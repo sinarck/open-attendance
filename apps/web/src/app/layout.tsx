@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "attendace",
-  description: "attendace",
+  title: "BPA Attendance",
+  description:
+    "Custom built attendance system for a Business Professionals of America chapter",
 };
 
 export default function RootLayout({
