@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
 import z from "zod";
-import { publicProcedure, router } from "../lib/trpc";
+import { protectedProcedure, router } from "../lib/trpc";
 
 const TOKEN_EXPIRATION_SECONDS = 30;
 
 export const meetingRouter = router({
-  generateToken: publicProcedure
+  generateToken: protectedProcedure
     .input(
       z.object({
         meetingId: z.string(),
@@ -18,11 +18,14 @@ export const meetingRouter = router({
         nonce: crypto.randomUUID(),
       };
 
-      const token = jwt.sign(payload, process.env.TOKEN_SECRET!, {
+      const token = jwt.sign(payload, process.env.QR_CODE_SECRET!, {
         algorithm: "HS256",
         expiresIn: TOKEN_EXPIRATION_SECONDS,
       });
 
+      console.log(token);
+
       return { token };
     }),
 });
+
