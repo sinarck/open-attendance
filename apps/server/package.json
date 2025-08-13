@@ -24,6 +24,7 @@
     "drizzle-orm": "^0.44.2",
     "hono": "^4.8.2",
     "jsonwebtoken": "^9.0.2",
+    "qrcode.react": "^4.2.0",
     "zod": "^4.0.2"
   },
   "devDependencies": {
