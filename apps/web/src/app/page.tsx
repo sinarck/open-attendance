@@ -6,11 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
-  const { data: meetingToken } = useQuery(
-    trpc.meeting.generateToken.queryOptions({
+  const { data: meetingToken } = useQuery({
+    ...trpc.meeting.generateToken.queryOptions({
       meetingId: "123",
-    })
-  );
+    }),
+    enabled: !!session,
+  });
 
   if (isPending) {
     return <div>Loading...</div>;
