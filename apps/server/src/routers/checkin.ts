@@ -12,6 +12,63 @@ import {
 } from "../db/schema/attendance";
 import { publicProcedure, router } from "../lib/trpc";
 
+// Error code mappings for user-friendly messages
+const ERROR_MESSAGES = {
+  TOKEN_INVALID_OR_EXPIRED: {
+    code: "INVALID_TOKEN",
+    message: "Your check-in link has expired. Please scan the QR code again.",
+  },
+  TOKEN_MALFORMED: {
+    code: "INVALID_TOKEN",
+    message: "Invalid check-in link. Please scan the QR code again.",
+  },
+  TOKEN_STALE: {
+    code: "INVALID_TOKEN",
+    message: "Your check-in link has expired. Please scan the QR code again.",
+  },
+  TOKEN_ALREADY_USED: {
+    code: "TOKEN_USED",
+    message:
+      "This check-in link has already been used. Please scan a fresh QR code.",
+  },
+  RATE_LIMITED: {
+    code: "TOO_MANY_ATTEMPTS",
+    message: "Too many attempts. Please wait a moment and try again.",
+  },
+  MEETING_INACTIVE: {
+    code: "EVENT_UNAVAILABLE",
+    message: "This event is currently not available for check-in.",
+  },
+  MEETING_NOT_CONFIGURED: {
+    code: "EVENT_UNAVAILABLE",
+    message: "Event configuration error. Please contact event staff.",
+  },
+  LOCATION_INACCURATE: {
+    code: "LOCATION_REQUIRED",
+    message:
+      "Unable to verify your location accurately. Please ensure location services are enabled and try again.",
+  },
+  NOT_IN_GEOFENCE: {
+    code: "LOCATION_REQUIRED",
+    message: "You must be at the event location to check in.",
+  },
+  UNKNOWN_USER: {
+    code: "INVALID_USER",
+    message: "User ID not found. Please check your ID and try again.",
+  },
+  DEVICE_ALREADY_USED: {
+    code: "DEVICE_USED",
+    message: "This device has already been used to check in to this event.",
+  },
+} as const;
+
+function createUserError(errorKey: keyof typeof ERROR_MESSAGES) {
+  const error = ERROR_MESSAGES[errorKey];
+  const err = new Error(error.message);
+  (err as any).code = error.code;
+  return err;
+}
+
 const inputSchema = z.object({
   token: z.string().min(1),
   userId: z.string().regex(/^\d{6}$/, "User ID must be 6 digits"),
@@ -78,7 +135,7 @@ async function getMeetingConfig(meetingId: string) {
       active: true,
     };
   }
-  throw new Error("MEETING_NOT_CONFIGURED");
+  throw createUserError("MEETING_NOT_CONFIGURED");
 }
 
 function hashValue(v: string | undefined | null) {
@@ -115,43 +172,59 @@ export const checkinRouter = router({
           algorithms: ["HS256"],
         });
       } catch {
-        throw new Error("TOKEN_INVALID_OR_EXPIRED");
+        throw createUserError("TOKEN_INVALID_OR_EXPIRED");
       }
       const { meetingId, kioskId, nonce, iat, exp } = payload ?? {};
-      if (!meetingId || !nonce) throw new Error("TOKEN_MALFORMED");
+      if (!meetingId || !nonce) throw createUserError("TOKEN_MALFORMED");
 
       // iat skew bound (optional hardening)
       if (typeof iat === "number") {
         const nowS = Math.floor(Date.now() / 1000);
-        if (Math.abs(nowS - iat) > 120) throw new Error("TOKEN_STALE");
+        if (Math.abs(nowS - iat) > 120) throw createUserError("TOKEN_STALE");
       }
 
       const clientIp =
         (ctx.ip as string | undefined) ||
         (ctx.headers?.get?.("x-forwarded-for") as string | undefined) ||
         undefined;
-      if (!rateLimitOk(clientIp)) throw new Error("RATE_LIMITED");
+      if (!rateLimitOk(clientIp)) throw createUserError("RATE_LIMITED");
 
       const meeting = await getMeetingConfig(meetingId);
-      if (!meeting.active) throw new Error("MEETING_INACTIVE");
+      if (!meeting.active) throw createUserError("MEETING_INACTIVE");
 
       // Geofence check
       const { lat, lng, accuracyM } = input.geo;
-      if (accuracyM > 50) throw new Error("LOCATION_INACCURATE");
+      if (accuracyM > 50) throw createUserError("LOCATION_INACCURATE");
       const distance = haversineMeters(
         lat,
         lng,
         meeting.centerLat,
         meeting.centerLng
       );
-      if (distance > meeting.radiusM + 10) throw new Error("NOT_IN_GEOFENCE");
+      if (distance > meeting.radiusM + 10)
+        throw createUserError("NOT_IN_GEOFENCE");
 
       // Directory validation
       const [att] = await db
         .select()
         .from(attendeeDirectory)
         .where(eq(attendeeDirectory.userId, input.userId));
-      if (!att) throw new Error("UNKNOWN_USER");
+      if (!att) throw createUserError("UNKNOWN_USER");
+
+      // Check if user already checked in to this meeting
+      const [existingCheckin] = await db
+        .select()
+        .from(checkin)
+        .where(
+          and(
+            eq(checkin.meetingId, meetingId),
+            eq(checkin.userId, input.userId)
+          )
+        );
+
+      if (existingCheckin) {
+        return { status: "already" as const };
+      }
 
       // Check if device fingerprint was already used for this meeting
       const [existingDevice] = await db
@@ -163,8 +236,9 @@ export const checkinRouter = router({
             eq(usedDeviceFingerprint.meetingId, meetingId)
           )
         );
+
       if (existingDevice) {
-        throw new Error("DEVICE_ALREADY_USED");
+        throw createUserError("DEVICE_ALREADY_USED");
       }
 
       const ua =
@@ -206,26 +280,14 @@ export const checkinRouter = router({
         return { status: "ok" as const };
       } catch (e: any) {
         const msg = String(e?.message || "");
-        // If nonce already inserted or unique constraint on meeting+user triggers
+        // If nonce already inserted, token was reused
         if (
           msg.includes("UNIQUE") ||
           msg.includes("unique") ||
-          msg.includes("constraint")
+          msg.includes("constraint") ||
+          msg.includes("SQLITE_CONSTRAINT")
         ) {
-          // Distinguish already checked-in vs nonce reuse by checking existing check-in
-          const existing = await db
-            .select()
-            .from(checkin)
-            .where(
-              and(
-                eq(checkin.meetingId, meetingId),
-                eq(checkin.userId, input.userId)
-              )
-            );
-          if (existing.length > 0) {
-            return { status: "already" as const };
-          }
-          throw new Error("TOKEN_ALREADY_USED");
+          throw createUserError("TOKEN_ALREADY_USED");
         }
         throw e;
       }

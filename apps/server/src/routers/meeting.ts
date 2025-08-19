@@ -25,16 +25,6 @@ export const meetingRouter = router({
         expiresIn: TOKEN_EXPIRATION_SECONDS,
       });
 
-      console.log(
-        "🔑 Debug - Token generated:",
-        token.substring(0, 50) + "..."
-      );
-      console.log("🔑 Debug - Payload:", payload);
-      console.log(
-        "🔑 Debug - QR_CODE_SECRET exists:",
-        !!process.env.QR_CODE_SECRET
-      );
-
       return { token };
     }),
 });
