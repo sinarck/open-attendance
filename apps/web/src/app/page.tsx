@@ -14,7 +14,6 @@ export default function Home() {
     enabled: !!session,
     refetchInterval: 15 * 1000,
   });
-  const token = meetingToken?.token;
 
   if (isPending || isMeetingTokenPending) {
     return <div>Loading...</div>;
@@ -24,9 +23,17 @@ export default function Home() {
     return <div>Not logged in</div>;
   }
 
+  const url =
+    typeof window !== "undefined" && meetingToken?.token
+      ? `${window.location.origin}/checkin?token=${encodeURIComponent(
+          meetingToken.token
+        )}`
+      : "";
+
   return (
     <div className="container mx-auto flex flex-col items-center justify-center h-screen">
-      {token ? <QRCodeSVG value={token} size={256} /> : null}
+      {url ? <QRCodeSVG value={url} size={256} /> : null}
     </div>
   );
 }
+

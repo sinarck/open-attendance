@@ -12,8 +12,10 @@ export const meetingRouter = router({
       })
     )
     .query(async ({ input }) => {
+      const kioskId = process.env.KIOSK_ID || "kiosk_default";
       const payload = {
         meetingId: input.meetingId,
+        kioskId,
         issuedAt: Math.floor(Date.now() / 1000),
         nonce: crypto.randomUUID(),
       };
@@ -22,8 +24,6 @@ export const meetingRouter = router({
         algorithm: "HS256",
         expiresIn: TOKEN_EXPIRATION_SECONDS,
       });
-
-      console.log(token);
 
       return { token };
     }),
