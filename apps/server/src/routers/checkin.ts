@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
@@ -64,9 +65,13 @@ const ERROR_MESSAGES = {
 
 function createUserError(errorKey: keyof typeof ERROR_MESSAGES) {
   const error = ERROR_MESSAGES[errorKey];
-  const err = new Error(error.message);
-  (err as any).code = error.code;
-  return err;
+  return new TRPCError({
+    code: "BAD_REQUEST",
+    message: error.message,
+    cause: {
+      errorCode: error.code,
+    },
+  });
 }
 
 const inputSchema = z.object({

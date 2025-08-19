@@ -40,9 +40,8 @@ export default function CheckinPage() {
         }
       },
       onError: (error: any) => {
-        const errorCode = error.data?.code || "UNKNOWN_ERROR";
         const message = error.message || "Check-in failed";
-        toast.error(`${message} (${errorCode})`);
+        toast.error(message);
       },
     })
   );
