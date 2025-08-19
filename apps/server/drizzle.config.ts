@@ -9,3 +9,4 @@ export default defineConfig({
     authToken: process.env.DATABASE_AUTH_TOKEN,
   },
 });
+

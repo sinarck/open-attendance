@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/utils/trpc";
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
@@ -27,6 +28,7 @@ export default function CheckinPage() {
     accuracyM: number;
   } | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [deviceFingerprint, setDeviceFingerprint] = useState<string>("");
 
   const mutation = useMutation(
     trpc.checkin.validateAndCreate.mutationOptions({
@@ -48,11 +50,12 @@ export default function CheckinPage() {
       userId: "",
     },
     onSubmit: async ({ value }) => {
-      if (!geo || !token) return;
+      if (!geo || !token || !deviceFingerprint) return;
       mutation.mutate({
         token,
         userId: value.userId,
         geo: { lat: geo.lat, lng: geo.lng, accuracyM: geo.accuracyM },
+        deviceFingerprint,
       });
     },
     validators: {
@@ -66,6 +69,23 @@ export default function CheckinPage() {
     let cancelled = false;
     if (!token) return;
 
+    // Generate device fingerprint
+    const initFingerprint = async () => {
+      try {
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        if (!cancelled) {
+          setDeviceFingerprint(result.visitorId);
+        }
+      } catch (error) {
+        console.error("Failed to generate device fingerprint:", error);
+        if (!cancelled) {
+          setDeviceFingerprint("fallback-" + Date.now());
+        }
+      }
+    };
+
+    // Get geolocation
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         if (cancelled) return;
@@ -81,6 +101,8 @@ export default function CheckinPage() {
       },
       { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
     );
+
+    initFingerprint();
 
     return () => {
       cancelled = true;
@@ -171,7 +193,8 @@ export default function CheckinPage() {
                         !state.canSubmit ||
                         state.isSubmitting ||
                         !geo ||
-                        !!geoError
+                        !!geoError ||
+                        !deviceFingerprint
                       }
                     >
                       {state.isSubmitting ? "Checking in..." : "Check In"}
@@ -184,17 +207,27 @@ export default function CheckinPage() {
         </CardContent>
       </Card>
 
-      {/* Debug location info */}
-      {geo && (
+      {/* Debug info */}
+      {(geo || deviceFingerprint) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Debug: Location Info</CardTitle>
+            <CardTitle className="text-sm">Debug Info</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xs space-y-1 font-mono">
-              <div>Lat: {geo.lat.toFixed(6)}</div>
-              <div>Lng: {geo.lng.toFixed(6)}</div>
-              <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
+              {geo && (
+                <>
+                  <div>Lat: {geo.lat.toFixed(6)}</div>
+                  <div>Lng: {geo.lng.toFixed(6)}</div>
+                  <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
+                </>
+              )}
+              {deviceFingerprint && (
+                <div className="pt-2 border-t">
+                  <div className="text-gray-600 mb-1">Device ID:</div>
+                  <div className="break-all">{deviceFingerprint}</div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

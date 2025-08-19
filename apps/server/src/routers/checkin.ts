@@ -7,6 +7,7 @@ import {
   attendeeDirectory,
   checkin,
   meeting as meetingTable,
+  usedDeviceFingerprint,
   usedTokenNonce,
 } from "../db/schema/attendance";
 import { publicProcedure, router } from "../lib/trpc";
@@ -19,6 +20,7 @@ const inputSchema = z.object({
     lng: z.number(),
     accuracyM: z.number().max(2000),
   }),
+  deviceFingerprint: z.string().min(1),
 });
 
 function toRad(n: number) {
@@ -151,6 +153,20 @@ export const checkinRouter = router({
         .where(eq(attendeeDirectory.userId, input.userId));
       if (!att) throw new Error("UNKNOWN_USER");
 
+      // Check if device fingerprint was already used for this meeting
+      const [existingDevice] = await db
+        .select()
+        .from(usedDeviceFingerprint)
+        .where(
+          and(
+            eq(usedDeviceFingerprint.fingerprint, input.deviceFingerprint),
+            eq(usedDeviceFingerprint.meetingId, meetingId)
+          )
+        );
+      if (existingDevice) {
+        throw new Error("DEVICE_ALREADY_USED");
+      }
+
       const ua =
         (ctx.userAgent as string | undefined) ||
         (ctx.headers?.get?.("user-agent") as string | undefined) ||
@@ -167,6 +183,12 @@ export const checkinRouter = router({
             kioskId: kioskId || "unknown",
             consumedAt: new Date(),
           });
+          await tx.insert(usedDeviceFingerprint).values({
+            fingerprint: input.deviceFingerprint,
+            meetingId,
+            userId: input.userId,
+            firstUsedAt: new Date(),
+          });
           await tx.insert(checkin).values({
             id: crypto.randomUUID(),
             meetingId,
@@ -178,6 +200,7 @@ export const checkinRouter = router({
             userAgentHash,
             ipHash,
             kioskId: kioskId || "unknown",
+            deviceFingerprint: input.deviceFingerprint,
           });
         });
         return { status: "ok" as const };

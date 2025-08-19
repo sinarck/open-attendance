@@ -12,7 +12,10 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "seed": "bun src/seed.ts",
+    "add-users": "bun src/add-users.ts",
+    "check-db": "bun src/check-db.ts"
   },
   "dependencies": {
     "@hono/trpc-server": "^0.4.0",

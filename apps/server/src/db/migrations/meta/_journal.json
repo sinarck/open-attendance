@@ -15,6 +15,13 @@
       "when": 1755580057535,
       "tag": "0001_omniscient_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1755635246616,
+      "tag": "0002_neat_iron_monger",
+      "breakpoints": true
     }
   ]
 }

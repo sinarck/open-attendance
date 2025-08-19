@@ -31,7 +31,15 @@ CREATE TABLE IF NOT EXISTS checkin (
   accuracy_m REAL,
   user_agent_hash TEXT,
   ip_hash TEXT,
-  kiosk_id TEXT
+  kiosk_id TEXT,
+  device_fingerprint TEXT
+);
+
+CREATE TABLE IF NOT EXISTS used_device_fingerprint (
+  fingerprint TEXT PRIMARY KEY,
+  meeting_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  first_used_at INTEGER NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS checkin_meeting_user_unique

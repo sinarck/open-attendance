@@ -42,6 +42,7 @@ export const checkin = sqliteTable(
     userAgentHash: text("user_agent_hash"),
     ipHash: text("ip_hash"),
     kioskId: text("kiosk_id"),
+    deviceFingerprint: text("device_fingerprint"),
   },
   (t) => ({
     uniqPerMeeting: uniqueIndex("checkin_meeting_user_unique").on(
@@ -50,4 +51,11 @@ export const checkin = sqliteTable(
     ),
   })
 );
+
+export const usedDeviceFingerprint = sqliteTable("used_device_fingerprint", {
+  fingerprint: text("fingerprint").primaryKey(),
+  meetingId: text("meeting_id").notNull(),
+  userId: text("user_id").notNull(),
+  firstUsedAt: integer("first_used_at", { mode: "timestamp" }).notNull(),
+});
 
