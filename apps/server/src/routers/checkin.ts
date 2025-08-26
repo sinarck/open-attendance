@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import z from "zod";
+import { CONFIG } from "../config";
 import { db } from "../db";
 import {
   attendeeDirectory,
@@ -185,28 +186,31 @@ export const checkinRouter = router({
       // iat skew bound (optional hardening)
       if (typeof iat === "number") {
         const nowS = Math.floor(Date.now() / 1000);
-        if (Math.abs(nowS - iat) > 120) throw createUserError("TOKEN_STALE");
+        if (Math.abs(nowS - iat) > CONFIG.tokens.iatSkewSeconds)
+          throw createUserError("TOKEN_STALE");
       }
 
       const clientIp =
         (ctx.ip as string | undefined) ||
         (ctx.headers?.get?.("x-forwarded-for") as string | undefined) ||
         undefined;
-      if (!rateLimitOk(clientIp)) throw createUserError("RATE_LIMITED");
+      if (!rateLimitOk(clientIp, CONFIG.rateLimit.perIpPerMinute))
+        throw createUserError("RATE_LIMITED");
 
       const meeting = await getMeetingConfig(meetingId);
       if (!meeting.active) throw createUserError("MEETING_INACTIVE");
 
       // Geofence check
       const { lat, lng, accuracyM } = input.geo;
-      if (accuracyM > 50) throw createUserError("LOCATION_INACCURATE");
+      if (accuracyM > CONFIG.geofence.maxAccuracyMeters)
+        throw createUserError("LOCATION_INACCURATE");
       const distance = haversineMeters(
         lat,
         lng,
         meeting.centerLat,
         meeting.centerLng
       );
-      if (distance > meeting.radiusM + 10)
+      if (distance > meeting.radiusM + CONFIG.geofence.radiusBufferMeters)
         throw createUserError("NOT_IN_GEOFENCE");
 
       // Directory validation

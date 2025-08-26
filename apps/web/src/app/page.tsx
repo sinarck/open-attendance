@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { CONFIG } from "@/config";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +16,7 @@ export default function Home() {
       meetingId: "123",
     }),
     enabled: !!session,
-    refetchInterval: 15 * 1000,
+    refetchInterval: CONFIG.qr.refreshIntervalMs,
   });
 
   if (isPending || isMeetingTokenPending) {
