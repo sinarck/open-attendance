@@ -19,7 +19,13 @@ export default function Home() {
     refetchInterval: CONFIG.qr.refreshIntervalMs,
   });
 
-  if (isPending || isMeetingTokenPending) {
+  // If session has resolved and is missing, show not logged in immediately.
+  if (!session && !isPending) {
+    return <div>Not logged in</div>;
+  }
+
+  // Only consider token loading when we have a session.
+  if (isPending || (session && isMeetingTokenPending)) {
     return <div>Loading...</div>;
   }
 

@@ -10,3 +10,4 @@ export const CONFIG = {
     maximumAgeMs: 0,
   },
 };
+
