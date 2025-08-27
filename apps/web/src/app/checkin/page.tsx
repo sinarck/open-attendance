@@ -28,12 +28,8 @@ export default function CheckinPage() {
 
   const mutation = useMutation(
     trpc.checkin.validateAndCreate.mutationOptions({
-      onSuccess: (res) => {
-        if (res.status === "already") {
-          toast.warning("You have already checked in to this event!");
-        } else {
-          toast.success("Successfully checked in!");
-        }
+      onSuccess: () => {
+        toast.success("Successfully checked in!");
       },
       onError: (error: any) => {
         const message = error.message || "Check-in failed";

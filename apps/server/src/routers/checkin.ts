@@ -63,6 +63,10 @@ const ERROR_MESSAGES = {
     code: "DEVICE_USED",
     message: "This device has already been used to check in to this event.",
   },
+  ALREADY_CHECKED_IN: {
+    code: "ALREADY_CHECKED_IN",
+    message: "You have already checked in to this event.",
+  },
 } as const;
 
 function createUserError(errorKey: keyof typeof ERROR_MESSAGES) {
@@ -81,6 +85,7 @@ export const checkinRouter = router({
     .input(inputSchema)
     .mutation(async ({ input }) => {
       let payload: any;
+
       try {
         payload = jwt.verify(input.token, process.env.QR_CODE_SECRET!, {
           algorithms: ["HS256"],
@@ -88,6 +93,7 @@ export const checkinRouter = router({
       } catch {
         throw createUserError("TOKEN_INVALID_OR_EXPIRED");
       }
+
       const { meetingId, kioskId, nonce, iat } = payload;
 
       if (!meetingId || !nonce) {
@@ -113,6 +119,7 @@ export const checkinRouter = router({
 
       // Geofence check
       const { lat, lng, accuracyM } = input.geo;
+
       if (accuracyM > CONFIG.geofence.maxAccuracyMeters) {
         throw createUserError("LOCATION_INACCURATE");
       }
@@ -150,9 +157,7 @@ export const checkinRouter = router({
         );
 
       if (existingCheckin) {
-        return {
-          status: "already",
-        };
+        throw createUserError("ALREADY_CHECKED_IN");
       }
 
       // Check if device fingerprint was already used for this meeting
