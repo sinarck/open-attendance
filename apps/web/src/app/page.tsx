@@ -13,7 +13,7 @@ export default function Home() {
   const router = useRouter();
   const { data: meetingToken, isPending: isMeetingTokenPending } = useQuery({
     ...trpc.meeting.generateToken.queryOptions({
-      meetingId: "1",
+      meetingId: "123",
     }),
     enabled: !!session,
     refetchInterval: CONFIG.qr.refreshIntervalMs,
@@ -27,10 +27,6 @@ export default function Home() {
   // Only consider token loading when we have a session.
   if (isPending || (session && isMeetingTokenPending)) {
     return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    return <div>Not logged in</div>;
   }
 
   const url =
