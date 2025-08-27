@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import z from "zod";
-import { CONFIG } from "../config";
-import { protectedProcedure, router } from "../lib/trpc";
+import { CONFIG } from "../config/index.js";
+import { protectedProcedure, router } from "../lib/trpc.js";
 export const meetingRouter = router({
   generateToken: protectedProcedure
     .input(
@@ -29,3 +29,4 @@ export const meetingRouter = router({
       };
     }),
 });
+

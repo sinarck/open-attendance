@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
-import { CONFIG } from "../config";
-import { db } from "../db";
+import { CONFIG } from "../config/index.js";
+import { db } from "../db/index.js";
 import {
   attendeeDirectory,
   checkin,
@@ -10,10 +10,10 @@ import {
   usedDeviceFingerprint,
   usedTokenNonce,
 } from "../db/schema/attendance";
-import { createUserError } from "../lib/error";
-import { haversineMeters } from "../lib/location";
-import { publicProcedure, router } from "../lib/trpc";
-import { inputSchema } from "../schema/checkin";
+import { createUserError } from "../lib/error.js";
+import { haversineMeters } from "../lib/location.js";
+import { publicProcedure, router } from "../lib/trpc.js";
+import { inputSchema } from "../schema/checkin.js";
 
 export const checkinRouter = router({
   validateAndCreate: publicProcedure

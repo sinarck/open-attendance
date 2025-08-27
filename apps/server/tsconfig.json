@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
     "baseUrl": "./",
@@ -11,9 +12,10 @@
       "@/*": ["./src/*"]
     },
     "outDir": "./dist",
-    "types": ["bun", "node"],
+    "types": ["node"],
     "composite": true,
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   }
 }
+
