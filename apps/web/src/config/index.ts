@@ -1,7 +1,7 @@
 export const CONFIG = {
   qr: {
     // How often the kiosk refreshes the QR token (ms)
-    refreshIntervalMs: 15_000,
+    refreshIntervalMs: 5_000,
   },
   geo: {
     // Geolocation API options
@@ -10,4 +10,3 @@ export const CONFIG = {
     maximumAgeMs: 0,
   },
 };
-

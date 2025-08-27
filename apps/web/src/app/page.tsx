@@ -13,7 +13,7 @@ export default function Home() {
   const router = useRouter();
   const { data: meetingToken, isPending: isMeetingTokenPending } = useQuery({
     ...trpc.meeting.generateToken.queryOptions({
-      meetingId: "123",
+      meetingId: "1",
     }),
     enabled: !!session,
     refetchInterval: CONFIG.qr.refreshIntervalMs,

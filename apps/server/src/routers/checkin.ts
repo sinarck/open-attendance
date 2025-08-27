@@ -11,6 +11,7 @@ import {
   usedDeviceFingerprint,
   usedTokenNonce,
 } from "../db/schema/attendance";
+import { haversineMeters } from "../lib/location";
 import { publicProcedure, router } from "../lib/trpc";
 import { inputSchema } from "../schema/checkin";
 
@@ -75,92 +76,10 @@ function createUserError(errorKey: keyof typeof ERROR_MESSAGES) {
   });
 }
 
-function toRad(n: number) {
-  return (n * Math.PI) / 180;
-}
-function haversineMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-) {
-  const R = 6371000;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-async function getMeetingConfig(meetingId: string) {
-  const [m] = await db
-    .select()
-    .from(meetingTable)
-    .where(eq(meetingTable.id, meetingId));
-  if (m) {
-    return {
-      centerLat: m.centerLat,
-      centerLng: m.centerLng,
-      radiusM: m.radiusM,
-      startAt: m.startAt ? new Date(m.startAt) : undefined,
-      endAt: m.endAt ? new Date(m.endAt) : undefined,
-      active: m.active,
-    };
-  }
-  // Optional env fallback for no-admin bootstrap
-  const envLat = process.env.MEETING_CENTER_LAT
-    ? Number(process.env.MEETING_CENTER_LAT)
-    : undefined;
-  const envLng = process.env.MEETING_CENTER_LNG
-    ? Number(process.env.MEETING_CENTER_LNG)
-    : undefined;
-  const envRad = process.env.MEETING_RADIUS_M
-    ? Number(process.env.MEETING_RADIUS_M)
-    : undefined;
-  if (envLat && envLng && envRad) {
-    return {
-      centerLat: envLat,
-      centerLng: envLng,
-      radiusM: envRad,
-      active: true,
-    };
-  }
-  throw createUserError("MEETING_NOT_CONFIGURED");
-}
-
-function hashValue(v: string | undefined | null) {
-  if (!v) return null;
-  const salt = process.env.HASH_SALT || "salt";
-  return crypto
-    .createHash("sha256")
-    .update(salt + v)
-    .digest("hex");
-}
-
-// naive per-process rate limiter (best effort)
-const ipCounts = new Map<string, { ts: number; count: number }>();
-function rateLimitOk(ip: string | undefined | null, limitPerMin = 20) {
-  if (!ip) return true;
-  const now = Date.now();
-  const rec = ipCounts.get(ip);
-  if (!rec || now - rec.ts > 60_000) {
-    ipCounts.set(ip, { ts: now, count: 1 });
-    return true;
-  }
-  rec.count++;
-  if (rec.count > limitPerMin) return false;
-  return true;
-}
-
 export const checkinRouter = router({
   validateAndCreate: publicProcedure
     .input(inputSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       let payload: any;
       try {
         payload = jwt.verify(input.token, process.env.QR_CODE_SECRET!, {
@@ -169,45 +88,55 @@ export const checkinRouter = router({
       } catch {
         throw createUserError("TOKEN_INVALID_OR_EXPIRED");
       }
-      const { meetingId, kioskId, nonce, iat, exp } = payload ?? {};
-      if (!meetingId || !nonce) throw createUserError("TOKEN_MALFORMED");
+      const { meetingId, kioskId, nonce, iat } = payload;
+
+      if (!meetingId || !nonce) {
+        throw createUserError("TOKEN_MALFORMED");
+      }
 
       // iat skew bound (optional hardening)
       if (typeof iat === "number") {
         const nowS = Math.floor(Date.now() / 1000);
+
         if (Math.abs(nowS - iat) > CONFIG.tokens.iatSkewSeconds)
           throw createUserError("TOKEN_STALE");
       }
 
-      const clientIp =
-        (ctx.ip as string | undefined) ||
-        (ctx.headers?.get?.("x-forwarded-for") as string | undefined) ||
-        undefined;
-      if (!rateLimitOk(clientIp, CONFIG.rateLimit.perIpPerMinute))
-        throw createUserError("RATE_LIMITED");
+      const [meeting] = await db
+        .select()
+        .from(meetingTable)
+        .where(eq(meetingTable.id, meetingId));
 
-      const meeting = await getMeetingConfig(meetingId);
-      if (!meeting.active) throw createUserError("MEETING_INACTIVE");
+      if (!meeting.active) {
+        throw createUserError("MEETING_INACTIVE");
+      }
 
       // Geofence check
       const { lat, lng, accuracyM } = input.geo;
-      if (accuracyM > CONFIG.geofence.maxAccuracyMeters)
+      if (accuracyM > CONFIG.geofence.maxAccuracyMeters) {
         throw createUserError("LOCATION_INACCURATE");
+      }
+
       const distance = haversineMeters(
         lat,
         lng,
         meeting.centerLat,
         meeting.centerLng
       );
-      if (distance > meeting.radiusM + CONFIG.geofence.radiusBufferMeters)
+
+      if (distance > meeting.radiusM + CONFIG.geofence.radiusBufferMeters) {
         throw createUserError("NOT_IN_GEOFENCE");
+      }
 
       // Directory validation
       const [att] = await db
         .select()
         .from(attendeeDirectory)
         .where(eq(attendeeDirectory.userId, input.userId));
-      if (!att) throw createUserError("UNKNOWN_USER");
+
+      if (!att) {
+        throw createUserError("UNKNOWN_USER");
+      }
 
       // Check if user already checked in to this meeting
       const [existingCheckin] = await db
@@ -221,7 +150,9 @@ export const checkinRouter = router({
         );
 
       if (existingCheckin) {
-        return { status: "already" as const };
+        return {
+          status: "already",
+        };
       }
 
       // Check if device fingerprint was already used for this meeting
@@ -239,13 +170,6 @@ export const checkinRouter = router({
         throw createUserError("DEVICE_ALREADY_USED");
       }
 
-      const ua =
-        (ctx.userAgent as string | undefined) ||
-        (ctx.headers?.get?.("user-agent") as string | undefined) ||
-        "";
-      const ipHash = hashValue(clientIp || "");
-      const userAgentHash = hashValue(ua);
-
       // Single-use nonce + idempotent check-in
       try {
         await db.transaction(async (tx) => {
@@ -255,12 +179,14 @@ export const checkinRouter = router({
             kioskId: kioskId || "unknown",
             consumedAt: new Date(),
           });
+
           await tx.insert(usedDeviceFingerprint).values({
             fingerprint: input.deviceFingerprint,
             meetingId,
             userId: input.userId,
             firstUsedAt: new Date(),
           });
+
           await tx.insert(checkin).values({
             id: crypto.randomUUID(),
             meetingId,
@@ -269,15 +195,17 @@ export const checkinRouter = router({
             lat,
             lng,
             accuracyM,
-            userAgentHash,
-            ipHash,
             kioskId: kioskId || "unknown",
             deviceFingerprint: input.deviceFingerprint,
           });
         });
-        return { status: "ok" as const };
+
+        return {
+          status: "ok",
+        };
       } catch (e: any) {
         const msg = String(e?.message || "");
+
         // If nonce already inserted, token was reused
         if (
           msg.includes("UNIQUE") ||
@@ -287,6 +215,7 @@ export const checkinRouter = router({
         ) {
           throw createUserError("TOKEN_ALREADY_USED");
         }
+
         throw e;
       }
     }),
