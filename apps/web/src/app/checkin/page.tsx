@@ -175,6 +175,7 @@ export default function CheckinPage() {
                   <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
                 </>
               )}
+
               {deviceFingerprint && (
                 <div className="pt-2 border-t">
                   <div className="text-gray-600 mb-1">Device ID:</div>
