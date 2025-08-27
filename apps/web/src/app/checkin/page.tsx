@@ -161,7 +161,7 @@ export default function CheckinPage() {
       </Card>
 
       {/* Debug info */}
-      {(geo || deviceFingerprint) && (
+      {process.env.NODE_ENV === "development" && (geo || deviceFingerprint) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Debug Info</CardTitle>
