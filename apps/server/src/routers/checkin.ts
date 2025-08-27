@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
-import z from "zod";
 import { CONFIG } from "../config";
 import { db } from "../db";
 import {
@@ -13,6 +12,7 @@ import {
   usedTokenNonce,
 } from "../db/schema/attendance";
 import { publicProcedure, router } from "../lib/trpc";
+import { inputSchema } from "../schema/checkin";
 
 // Error code mappings for user-friendly messages
 const ERROR_MESSAGES = {
@@ -74,17 +74,6 @@ function createUserError(errorKey: keyof typeof ERROR_MESSAGES) {
     },
   });
 }
-
-const inputSchema = z.object({
-  token: z.string().min(1),
-  userId: z.string().regex(/^\d{6}$/, "User ID must be 6 digits"),
-  geo: z.object({
-    lat: z.number(),
-    lng: z.number(),
-    accuracyM: z.number().max(2000),
-  }),
-  deviceFingerprint: z.string().min(1),
-});
 
 function toRad(n: number) {
   return (n * Math.PI) / 180;
