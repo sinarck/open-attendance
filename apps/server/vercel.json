@@ -11,11 +11,6 @@
       "src": "/(.*)",
       "dest": "src/index.ts"
     }
-  ],
-  "functions": {
-    "src/index.ts": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  ]
 }
 
