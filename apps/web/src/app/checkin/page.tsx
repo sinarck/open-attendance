@@ -10,25 +10,21 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFingerprint } from "@/hooks/use-fingerprint";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { trpc } from "@/utils/trpc";
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
 export default function CheckinPage() {
   const params = useSearchParams();
   const token = useMemo(() => params.get("token") ?? "", [params]);
-  const [geo, setGeo] = useState<{
-    lat: number;
-    lng: number;
-    accuracyM: number;
-  } | null>(null);
-  const [geoError, setGeoError] = useState<string | null>(null);
-  const [deviceFingerprint, setDeviceFingerprint] = useState<string>("");
+  const { geo, error: geoError } = useGeolocation(Boolean(token));
+  const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
 
   const mutation = useMutation(
     trpc.checkin.validateAndCreate.mutationOptions({
@@ -65,50 +61,6 @@ export default function CheckinPage() {
       }),
     },
   });
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!token) return;
-
-    // Generate device fingerprint
-    const initFingerprint = async () => {
-      try {
-        const fp = await FingerprintJS.load();
-        const result = await fp.get();
-        if (!cancelled) {
-          setDeviceFingerprint(result.visitorId);
-        }
-      } catch (error) {
-        console.error("Failed to generate device fingerprint:", error);
-        if (!cancelled) {
-          setDeviceFingerprint("fallback-" + Date.now());
-        }
-      }
-    };
-
-    // Get geolocation
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        if (cancelled) return;
-        setGeo({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracyM: pos.coords.accuracy ?? 9999,
-        });
-      },
-      (err) => {
-        if (cancelled) return;
-        setGeoError(err.message || "Location access required");
-      },
-      { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
-    );
-
-    initFingerprint();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
 
   if (!token) {
     return (
