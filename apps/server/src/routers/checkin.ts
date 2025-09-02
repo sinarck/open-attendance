@@ -9,7 +9,7 @@ import {
   meeting as meetingTable,
   usedDeviceFingerprint,
   usedTokenNonce,
-} from "../db/schema/attendance";
+} from "../db/schema/attendance.js";
 import { createUserError } from "../lib/error.js";
 import { haversineMeters } from "../lib/location.js";
 import { publicProcedure, router } from "../lib/trpc.js";
@@ -17,7 +17,7 @@ import { inputSchema } from "../schema/checkin.js";
 
 export const checkinRouter = router({
   validateAndCreate: publicProcedure
-    .input(inputSchema)
+    .input(inputSchema.assert)
     .mutation(async ({ input }) => {
       let payload: any;
 

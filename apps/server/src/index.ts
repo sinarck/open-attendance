@@ -35,6 +35,5 @@ app.use(
 app.get("/", (c) => {
   return c.text("OK");
 });
-
 export default app;
 
