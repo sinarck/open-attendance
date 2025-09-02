@@ -36,8 +36,6 @@ export default function Home() {
         )}`
       : "";
 
-  // Pure CSS sizing via Tailwind; no JS listeners
-
   return (
     <div className="container mx-auto flex flex-col items-center justify-center h-full gap-8">
       {url ? (
