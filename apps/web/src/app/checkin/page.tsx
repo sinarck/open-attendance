@@ -86,12 +86,12 @@ export default function CheckinPage() {
       <div className="w-full flex flex-col items-center gap-6">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Event Check-in</CardTitle>
+            <CardTitle>Meeting Check-in</CardTitle>
             {typeof remainingMs === "number" ? (
               <CardDescription>Time remaining: {formatted}</CardDescription>
             ) : null}
             <CardDescription>
-              Enter your 6-digit user ID to check in to the event
+              Enter your 6-digit user ID to check in to the meeting
             </CardDescription>
           </CardHeader>
           <CardContent>

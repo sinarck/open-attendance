@@ -25,11 +25,11 @@ export const ERROR_MESSAGES = {
   },
   MEETING_INACTIVE: {
     code: "EVENT_UNAVAILABLE",
-    message: "This event is currently not available for check-in.",
+    message: "This meeting is currently not available for check-in.",
   },
   MEETING_NOT_CONFIGURED: {
     code: "EVENT_UNAVAILABLE",
-    message: "Event configuration error. Please contact event staff.",
+    message: "Meeting configuration error. Please contact staff.",
   },
   LOCATION_INACCURATE: {
     code: "LOCATION_REQUIRED",
@@ -38,7 +38,7 @@ export const ERROR_MESSAGES = {
   },
   NOT_IN_GEOFENCE: {
     code: "LOCATION_REQUIRED",
-    message: "You must be at the event location to check in.",
+    message: "You must be at the meeting location to check in.",
   },
   UNKNOWN_USER: {
     code: "INVALID_USER",
@@ -46,11 +46,11 @@ export const ERROR_MESSAGES = {
   },
   DEVICE_ALREADY_USED: {
     code: "DEVICE_USED",
-    message: "This device has already been used to check in to this event.",
+    message: "This device has already been used to check in to this meeting.",
   },
   ALREADY_CHECKED_IN: {
     code: "ALREADY_CHECKED_IN",
-    message: "You have already checked in to this event.",
+    message: "You have already checked in to this meeting.",
   },
 } as const;
 
