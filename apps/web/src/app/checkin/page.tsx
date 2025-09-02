@@ -12,63 +12,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useGeolocation } from "@/hooks/use-geolocation";
+import { useTokenCountdown } from "@/hooks/use-token-countdown";
 import { trpc } from "@/utils/trpc";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import z from "zod";
+import type { AppRouter } from "../../../../server/src/routers";
 
 export default function CheckinPage() {
   const params = useSearchParams();
   const token = useMemo(() => params.get("token") ?? "", [params]);
   const { geo, error: geoError } = useGeolocation(Boolean(token));
   const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
+  const { remainingMs, formatted, isExpired } = useTokenCountdown(token);
 
-  // Decode JWT `exp` (seconds) to drive a countdown timer
-  const expMs = useMemo(() => {
-    if (!token) return null as number | null;
-    try {
-      const parts = token.split(".");
-      if (parts.length < 2) return null;
-      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), "=");
-      const payload = JSON.parse(atob(padded));
-      if (typeof payload?.exp === "number") {
-        return payload.exp * 1000;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }, [token]);
-
-  const [remainingMs, setRemainingMs] = useState<number | null>(
-    expMs ? Math.max(expMs - Date.now(), 0) : null
-  );
-
-  useEffect(() => {
-    if (!expMs) {
-      setRemainingMs(null);
-      return;
-    }
-    const update = () => setRemainingMs(Math.max(expMs - Date.now(), 0));
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [expMs]);
-
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.ceil(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
-  };
+  type RouterOutputs = inferRouterOutputs<AppRouter>;
+  type ValidateAndCreateOutput = RouterOutputs["checkin"]["validateAndCreate"];
 
   const mutation = useMutation(
     trpc.checkin.validateAndCreate.mutationOptions({
-      onSuccess: (data: any) => {
+      onSuccess: (data: ValidateAndCreateOutput) => {
         const name = data?.attendee?.name;
         toast.success(
           name ? `Successfully checked in ${name}!` : "Successfully checked in!"
@@ -120,16 +87,14 @@ export default function CheckinPage() {
         <CardHeader>
           <CardTitle>Event Check-in</CardTitle>
           {typeof remainingMs === "number" ? (
-            <CardDescription>
-              Time remaining: {formatTime(remainingMs)}
-            </CardDescription>
+            <CardDescription>Time remaining: {formatted}</CardDescription>
           ) : null}
           <CardDescription>
             Enter your 6-digit user ID to check in to the event
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {remainingMs === 0 && (
+          {isExpired && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600 text-sm">
                 This check-in link has expired.
@@ -169,6 +134,7 @@ export default function CheckinPage() {
                         pattern="^\d{6}$"
                         maxLength={6}
                         placeholder="123456"
+                        autoFocus
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
@@ -199,7 +165,7 @@ export default function CheckinPage() {
                         !geo ||
                         !!geoError ||
                         !deviceFingerprint ||
-                        remainingMs === 0
+                        isExpired
                       }
                     >
                       {state.isSubmitting ? "Checking in..." : "Check In"}
