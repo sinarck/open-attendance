@@ -96,18 +96,16 @@ export default function CheckinPage() {
           </CardHeader>
           <CardContent>
             {isExpired && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm">
+              <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
+                <p className="text-sm">
                   This check-in link has expired. Please scan the QR code again.
                 </p>
               </div>
             )}
             {geoError ? (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm">
-                  Location error: {geoError}
-                </p>
-                <p className="text-red-500 text-xs mt-1">
+              <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
+                <p className="text-sm">Location error: {geoError}</p>
+                <p className="text-xs mt-1 opacity-90">
                   Please enable location access and refresh the page
                 </p>
               </div>
@@ -146,7 +144,7 @@ export default function CheckinPage() {
                         />
 
                         {field.state.meta.errors.map((error, idx) => (
-                          <p key={idx} className="text-red-500 text-sm">
+                          <p key={idx} className="text-destructive text-sm">
                             {error?.message}
                           </p>
                         ))}
