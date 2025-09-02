@@ -50,7 +50,10 @@ export function useGeolocation(
       },
       (err) => {
         if (cancelledRef.current) return;
-        setError(err.message || "Location access required");
+        setError(
+          err.message ||
+            "Location access required. Try going to Settings > Privacy > Location Services > Safari if you're on iOS."
+        );
         setLoading(false);
       },
       geoOptions
