@@ -38,9 +38,7 @@ export default function CheckinPage() {
       onSuccess: (data: ValidateAndCreateOutput) => {
         const name = data?.attendee?.name;
         toast.success(
-          name
-            ? `Successfully checked in ${name}! You can close this tab now.`
-            : "Successfully checked in!"
+          name ? `Successfully checked in ${name}!` : "Successfully checked in!"
         );
       },
       onError: (error: any) => {
@@ -84,101 +82,107 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mx-auto w-full h-full p-6 flex flex-col items-center justify-center gap-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Event Check-in</CardTitle>
-          {typeof remainingMs === "number" ? (
-            <CardDescription>Time remaining: {formatted}</CardDescription>
-          ) : null}
-          <CardDescription>
-            Enter your 6-digit user ID to check in to the event
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isExpired && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-center">
-              <p className="text-red-600 text-sm">
-                This check-in link has expired. Please scan the QR code again.
-              </p>
-            </div>
-          )}
-          {geoError ? (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 text-sm">Location error: {geoError}</p>
-              <p className="text-red-500 text-xs mt-1">
-                Please enable location access and refresh the page
-              </p>
-            </div>
-          ) : !geo ? (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-blue-600 text-sm">Getting your location...</p>
-            </div>
-          ) : null}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              form.handleSubmit();
-            }}
-          >
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-3">
-                <form.Field name="userId">
-                  {(field) => (
-                    <div className="grid gap-3">
-                      <Label htmlFor={field.name}>User ID (6 digits)</Label>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        inputMode="numeric"
-                        pattern="^\d{6}$"
-                        maxLength={6}
-                        placeholder="123456"
-                        autoFocus
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        required
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <p
-                          key={error?.message}
-                          className="text-red-500 text-sm"
-                        >
-                          {error?.message}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </form.Field>
+    <div className="mx-auto w-full h-full p-6 flex flex-col gap-6">
+      <div className="flex-1 w-full flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Event Check-in</CardTitle>
+            {typeof remainingMs === "number" ? (
+              <CardDescription>Time remaining: {formatted}</CardDescription>
+            ) : null}
+            <CardDescription>
+              Enter your 6-digit user ID to check in to the event
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isExpired && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm">
+                  This check-in link has expired. Please scan the QR code again.
+                </p>
               </div>
-
-              <div className="flex flex-col gap-3">
-                <form.Subscribe>
-                  {(state) => (
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        !geo ||
-                        !!geoError ||
-                        !deviceFingerprint ||
-                        isExpired
-                      }
-                    >
-                      {state.isSubmitting ? "Checking in..." : "Check In"}
-                    </Button>
-                  )}
-                </form.Subscribe>
+            )}
+            {geoError ? (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm">
+                  Location error: {geoError}
+                </p>
+                <p className="text-red-500 text-xs mt-1">
+                  Please enable location access and refresh the page
+                </p>
               </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            ) : !geo ? (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-blue-600 text-sm">
+                  Getting your location...
+                </p>
+              </div>
+            ) : null}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+              }}
+            >
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-3">
+                  <form.Field name="userId">
+                    {(field) => (
+                      <div className="grid gap-3">
+                        <Label htmlFor={field.name}>User ID (6 digits)</Label>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          inputMode="numeric"
+                          pattern="^\d{6}$"
+                          maxLength={6}
+                          placeholder="123456"
+                          autoFocus
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          required
+                        />
+                        {field.state.meta.errors.map((error) => (
+                          <p
+                            key={error?.message}
+                            className="text-red-500 text-sm"
+                          >
+                            {error?.message}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </form.Field>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <form.Subscribe>
+                    {(state) => (
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={
+                          !state.canSubmit ||
+                          state.isSubmitting ||
+                          !geo ||
+                          !!geoError ||
+                          !deviceFingerprint ||
+                          isExpired
+                        }
+                      >
+                        {state.isSubmitting ? "Checking in..." : "Check In"}
+                      </Button>
+                    )}
+                  </form.Subscribe>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Debug info */}
       {process.env.NODE_ENV === "development" && (geo || deviceFingerprint) && (
