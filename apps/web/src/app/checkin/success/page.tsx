@@ -23,6 +23,7 @@ export default function CheckinSuccess() {
         width={size.width}
         height={size.height}
         numberOfPieces={300}
+        gravity={1}
         recycle={false}
       />
       <div className="w-full max-w-md text-center space-y-4 relative">
