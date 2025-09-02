@@ -82,7 +82,7 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mx-auto w-full min-h-svh p-6 flex flex-col items-center justify-center gap-6">
+    <div className="mx-auto w-full h-full p-6 flex flex-col items-center justify-center gap-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Event Check-in</CardTitle>

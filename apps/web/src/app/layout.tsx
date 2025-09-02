@@ -31,12 +31,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
+          <div className="grid grid-rows-[auto_1fr_auto] h-svh">
             <Header />
             {children}
+            <footer className="text-xs text-muted-foreground px-3 py-2 border-t text-center">
+              Designed and built by Aadi Sanghvi
+            </footer>
           </div>
         </Providers>
       </body>
     </html>
   );
 }
+
