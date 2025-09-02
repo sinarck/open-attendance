@@ -39,13 +39,15 @@ export default function Home() {
   return (
     <div className="container mx-auto flex flex-col items-center justify-center h-screen">
       {url ? <QRCodeSVG value={url} size={256} /> : null}
-      <Button
-        onClick={() => {
-          router.push(`/checkin?token=${meetingToken?.token}`);
-        }}
-      >
-        Check In
-      </Button>
+      {process.env.NODE_ENV !== "production" ? (
+        <Button
+          onClick={() => {
+            router.push(`/checkin?token=${meetingToken?.token}`);
+          }}
+        >
+          Check In
+        </Button>
+      ) : null}
     </div>
   );
 }

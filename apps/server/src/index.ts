@@ -10,38 +10,16 @@ import { appRouter } from "./routers/index.js";
 const app = new Hono();
 
 app.use(logger());
-// CORS: allow configured origins (comma-separated) with credentials
-const allowedOrigins = (process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-const devFallbackOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://127.0.0.1:3000",
-];
-
 app.use(
   "/*",
   cors({
-    origin: (origin) => {
-      if (!origin) return ""; // Non-CORS or same-origin requests
-      const whitelist = allowedOrigins.length
-        ? allowedOrigins
-        : devFallbackOrigins;
-      return whitelist.includes(origin) ? origin : "";
-    },
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "https://attendance-web-two.vercel.app/"
+        : process.env.CORS_ORIGIN ?? "http://localhost:3000",
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: [
-      "*",
-      "Content-Type",
-      "Authorization",
-      "X-Requested-With",
-      "X-TRPC-Source",
-    ],
+    allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-    maxAge: 86400,
   })
 );
 
