@@ -34,7 +34,7 @@ export default function RootLayout({
           <div className="grid grid-rows-[auto_1fr_auto] h-svh">
             <Header />
             {children}
-            <footer className="text-xs text-muted-foreground px-3 py-2 border-t text-center">
+            <footer className="text-xs sm:text-sm md:text-base text-muted-foreground px-3 py-2 border-t text-center">
               Designed and built by Aadi Sanghvi
             </footer>
           </div>

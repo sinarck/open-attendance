@@ -38,7 +38,9 @@ export default function CheckinPage() {
       onSuccess: (data: ValidateAndCreateOutput) => {
         const name = data?.attendee?.name;
         toast.success(
-          name ? `Successfully checked in ${name}!` : "Successfully checked in!"
+          name
+            ? `Successfully checked in ${name}! You can close this tab now.`
+            : "Successfully checked in!"
         );
       },
       onError: (error: any) => {
@@ -84,7 +86,7 @@ export default function CheckinPage() {
   return (
     <div className="mx-auto w-full h-full p-6 flex flex-col items-center justify-center gap-6">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="text-center">
           <CardTitle>Event Check-in</CardTitle>
           {typeof remainingMs === "number" ? (
             <CardDescription>Time remaining: {formatted}</CardDescription>
@@ -95,7 +97,7 @@ export default function CheckinPage() {
         </CardHeader>
         <CardContent>
           {isExpired && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-center">
               <p className="text-red-600 text-sm">
                 This check-in link has expired. Please scan the QR code again.
               </p>
