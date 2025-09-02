@@ -9,4 +9,9 @@ export const CONFIG = {
     timeoutMs: 6_000,
     maximumAgeMs: 0,
   },
+  thumbmark: {
+    // Public client key for ThumbmarkJS
+    apiKey: process.env.NEXT_PUBLIC_THUMBMARK_API_KEY,
+  },
 };
+
