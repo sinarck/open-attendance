@@ -144,9 +144,10 @@ export default function CheckinPage() {
                           onChange={(e) => field.handleChange(e.target.value)}
                           required
                         />
+
                         {field.state.meta.errors.map((error, idx) => (
                           <p key={idx} className="text-red-500 text-sm">
-                            {String(error)}
+                            {error?.message}
                           </p>
                         ))}
                       </div>

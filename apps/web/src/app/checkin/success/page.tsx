@@ -22,7 +22,7 @@ export default function CheckinSuccess() {
       <Confetti
         width={size.width}
         height={size.height}
-        numberOfPieces={300}
+        numberOfPieces={100}
         gravity={1}
         recycle={false}
       />
