@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useTokenCountdown } from "@/hooks/use-token-countdown";
-import { checkinInput } from "@/schema/checkin";
 import { trpc } from "@/utils/trpc";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
@@ -21,6 +20,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { toast } from "sonner";
+import z from "zod";
 import type { AppRouter } from "../../../../server/src/routers";
 
 export default function CheckinPage() {
@@ -62,22 +62,9 @@ export default function CheckinPage() {
       });
     },
     validators: {
-      onSubmit: ({ value }) => {
-        const result = checkinInput({
-          token,
-          userId: value.userId,
-          geo: geo || { lat: 0, lng: 0, accuracyM: 0 },
-          deviceFingerprint: deviceFingerprint || "",
-        });
-
-        if (typeof result === "object" && (result as any).problems) {
-          return {
-            fields: {
-              userId: ["User ID must be exactly 6 digits"],
-            },
-          };
-        }
-      },
+      onSubmit: z.object({
+        userId: z.string().regex(/^\d{6}$/, "User ID must be exactly 6 digits"),
+      }),
     },
   });
 
