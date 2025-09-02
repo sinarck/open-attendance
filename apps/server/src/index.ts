@@ -13,10 +13,7 @@ app.use(logger());
 app.use(
   "/*",
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? "https://attendance-web-two.vercel.app"
-        : process.env.CORS_ORIGIN ?? "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN ?? "",
     credentials: true,
   })
 );
