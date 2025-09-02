@@ -10,13 +10,30 @@ import { appRouter } from "./routers/index.js";
 const app = new Hono();
 
 app.use(logger());
+// CORS: allow configured origins (comma-separated) with credentials
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const devFallbackOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+];
+
 app.use(
   "/*",
   cors({
-    origin: process.env.CORS_ORIGIN || "",
+    origin: (origin) => {
+      if (!origin) return ""; // Non-CORS or same-origin requests
+      const whitelist = allowedOrigins.length ? allowedOrigins : devFallbackOrigins;
+      return whitelist.includes(origin) ? origin : "";
+    },
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["*", "Content-Type", "Authorization", "X-Requested-With", "X-TRPC-Source"],
     credentials: true,
+    maxAge: 86400,
   })
 );
 
