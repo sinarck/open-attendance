@@ -97,7 +97,7 @@ export default function CheckinPage() {
           {isExpired && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600 text-sm">
-                This check-in link has expired.
+                This check-in link has expired. Please scan the QR code again.
               </p>
             </div>
           )}
