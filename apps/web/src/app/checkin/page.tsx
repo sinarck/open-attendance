@@ -82,8 +82,8 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mx-auto w-full h-full p-6 flex flex-col gap-6">
-      <div className="flex-1 w-full flex items-center justify-center">
+    <div className="mx-auto w-full h-full p-6 grid grid-rows-[1fr_auto]">
+      <div className="row-start-1 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Event Check-in</CardTitle>
@@ -136,7 +136,7 @@ export default function CheckinPage() {
                           id={field.name}
                           name={field.name}
                           inputMode="numeric"
-                          pattern="^\d{6}$"
+                          pattern="^\\d{6}$"
                           maxLength={6}
                           placeholder="123456"
                           autoFocus
@@ -186,29 +186,31 @@ export default function CheckinPage() {
 
       {/* Debug info */}
       {process.env.NODE_ENV === "development" && (geo || deviceFingerprint) && (
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-sm">Debug Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xs space-y-1 font-mono">
-              {geo && (
-                <>
-                  <div>Lat: {geo.lat.toFixed(6)}</div>
-                  <div>Lng: {geo.lng.toFixed(6)}</div>
-                  <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
-                </>
-              )}
+        <div className="row-start-2 mt-6 flex justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-sm">Debug Info</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs space-y-1 font-mono">
+                {geo && (
+                  <>
+                    <div>Lat: {geo.lat.toFixed(6)}</div>
+                    <div>Lng: {geo.lng.toFixed(6)}</div>
+                    <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
+                  </>
+                )}
 
-              {deviceFingerprint && (
-                <div className="pt-2 border-t">
-                  <div className="text-gray-600 mb-1">Device ID:</div>
-                  <div className="break-all">{deviceFingerprint}</div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                {deviceFingerprint && (
+                  <div className="pt-2 border-t">
+                    <div className="text-gray-600 mb-1">Device ID:</div>
+                    <div className="break-all">{deviceFingerprint}</div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
