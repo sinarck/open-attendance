@@ -13,6 +13,13 @@ export const auth = betterAuth({
       ? "https://attendance-web-two.vercel.app"
       : process.env.CORS_ORIGIN || "http://localhost:3000",
   ],
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+      partitioned: true,
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },
