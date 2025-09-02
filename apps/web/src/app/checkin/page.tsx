@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useTokenCountdown } from "@/hooks/use-token-countdown";
+import { checkinInput } from "@/schema/checkin";
 import { trpc } from "@/utils/trpc";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
@@ -20,7 +21,6 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import z from "zod";
 import type { AppRouter } from "../../../../server/src/routers";
 
 export default function CheckinPage() {
@@ -62,9 +62,22 @@ export default function CheckinPage() {
       });
     },
     validators: {
-      onSubmit: z.object({
-        userId: z.string().regex(/^\d{6}$/, "User ID must be exactly 6 digits"),
-      }),
+      onSubmit: ({ value }) => {
+        const result = checkinInput({
+          token,
+          userId: value.userId,
+          geo: geo || { lat: 0, lng: 0, accuracyM: 0 },
+          deviceFingerprint: deviceFingerprint || "",
+        });
+
+        if (typeof result === "object" && (result as any).problems) {
+          return {
+            fields: {
+              userId: ["User ID must be exactly 6 digits"],
+            },
+          };
+        }
+      },
     },
   });
 
@@ -82,7 +95,7 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="min-h-svh flex items-center justify-center p-6">
+    <div className="h-svh overflow-hidden md:overflow-visible flex items-center justify-center p-6">
       <div className="w-full flex flex-col items-center gap-6">
         <Card className="w-full max-w-md">
           <CardHeader>
@@ -136,7 +149,6 @@ export default function CheckinPage() {
                           id={field.name}
                           name={field.name}
                           inputMode="numeric"
-                          pattern="^\\d{6}$"
                           maxLength={6}
                           placeholder="123456"
                           autoFocus
@@ -145,12 +157,9 @@ export default function CheckinPage() {
                           onChange={(e) => field.handleChange(e.target.value)}
                           required
                         />
-                        {field.state.meta.errors.map((error) => (
-                          <p
-                            key={error?.message}
-                            className="text-red-500 text-sm"
-                          >
-                            {error?.message}
+                        {field.state.meta.errors.map((error, idx) => (
+                          <p key={idx} className="text-red-500 text-sm">
+                            {String(error)}
                           </p>
                         ))}
                       </div>
