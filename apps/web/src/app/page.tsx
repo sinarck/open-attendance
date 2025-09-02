@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CONFIG } from "@/config";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
@@ -26,7 +27,11 @@ export default function Home() {
 
   // Only consider token loading when we have a session.
   if (isPending || (session && isMeetingTokenPending)) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto flex flex-col items-center justify-center h-full gap-8">
+        <Skeleton className="w-[clamp(320px,70vmin,900px)] aspect-square" />
+      </div>
+    );
   }
 
   const url =
