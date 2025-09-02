@@ -2,11 +2,29 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalDependencies": [".env"],
+  "globalEnv": [
+    "DATABASE_URL",
+    "DATABASE_AUTH_TOKEN",
+    "BETTER_AUTH_SECRET",
+    "QR_CODE_SECRET",
+    "CORS_ORIGIN",
+    "BETTER_AUTH_URL",
+    "NEXT_PUBLIC_SERVER_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": [
+        "DATABASE_URL",
+        "DATABASE_AUTH_TOKEN",
+        "BETTER_AUTH_SECRET",
+        "QR_CODE_SECRET",
+        "CORS_ORIGIN",
+        "BETTER_AUTH_URL",
+        "NEXT_PUBLIC_SERVER_URL"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -26,7 +44,7 @@
       "cache": false,
       "persistent": true
     },
-    "db:mi`g`rate": {
+    "db:migrate": {
       "cache": false,
       "persistent": true
     },
@@ -36,3 +54,4 @@
     }
   }
 }
+
