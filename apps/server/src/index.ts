@@ -10,48 +10,16 @@ import { appRouter } from "./routers/index.js";
 const app = new Hono();
 
 app.use(logger());
-const normalizeOrigin = (value?: string) => value?.replace(/\/+$/, "");
-const allowedOrigins = [
-  "https://attendance-web-two.vercel.app",
-  normalizeOrigin(process.env.CORS_ORIGIN),
-].filter(Boolean) as string[];
 app.use(
   "/*",
   cors({
-    origin: (origin) => {
-      const normalized = normalizeOrigin(origin || "");
-      if (normalized && allowedOrigins.includes(normalized)) {
-        return normalized;
-      }
-      return null;
-    },
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "https://attendance-web-two.vercel.app"
+        : process.env.CORS_ORIGIN ?? "http://localhost:3000",
     credentials: true,
   })
 );
-
-const DEBUG_CORS = process.env.DEBUG_CORS === "1";
-app.use("/*", async (c, next) => {
-  await next();
-  if (DEBUG_CORS) {
-    console.log(
-      "[CORS]",
-      JSON.stringify(
-        {
-          method: c.req.method,
-          path: c.req.path,
-          origin: c.req.header("origin") || "",
-          allowOrigin: c.res.headers.get("Access-Control-Allow-Origin") || "",
-          allowCredentials:
-            c.res.headers.get("Access-Control-Allow-Credentials") || "",
-          vary: c.res.headers.get("Vary") || "",
-          status: c.res.status,
-        },
-        null,
-        0
-      )
-    );
-  }
-});
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
@@ -68,5 +36,6 @@ app.use(
 app.get("/", (c) => {
   return c.text("OK");
 });
+
 export default app;
 
