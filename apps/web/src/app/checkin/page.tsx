@@ -17,7 +17,7 @@ import { trpc } from "@/utils/trpc";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import z from "zod";
@@ -25,6 +25,7 @@ import type { AppRouter } from "../../../../server/src/routers";
 
 export default function CheckinPage() {
   const params = useSearchParams();
+  const router = useRouter();
   const token = useMemo(() => params.get("token") ?? "", [params]);
   const { geo, error: geoError } = useGeolocation(Boolean(token));
   const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
@@ -37,11 +38,8 @@ export default function CheckinPage() {
     trpc.checkin.validateAndCreate.mutationOptions({
       onSuccess: (data: ValidateAndCreateOutput) => {
         const name = data?.attendee?.name;
-        toast.success(
-          (name
-            ? `Successfully checked in ${name}!`
-            : "Successfully checked in!") + "You can close this tab now."
-        );
+        const qs = name ? `?name=${encodeURIComponent(name)}` : "";
+        router.push(`/checkin/success${qs}`);
       },
       onError: (error: any) => {
         const message = error.message || "Check-in failed";
