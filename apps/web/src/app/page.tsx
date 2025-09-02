@@ -36,9 +36,16 @@ export default function Home() {
         )}`
       : "";
 
+  // Pure CSS sizing via Tailwind; no JS listeners
+
   return (
-    <div className="container mx-auto flex flex-col items-center justify-center h-screen">
-      {url ? <QRCodeSVG value={url} size={256} /> : null}
+    <div className="container mx-auto flex flex-col items-center justify-center h-screen gap-8">
+      {url ? (
+        <QRCodeSVG
+          value={url}
+          className="w-[clamp(320px,70vmin,900px)] h-auto aspect-square"
+        />
+      ) : null}
       {process.env.NODE_ENV !== "production" ? (
         <Button
           onClick={() => {
