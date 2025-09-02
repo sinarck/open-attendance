@@ -13,12 +13,16 @@ export default function Header() {
   const links = [{ to: "/", label: "Home" }];
 
   return (
-    <div>
-      <div className="flex flex-row items-center justify-between px-2 py-1">
-        <nav className="flex gap-4 text-lg">
+    <div className="border-b bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/40">
+      <div className="flex flex-row items-center justify-between px-3 py-2">
+        <nav className="flex gap-2 text-sm">
           {links.map(({ to, label }) => {
             return (
-              <Link key={to} href={to}>
+              <Link
+                key={to}
+                href={to}
+                className="px-3 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
                 {label}
               </Link>
             );
@@ -29,7 +33,6 @@ export default function Header() {
           <UserMenu />
         </div>
       </div>
-      <hr />
     </div>
   );
 }
