@@ -38,7 +38,9 @@ export default function CheckinPage() {
       onSuccess: (data: ValidateAndCreateOutput) => {
         const name = data?.attendee?.name;
         toast.success(
-          name ? `Successfully checked in ${name}!` : "Successfully checked in!"
+          (name
+            ? `Successfully checked in ${name}!`
+            : "Successfully checked in!") + "You can close this tab now."
         );
       },
       onError: (error: any) => {
