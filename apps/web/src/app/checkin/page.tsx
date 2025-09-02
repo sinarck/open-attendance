@@ -82,8 +82,8 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mx-auto w-full h-full p-6 grid grid-rows-[1fr_auto]">
-      <div className="row-start-1 flex items-center justify-center">
+    <div className="min-h-svh flex items-center justify-center p-6">
+      <div className="w-full flex flex-col items-center gap-6">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Event Check-in</CardTitle>
@@ -182,36 +182,35 @@ export default function CheckinPage() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Debug info */}
+        {process.env.NODE_ENV === "development" &&
+          (geo || deviceFingerprint) && (
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="text-sm">Debug Info</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs space-y-1 font-mono">
+                  {geo && (
+                    <>
+                      <div>Lat: {geo.lat.toFixed(6)}</div>
+                      <div>Lng: {geo.lng.toFixed(6)}</div>
+                      <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
+                    </>
+                  )}
+
+                  {deviceFingerprint && (
+                    <div className="pt-2 border-t">
+                      <div className="text-gray-600 mb-1">Device ID:</div>
+                      <div className="break-all">{deviceFingerprint}</div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
       </div>
-
-      {/* Debug info */}
-      {process.env.NODE_ENV === "development" && (geo || deviceFingerprint) && (
-        <div className="row-start-2 mt-6 flex justify-center">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-sm">Debug Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xs space-y-1 font-mono">
-                {geo && (
-                  <>
-                    <div>Lat: {geo.lat.toFixed(6)}</div>
-                    <div>Lng: {geo.lng.toFixed(6)}</div>
-                    <div>Accuracy: {geo.accuracyM.toFixed(1)}m</div>
-                  </>
-                )}
-
-                {deviceFingerprint && (
-                  <div className="pt-2 border-t">
-                    <div className="text-gray-600 mb-1">Device ID:</div>
-                    <div className="break-all">{deviceFingerprint}</div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
