@@ -142,6 +142,10 @@ export const checkinRouter = router({
 
         return {
           status: "ok",
+          attendee: {
+            userId: input.userId,
+            name: att.name,
+          },
         };
       } catch (e: any) {
         const msg = String(e?.message || "");

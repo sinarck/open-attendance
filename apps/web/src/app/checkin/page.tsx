@@ -16,7 +16,7 @@ import { trpc } from "@/utils/trpc";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -26,10 +26,53 @@ export default function CheckinPage() {
   const { geo, error: geoError } = useGeolocation(Boolean(token));
   const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
 
+  // Decode JWT `exp` (seconds) to drive a countdown timer
+  const expMs = useMemo(() => {
+    if (!token) return null as number | null;
+    try {
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), "=");
+      const payload = JSON.parse(atob(padded));
+      if (typeof payload?.exp === "number") {
+        return payload.exp * 1000;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, [token]);
+
+  const [remainingMs, setRemainingMs] = useState<number | null>(
+    expMs ? Math.max(expMs - Date.now(), 0) : null
+  );
+
+  useEffect(() => {
+    if (!expMs) {
+      setRemainingMs(null);
+      return;
+    }
+    const update = () => setRemainingMs(Math.max(expMs - Date.now(), 0));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [expMs]);
+
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  };
+
   const mutation = useMutation(
     trpc.checkin.validateAndCreate.mutationOptions({
-      onSuccess: () => {
-        toast.success("Successfully checked in!");
+      onSuccess: (data: any) => {
+        const name = data?.attendee?.name;
+        toast.success(
+          name ? `Successfully checked in ${name}!` : "Successfully checked in!"
+        );
       },
       onError: (error: any) => {
         const message = error.message || "Check-in failed";
@@ -72,15 +115,27 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6 flex flex-col gap-6">
-      <Card>
+    <div className="mx-auto w-full min-h-svh p-6 flex flex-col items-center justify-center gap-6">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Event Check-in</CardTitle>
+          {typeof remainingMs === "number" ? (
+            <CardDescription>
+              Time remaining: {formatTime(remainingMs)}
+            </CardDescription>
+          ) : null}
           <CardDescription>
             Enter your 6-digit user ID to check in to the event
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {remainingMs === 0 && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm">
+                This check-in link has expired.
+              </p>
+            </div>
+          )}
           {geoError ? (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600 text-sm">Location error: {geoError}</p>
@@ -143,7 +198,8 @@ export default function CheckinPage() {
                         state.isSubmitting ||
                         !geo ||
                         !!geoError ||
-                        !deviceFingerprint
+                        !deviceFingerprint ||
+                        remainingMs === 0
                       }
                     >
                       {state.isSubmitting ? "Checking in..." : "Check In"}
@@ -158,7 +214,7 @@ export default function CheckinPage() {
 
       {/* Debug info */}
       {process.env.NODE_ENV === "development" && (geo || deviceFingerprint) && (
-        <Card>
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-sm">Debug Info</CardTitle>
           </CardHeader>
