@@ -106,7 +106,8 @@ export default function CheckinPage() {
               <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
                 <p className="text-sm">Location error: {geoError}</p>
                 <p className="text-xs mt-1 opacity-90">
-                  Please enable location access and refresh the page
+                  Please enable location access and refresh the page. If you're
+                  not sure how to do this, please contact the meeting staff.
                 </p>
               </div>
             ) : !geo ? (
