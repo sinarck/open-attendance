@@ -27,11 +27,19 @@ app.use(
   cors({
     origin: (origin) => {
       if (!origin) return ""; // Non-CORS or same-origin requests
-      const whitelist = allowedOrigins.length ? allowedOrigins : devFallbackOrigins;
+      const whitelist = allowedOrigins.length
+        ? allowedOrigins
+        : devFallbackOrigins;
       return whitelist.includes(origin) ? origin : "";
     },
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["*", "Content-Type", "Authorization", "X-Requested-With", "X-TRPC-Source"],
+    allowHeaders: [
+      "*",
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "X-TRPC-Source",
+    ],
     credentials: true,
     maxAge: 86400,
   })
