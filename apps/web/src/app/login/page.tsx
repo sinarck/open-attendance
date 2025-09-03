@@ -9,12 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { z } from "zod";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,8 +68,7 @@ export default function LoginPage() {
                 <form.Field
                   name="email"
                   validators={{
-                    onChange: ({ value }) =>
-                      /.+@.+/.test(value) ? undefined : "Invalid email address",
+                    onChange: z.string().email("Invalid email address"),
                   }}
                 >
                   {(field) => (
@@ -85,7 +85,13 @@ export default function LoginPage() {
                       {field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0 && (
                           <p className="text-destructive text-sm">
-                            {field.state.meta.errors.join(", ")}
+                            {field.state.meta.errors
+                              .map((e: any) =>
+                                typeof e === "string"
+                                  ? e
+                                  : e?.message ?? JSON.stringify(e)
+                              )
+                              .join(", ")}
                           </p>
                         )}
                     </div>
@@ -97,10 +103,9 @@ export default function LoginPage() {
                 <form.Field
                   name="password"
                   validators={{
-                    onChange: ({ value }) =>
-                      value.length >= 8
-                        ? undefined
-                        : "Password must be at least 8 characters",
+                    onChange: z
+                      .string()
+                      .min(8, "Password must be at least 8 characters"),
                   }}
                 >
                   {(field) => (
@@ -116,7 +121,13 @@ export default function LoginPage() {
                       {field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0 && (
                           <p className="text-destructive text-sm">
-                            {field.state.meta.errors.join(", ")}
+                            {field.state.meta.errors
+                              .map((e: any) =>
+                                typeof e === "string"
+                                  ? e
+                                  : e?.message ?? JSON.stringify(e)
+                              )
+                              .join(", ")}
                           </p>
                         )}
                     </div>

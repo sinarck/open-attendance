@@ -15,8 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useTokenCountdown } from "@/hooks/use-token-countdown";
@@ -27,6 +27,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import type { AppRouter } from "../../../../server/src/routers";
 
 export default function CheckinPage() {
@@ -178,15 +179,14 @@ export default function CheckinPage() {
                   <form.Field
                     name="userId"
                     validators={{
-                      onChange: ({ value }) =>
-                        /^\d{6}$/.test(value)
-                          ? undefined
-                          : "User ID must be exactly 6 digits",
+                      onChange: z
+                        .string()
+                        .regex(/^\d{6}$/, "User ID must be exactly 6 digits"),
                     }}
                   >
                     {(field) => (
                       <div className="grid gap-2">
-                        <Label>User ID (6 digits)</Label>
+                        <Label>User ID</Label>
                         <Input
                           inputMode="numeric"
                           maxLength={6}
@@ -200,7 +200,13 @@ export default function CheckinPage() {
                         {field.state.meta.isTouched &&
                           field.state.meta.errors.length > 0 && (
                             <p className="text-destructive text-sm">
-                              {field.state.meta.errors.join(", ")}
+                              {field.state.meta.errors
+                                .map((e: any) =>
+                                  typeof e === "string"
+                                    ? e
+                                    : e?.message ?? JSON.stringify(e)
+                                )
+                                .join(", ")}
                             </p>
                           )}
                       </div>
