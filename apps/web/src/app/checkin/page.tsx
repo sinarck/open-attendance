@@ -15,17 +15,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useTokenCountdown } from "@/hooks/use-token-countdown";
 import { trpc } from "@/utils/trpc";
-import { useForm } from "@tanstack/react-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { useForm as useRHForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 import type { AppRouter } from "../../../../server/src/routers";
@@ -78,24 +86,14 @@ export default function CheckinPage() {
     })
   );
 
-  const form = useForm({
-    defaultValues: {
-      userId: "",
-    },
-    onSubmit: async ({ value }) => {
-      if (!geo || !token || !deviceFingerprint) return;
-      mutation.mutate({
-        token,
-        userId: value.userId,
-        geo: { lat: geo.lat, lng: geo.lng, accuracyM: geo.accuracyM },
-        deviceFingerprint,
-      });
-    },
-    validators: {
-      onSubmit: z.object({
-        userId: z.string().regex(/^\d{6}$/, "User ID must be exactly 6 digits"),
-      }),
-    },
+  const checkinSchema = z.object({
+    userId: z.string().regex(/^\d{6}$/, "User ID must be exactly 6 digits"),
+  });
+
+  const form = useRHForm<z.infer<typeof checkinSchema>>({
+    resolver: zodResolver(checkinSchema),
+    mode: "onChange",
+    defaultValues: { userId: "" },
   });
 
   if (!token) {
@@ -170,64 +168,67 @@ export default function CheckinPage() {
               </div>
             ) : null}
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                form.handleSubmit();
-              }}
-            >
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-3">
-                  <form.Field name="userId">
-                    {(field) => (
-                      <div className="grid gap-3">
-                        <Label htmlFor={field.name}>User ID (6 digits)</Label>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          inputMode="numeric"
-                          maxLength={6}
-                          placeholder="123456"
-                          autoFocus
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          required
-                        />
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit((values) => {
+                  if (!geo || !token || !deviceFingerprint) return;
+                  mutation.mutate({
+                    token,
+                    userId: values.userId,
+                    geo: {
+                      lat: geo.lat,
+                      lng: geo.lng,
+                      accuracyM: geo.accuracyM,
+                    },
+                    deviceFingerprint,
+                  });
+                })}
+              >
+                <div className="flex flex-col gap-6">
+                  <div className="grid gap-3">
+                    <FormField
+                      control={form.control}
+                      name="userId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>User ID (6 digits)</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              maxLength={6}
+                              placeholder="123456"
+                              autoFocus
+                              required
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                        {field.state.meta.errors.map((error, idx) => (
-                          <p key={idx} className="text-destructive text-sm">
-                            {error?.message}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </form.Field>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={
+                        !form.formState.isValid ||
+                        form.formState.isSubmitting ||
+                        !geo ||
+                        !!geoError ||
+                        !deviceFingerprint ||
+                        isExpired
+                      }
+                    >
+                      {form.formState.isSubmitting
+                        ? "Checking in..."
+                        : "Check In"}
+                    </Button>
+                  </div>
                 </div>
-
-                <div className="flex flex-col gap-3">
-                  <form.Subscribe>
-                    {(state) => (
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={
-                          !state.canSubmit ||
-                          state.isSubmitting ||
-                          !geo ||
-                          !!geoError ||
-                          !deviceFingerprint ||
-                          isExpired
-                        }
-                      >
-                        {state.isSubmitting ? "Checking in..." : "Check In"}
-                      </Button>
-                    )}
-                  </form.Subscribe>
-                </div>
-              </div>
-            </form>
+              </form>
+            </Form>
           </CardContent>
         </Card>
 
