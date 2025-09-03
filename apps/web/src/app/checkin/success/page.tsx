@@ -7,8 +7,10 @@ import Confetti from "react-confetti";
 export default function CheckinSuccess() {
   const params = useSearchParams();
   const name = params.get("name");
+  const firstName = name?.trim().split(/\s+/)[0] ?? null;
 
   const [size, setSize] = useState({ width: 0, height: 0 });
+
   useEffect(() => {
     const update = () =>
       setSize({ width: window.innerWidth, height: window.innerHeight });
@@ -29,8 +31,8 @@ export default function CheckinSuccess() {
       <div className="w-full max-w-md text-center space-y-4 relative">
         <h1 className="text-2xl font-semibold">Check-in Successful</h1>
         <p className="text-muted-foreground">
-          {name
-            ? `You’re all set, ${name}. You can close this tab.`
+          {firstName
+            ? `You’re all set, ${firstName}. You can close this tab.`
             : "You’re all set. You can close this tab."}
         </p>
       </div>
