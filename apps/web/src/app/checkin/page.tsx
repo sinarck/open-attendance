@@ -1,5 +1,12 @@
 "use client";
 
+import { PlatformHelp } from "@/components/platform-help";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,7 +25,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import type { AppRouter } from "../../../../server/src/routers";
@@ -30,6 +37,29 @@ export default function CheckinPage() {
   const { geo, error: geoError } = useGeolocation(Boolean(token));
   const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
   const { remainingMs, formatted, isExpired } = useTokenCountdown(token);
+
+  const openLocationSettings = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+    if (isAndroid) {
+      try {
+        // Attempt to open Android Location settings
+        window.location.href =
+          "intent://settings#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end";
+      } catch (_) {}
+      return;
+    }
+
+    if (isIOS) {
+      // Safari on iOS cannot deep link to Settings from the web securely.
+      return;
+    }
+
+    // Other platforms: show inline guidance below.
+  }, []);
 
   type RouterOutputs = inferRouterOutputs<AppRouter>;
   type ValidateAndCreateOutput = RouterOutputs["checkin"]["validateAndCreate"];
@@ -105,10 +135,32 @@ export default function CheckinPage() {
             {geoError ? (
               <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
                 <p className="text-sm">Location error: {geoError}</p>
-                <p className="text-xs mt-1 opacity-90">
-                  Please enable location access and refresh the page. If you're
-                  not sure how to do this, please contact the meeting staff.
-                </p>
+                <div className="text-xs mt-2 space-y-2 opacity-90">
+                  <div>
+                    Please enable location access and then refresh.
+                    <button
+                      type="button"
+                      onClick={openLocationSettings}
+                      className="ml-1 underline underline-offset-2"
+                    >
+                      Go to settings
+                    </button>
+                  </div>
+                  <Accordion
+                    type="single"
+                    collapsible
+                    className="border rounded-md bg-background/40"
+                  >
+                    <AccordionItem value="how">
+                      <AccordionTrigger className="px-3 py-2">
+                        How to enable location
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3">
+                        <PlatformHelp />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
               </div>
             ) : !geo ? (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
