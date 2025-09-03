@@ -15,6 +15,7 @@ export const meeting = sqliteTable("meeting", {
   centerLng: real("center_lng").notNull(),
   radiusM: integer("radius_m").notNull(), // meters
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+  strict: integer("strict", { mode: "boolean" }).notNull().default(true),
 });
 
 export const attendeeDirectory = sqliteTable("attendee_directory", {

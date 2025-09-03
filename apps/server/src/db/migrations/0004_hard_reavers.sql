@@ -1,0 +1,1 @@
+ALTER TABLE `meeting` ADD `strict` integer DEFAULT true NOT NULL;

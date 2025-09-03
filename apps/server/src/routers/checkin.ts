@@ -76,7 +76,9 @@ export const checkinRouter = router({
         .from(attendeeDirectory)
         .where(eq(attendeeDirectory.userId, input.userId));
 
-      if (!att) {
+      // If meeting.strict is true (default), reject unknown users.
+      // If meeting.strict is false, allow unknown users and still log the check-in.
+      if (!att && meeting.strict) {
         throw createUserError("UNKNOWN_USER");
       }
 
@@ -144,7 +146,7 @@ export const checkinRouter = router({
           status: "ok",
           attendee: {
             userId: input.userId,
-            name: att.name,
+            name: att?.name,
           },
         };
       } catch (e: any) {

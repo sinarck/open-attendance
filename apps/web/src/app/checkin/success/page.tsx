@@ -29,7 +29,9 @@ export default function CheckinSuccess() {
       <div className="w-full max-w-md text-center space-y-4 relative">
         <h1 className="text-2xl font-semibold">Check-in Successful</h1>
         <p className="text-muted-foreground">
-          You’re all set{name ? `, ${name}` : ""}. You can close this tab.
+          {name
+            ? `You’re all set, ${name}. You can close this tab.`
+            : "You’re all set. You can close this tab."}
         </p>
       </div>
     </div>
