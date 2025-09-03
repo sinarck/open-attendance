@@ -11,7 +11,7 @@ export const auth = betterAuth({
   }),
   trustedOrigins: [
     process.env.NODE_ENV === "production"
-      ? "https://attendance-web-two.vercel.app"
+      ? "https://www.attendance-api.voluntra.org"
       : process.env.CORS_ORIGIN || "http://localhost:3000",
   ],
   advanced: {
