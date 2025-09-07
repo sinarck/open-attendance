@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BPA Attendance System
 
-## Getting Started
+Fast, secure QR-based attendance for ~500 attendees in ~20 minutes. Built as a Bun monorepo with a typed API, short-lived QR tokens, geofenced check-ins, and anti-fraud controls.
 
-First, run the development server:
+## Highlights
+
+- QR codes rotate every few seconds with short-lived JWTs
+- Single-use tokens via nonce consumption
+- Geofenced check-ins (Haversine + accuracy thresholds)
+- Directory validation by 6-digit user ID
+- Device fingerprint gate (one device per meeting)
+- Clear user-facing error messages (internal codes hidden)
+
+## Tech Stack
+
+- Runtime/Tooling: Bun, Turbo
+- Frontend: Next.js (App Router), React 19, @tanstack/react-query, @tanstack/react-form, shadcn/ui
+- Backend: Hono, tRPC, Drizzle ORM (libSQL/Turso driver), Zod
+- Auth: better-auth (session in `apps/server/src/lib/auth.ts`)
+- QR: qrcode.react
+
+## Monorepo Layout
+
+- `apps/web` – Next.js client
+  - `src/app/checkin/page.tsx` – check-in flow (geolocation + user ID + fingerprint)
+  - `src/hooks` – `use-geolocation`, `use-fingerprint`
+  - `src/config/index.ts` – UI/runtime constants (QR refresh, geolocation options)
+- `apps/server` – Hono + tRPC API
+  - `src/routers/meeting.ts` – QR token generator (staff-only)
+  - `src/routers/checkin.ts` – verify token, geofence, directory, device-limit, insert
+  - `src/db/schema` – Drizzle schema (auth + attendance)
+  - `src/config/index.ts` – server constants (JWT TTL, geofence thresholds, skew)
+
+## Data Model (attendance)
+
+- `meeting(id, name, startAt, endAt, centerLat, centerLng, radiusM, active)`
+- `attendee_directory(userId, name)`
+- `used_token_nonce(nonce, meetingId, kioskId, consumedAt)`
+- `checkin(id, meetingId, userId, createdAt, lat, lng, accuracyM, kioskId, deviceFingerprint)`
+  - Unique: `(meetingId, userId)`
+
+## How It Works
+
+1. Kiosk page (staff logged-in) calls `meeting.generateToken({ meetingId })` every X seconds.
+2. QR value is a URL `.../checkin?token=JWT`. The JWT payload includes `{ meetingId, kioskId, nonce, iat, exp }`.
+3. Attendee opens `/checkin` on their phone, grants location, enters 6-digit user ID; device fingerprint is captured.
+4. API verifies:
+   - JWT signature and expiration; nonce single-use (insert into `used_token_nonce`)
+   - Meeting active, within geofence (Haversine + accuracy threshold + buffer)
+   - `attendee_directory` contains userId
+   - Device fingerprint not used for this meeting
+   - Idempotent insert into `checkin` (unique `(meetingId, userId)`)
+5. Response returns `ok` or `already`; user gets success/warning toast.
+
+## Configuration
+
+- Server (`apps/server/src/config/index.ts`)
+  - `tokens.qrTokenTtlSeconds` – JWT expiry for QR tokens
+  - `tokens.iatSkewSeconds` – acceptable clock skew
+  - `geofence.maxAccuracyMeters` – max allowed GPS accuracy
+  - `geofence.radiusBufferMeters` – extra buffer on radius
+- Web (`apps/web/src/config/index.ts`)
+  - `qr.refreshIntervalMs` – kiosk QR refresh cadence
+  - `geo.*` – geolocation API options
+
+## Environment Variables (server)
+
+- `DATABASE_URL`, `DATABASE_AUTH_TOKEN` – libSQL/Turso
+- `QR_CODE_SECRET` – HS256 signing secret for QR tokens
+- `NEXT_PUBLIC_SERVER_URL` – base URL used by web client to reach API
+- `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CORS_ORIGIN` – auth
+- Optional fallback meeting (if DB not seeded):
+  - `MEETING_CENTER_LAT`, `MEETING_CENTER_LNG`, `MEETING_RADIUS_M`
+
+## Install & Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# from repo root
+bun install
+
+# Migrate database (server)
+cd apps/server
+bun run db:generate
+bun run db:migrate
+
+# Start API
+bun run dev
+
+# Start web (new terminal)
+cd ../web
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Seeding Attendees
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Insert known 6-digit user IDs into `attendee_directory` (via SQL or a one-off script):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sql
+INSERT INTO attendee_directory (user_id, name) VALUES
+('123456', 'John Doe'),
+('654321', 'Jane Smith');
+```
 
-## Learn More
+Insert a meeting row (or use env fallback):
 
-To learn more about Next.js, take a look at the following resources:
+```sql
+INSERT INTO meeting (id, name, center_lat, center_lng, radius_m, active)
+VALUES ('1', 'Chapter Meeting', 0.0, 0.0, 0, 0);
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Error Handling
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Server returns human-readable messages (e.g., “Your check-in link has expired. Please scan the QR code again.”)
+- Internal error codes are mapped server-side and not exposed
+- Frontend shows:
+  - success: first-time check-in
+  - warning: already checked-in
+  - error: validation/geofence/token/device errors
 
-## Deploy on Vercel
+## Security Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- JWTs are short-lived and single-use (nonce table)
+- Check-ins require presence inside geofence with acceptable accuracy
+- One device per meeting (device fingerprint table)
+- No IP/UA hashing in the core path to avoid bloat (can be added externally)
