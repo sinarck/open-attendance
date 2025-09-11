@@ -1,4 +1,6 @@
 import { z } from "zod";
+import db from "@/db";
+import { meetings } from "@/db/schema";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 export const appRouter = createTRPCRouter({
@@ -13,7 +15,9 @@ export const appRouter = createTRPCRouter({
         greeting: `hello ${opts.input.text}`,
       };
     }),
+  dbCheck: baseProcedure.query(() => {
+    return db.select().from(meetings);
+  }),
 });
 
-// export type definition of API
 export type AppRouter = typeof appRouter;
