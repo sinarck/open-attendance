@@ -1,4 +1,5 @@
 "use client";
+
 // ^-- to make sure we can mount the Provider from a server component
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -23,6 +24,7 @@ function getQueryClient() {
   if (!clientQueryClientSingleton) {
     clientQueryClientSingleton = createQueryClient();
   }
+
   return clientQueryClientSingleton;
 }
 
@@ -32,6 +34,7 @@ function getUrl() {
     if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
     return "http://localhost:3000";
   })();
+
   return `${base}/api/trpc`;
 }
 
@@ -51,6 +54,7 @@ export function TRPCProvider(
       ],
     }),
   );
+
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
