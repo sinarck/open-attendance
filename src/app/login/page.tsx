@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -32,6 +33,7 @@ const schema = z.object({
 type Schema = z.infer<typeof schema>;
 
 export default function LoginForm() {
+  const router = useRouter();
   const form = useForm<Schema>({
     resolver: zodResolver(schema),
     defaultValues: { username: "", password: "" },
@@ -40,7 +42,7 @@ export default function LoginForm() {
   });
 
   async function onSubmit(values: Schema) {
-    const { error } = await authClient.signIn.username(
+    await authClient.signIn.username(
       {
         username: values.username,
         password: values.password,
@@ -52,17 +54,13 @@ export default function LoginForm() {
         },
         onSuccess: () => {
           toast.success("Signed in", { id: "login" });
-          // client-side nav in case auto-redirect is disabled by env
-          // Note: server will redirect automatically when possible
+          router.replace("/");
         },
         onError: (ctx) => {
           toast.error(ctx.error.message ?? "Login failed", { id: "login" });
         },
       },
     );
-    if (!error) {
-      // no-op; redirect can be handled by caller
-    }
   }
 
   return (
@@ -83,7 +81,7 @@ export default function LoginForm() {
                     <FormLabel>Username</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="johndoe"
+                        placeholder="username"
                         autoComplete="username"
                         {...field}
                       />
@@ -109,6 +107,7 @@ export default function LoginForm() {
                   </FormItem>
                 )}
               />
+
               <div className="flex flex-col gap-3">
                 <Button
                   type="submit"

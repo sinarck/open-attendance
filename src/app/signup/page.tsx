@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -34,6 +35,7 @@ const schema = z.object({
 type Schema = z.infer<typeof schema>;
 
 export default function SignupPage() {
+  const router = useRouter();
   const form = useForm<Schema>({
     resolver: zodResolver(schema),
     defaultValues: { name: "", email: "", username: "", password: "" },
@@ -57,7 +59,7 @@ export default function SignupPage() {
         },
         onSuccess: () => {
           toast.success("Account created", { id: "signup" });
-          // server will auto sign-in unless autoSignIn=false; ensure redirect home
+          router.replace("/");
         },
         onError: (ctx) => {
           toast.error(ctx.error.message ?? "Signup failed", { id: "signup" });
@@ -65,7 +67,7 @@ export default function SignupPage() {
       },
     );
     if (!error) {
-      // Optional: redirect after success handled elsewhere
+      // no-op; success handled in callback
     }
   }
 
