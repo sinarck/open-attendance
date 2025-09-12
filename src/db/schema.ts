@@ -13,6 +13,12 @@ export const meetings = sqliteTable("meetings", {
   strict: integer("strict", { mode: "boolean" }).notNull().default(true),
 });
 
+export const members = sqliteTable("members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  userId: text("user_id").notNull(),
+});
+
 // Auth tables
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),

@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 
 export function Navbar() {
@@ -20,6 +21,7 @@ export function Navbar() {
   const session = authClient.useSession();
 
   const user = session.data?.user;
+  const isAuthPending = session.isPending && !session.data;
 
   async function handleSignOut() {
     await authClient.signOut({
@@ -44,16 +46,18 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          {user ? (
+          {isAuthPending ? (
             <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="hidden sm:inline-flex">
-                Signed in
-              </Badge>
+              <span className="hidden sm:inline-flex">
+                <Skeleton className="h-5 w-20" />
+              </span>
+            </div>
+          ) : user ? (
+            <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.image ?? undefined} />
                       <AvatarFallback>
                         {user.name?.[0]?.toUpperCase() ??
                           user.email[0]?.toUpperCase() ??
