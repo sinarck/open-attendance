@@ -57,6 +57,7 @@ export default function SignupPage() {
         },
         onSuccess: () => {
           toast.success("Account created", { id: "signup" });
+          // server will auto sign-in unless autoSignIn=false; ensure redirect home
         },
         onError: (ctx) => {
           toast.error(ctx.error.message ?? "Signup failed", { id: "signup" });

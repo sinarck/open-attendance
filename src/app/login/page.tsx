@@ -44,6 +44,7 @@ export default function LoginForm() {
       {
         username: values.username,
         password: values.password,
+        callbackURL: "/",
       },
       {
         onRequest: () => {
@@ -51,6 +52,8 @@ export default function LoginForm() {
         },
         onSuccess: () => {
           toast.success("Signed in", { id: "login" });
+          // client-side nav in case auto-redirect is disabled by env
+          // Note: server will redirect automatically when possible
         },
         onError: (ctx) => {
           toast.error(ctx.error.message ?? "Login failed", { id: "login" });
