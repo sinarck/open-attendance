@@ -30,14 +30,6 @@ import { useTokenCountdown } from "@/hooks/use-token-countdown";
 import { trpc } from "@/trpc/client";
 
 export default function CheckinPage() {
-  return (
-    <Suspense>
-      <CheckinPageInner />
-    </Suspense>
-  );
-}
-
-function CheckinPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const token = useMemo(() => params.get("token") ?? "", [params]);
@@ -53,8 +45,6 @@ function CheckinPageInner() {
     mode: "onChange",
   });
   const { openLocationSettings } = usePlatformHelp();
-
-  // platform settings handled by usePlatformHelp
 
   const mutation = trpc.checkin.verifyAndRecord.useMutation({
     onSuccess: (data) => {
