@@ -97,7 +97,7 @@ export const checkinRouter = createTRPCRouter({
             ? raw.jti
             : undefined;
       const kioskId = raw.kioskId;
-      const iat = raw.iat;
+      const _iat = raw.iat;
       if (meetingIdNum === undefined || !nonce)
         fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token malformed");
 

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -30,6 +30,14 @@ import { useTokenCountdown } from "@/hooks/use-token-countdown";
 import { trpc } from "@/trpc/client";
 
 export default function CheckinPage() {
+  return (
+    <Suspense>
+      <CheckinPageInner />
+    </Suspense>
+  );
+}
+
+function CheckinPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const token = useMemo(() => params.get("token") ?? "", [params]);
