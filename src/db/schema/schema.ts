@@ -25,10 +25,12 @@ export const meetings = sqliteTable(
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     strict: integer("strict", { mode: "boolean" }).notNull().default(true),
     createdAt: integer("created_at", { mode: "timestamp" })
-      .default(sql`(unixepoch() * 1000)`)
+      .default(sql`0`)
+      .$default(() => new Date())
       .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
-      .default(sql`(unixepoch() * 1000)`)
+      .default(sql`0`)
+      .$default(() => new Date())
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
@@ -50,11 +52,15 @@ export const members = sqliteTable(
     authUserId: text("auth_user_id").references(() => user.id, {
       onDelete: "set null",
     }),
+    // Use constant defaults to satisfy SQLite when adding columns via ALTER TABLE
+    // The app will set real values on insert/update; you can backfill after push
     createdAt: integer("created_at", { mode: "timestamp" })
-      .default(sql`(unixepoch() * 1000)`)
+      .default(sql`0`)
+      .$default(() => new Date())
       .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
-      .default(sql`(unixepoch() * 1000)`)
+      .default(sql`0`)
+      .$default(() => new Date())
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
@@ -88,10 +94,12 @@ export const attendance = sqliteTable(
       .default("present"),
     notes: text("notes"),
     createdAt: integer("created_at", { mode: "timestamp" })
-      .default(sql`(unixepoch() * 1000)`)
+      .default(sql`0`)
+      .$default(() => new Date())
       .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
-      .default(sql`(unixepoch() * 1000)`)
+      .default(sql`0`)
+      .$default(() => new Date())
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
