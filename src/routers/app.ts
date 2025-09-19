@@ -1,5 +1,5 @@
 import db from "@/db";
-import { meetings } from "@/db/schema";
+import { meetings } from "@/db/schema/schema";
 import {
   createTRPCRouter,
   protectedProcedure,
