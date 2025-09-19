@@ -1,0 +1,196 @@
+import { and, eq } from "drizzle-orm";
+import jwt from "jsonwebtoken";
+import db from "@/db";
+import {
+  attendance,
+  meetings,
+  members,
+  usedDeviceFingerprint,
+  usedTokenNonce,
+} from "@/db/schema/schema";
+import { createTRPCRouter, fail, publicProcedure } from "@/trpc/init";
+
+const haversineMeters = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+) => {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371000; // meters
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+export const checkinRouter = createTRPCRouter({
+  verifyAndRecord: publicProcedure
+    .input((val) => {
+      type Input = {
+        token: string;
+        userId: string;
+        deviceFingerprint: string;
+        geo: { lat: number; lng: number; accuracyM: number };
+      };
+      const v = val as Partial<Input> | null | undefined;
+      if (
+        !v ||
+        typeof v.token !== "string" ||
+        typeof v.userId !== "string" ||
+        typeof v.deviceFingerprint !== "string" ||
+        !v.geo ||
+        typeof v.geo.lat !== "number" ||
+        typeof v.geo.lng !== "number" ||
+        typeof v.geo.accuracyM !== "number"
+      ) {
+        fail("BAD_REQUEST", "BAD_REQUEST", "Invalid input");
+      }
+      return v as Input;
+    })
+    .mutation(async ({ input }) => {
+      let payload: {
+        meetingId?: number;
+        kioskId?: string;
+        nonce?: string;
+        iat?: number;
+      } | null = null;
+
+      try {
+        payload = jwt.verify(input.token, process.env.QR_CODE_SECRET ?? "", {
+          algorithms: ["HS256"],
+        }) as {
+          meetingId?: number;
+          kioskId?: string;
+          nonce?: string;
+          iat?: number;
+        };
+      } catch {
+        fail(
+          "UNAUTHORIZED",
+          "TOKEN_INVALID_OR_EXPIRED",
+          "Token invalid or expired",
+        );
+      }
+
+      const { meetingId, kioskId, nonce, iat } = payload ?? {};
+      if (!meetingId || !nonce)
+        fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token malformed");
+
+      // Optional skew bound
+      if (typeof iat === "number") {
+        const nowS = Math.floor(Date.now() / 1000);
+        // 30s skew tolerance by default
+        if (Math.abs(nowS - iat) > 30)
+          fail("UNAUTHORIZED", "TOKEN_STALE", "Token too old");
+      }
+
+      const [meeting] = await db
+        .select()
+        .from(meetings)
+        .where(eq(meetings.id, meetingId));
+      if (!meeting || !meeting.active)
+        fail("BAD_REQUEST", "MEETING_INACTIVE", "Meeting not active");
+
+      // Geo checks
+      const { lat, lng, accuracyM } = input.geo;
+      if (accuracyM > 100 + 10)
+        fail("BAD_REQUEST", "LOCATION_INACCURATE", "Location accuracy too low");
+
+      const distance = haversineMeters(
+        lat,
+        lng,
+        meeting.centerLat,
+        meeting.centerLng,
+      );
+      if (distance > meeting.radiusM + 10)
+        fail("BAD_REQUEST", "NOT_IN_GEOFENCE", "Outside geofence");
+
+      // Directory validation
+      const [att] = await db
+        .select()
+        .from(members)
+        .where(eq(members.clubId, input.userId));
+      if (!att && meeting.strict)
+        fail("BAD_REQUEST", "UNKNOWN_USER", "Unknown user");
+
+      // Check duplicates
+      const [existing] = await db
+        .select()
+        .from(attendance)
+        .where(
+          and(
+            eq(attendance.meetingId, meetingId),
+            eq(attendance.memberId, att?.id ?? -1),
+          ),
+        );
+      if (existing)
+        fail("BAD_REQUEST", "ALREADY_CHECKED_IN", "Already checked in");
+
+      const [existingDevice] = await db
+        .select()
+        .from(usedDeviceFingerprint)
+        .where(
+          and(
+            eq(usedDeviceFingerprint.fingerprint, input.deviceFingerprint),
+            eq(usedDeviceFingerprint.meetingId, meetingId),
+          ),
+        );
+      if (existingDevice)
+        fail(
+          "BAD_REQUEST",
+          "DEVICE_ALREADY_USED",
+          "Device already used for this meeting",
+        );
+
+      try {
+        await db.transaction(async (tx) => {
+          await tx.insert(usedTokenNonce).values({
+            nonce,
+            meetingId,
+            kioskId: kioskId || "unknown",
+            consumedAt: new Date(),
+          });
+
+          await tx.insert(usedDeviceFingerprint).values({
+            fingerprint: input.deviceFingerprint,
+            meetingId,
+            memberId: att?.id ?? null,
+            firstUsedAt: new Date(),
+          });
+
+          if (att) {
+            await tx.insert(attendance).values({
+              meetingId,
+              memberId: att.id,
+              checkInAt: new Date(),
+              checkInLat: lat,
+              checkInLng: lng,
+              distanceM: distance,
+              method: "geo",
+              status: "present",
+              notes: null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+        });
+      } catch (e) {
+        const msg = String((e as Error)?.message ?? "");
+        if (msg.includes("UNIQUE") || msg.includes("constraint"))
+          fail("CONFLICT", "TOKEN_ALREADY_USED", "Token already used");
+        throw e;
+      }
+
+      return {
+        status: "ok" as const,
+        attendee: { userId: input.userId, name: att?.name ?? null },
+      };
+    }),
+});

@@ -113,3 +113,38 @@ export const attendance = sqliteTable(
     checkInIdx: index("attendance_check_in_idx").on(table.checkInAt),
   }),
 );
+
+export const usedTokenNonce = sqliteTable("used_token_nonce", {
+  nonce: text("nonce").primaryKey(),
+  meetingId: integer("meeting_id")
+    .notNull()
+    .references(() => meetings.id, { onDelete: "cascade" }),
+  kioskId: text("kiosk_id"),
+  consumedAt: integer("consumed_at", { mode: "timestamp" })
+    .default(sql`0`)
+    .$default(() => new Date())
+    .notNull(),
+});
+
+export const usedDeviceFingerprint = sqliteTable(
+  "used_device_fingerprint",
+  {
+    fingerprint: text("fingerprint").notNull(),
+    meetingId: integer("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    memberId: integer("member_id").references(() => members.id, {
+      onDelete: "set null",
+    }),
+    firstUsedAt: integer("first_used_at", { mode: "timestamp" })
+      .default(sql`0`)
+      .$default(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    uniqFpPerMeeting: uniqueIndex("uniq_fingerprint_per_meeting").on(
+      table.meetingId,
+      table.fingerprint,
+    ),
+  }),
+);
