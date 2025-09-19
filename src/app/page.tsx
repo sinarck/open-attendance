@@ -1,53 +1,62 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { meetingConfig } from "@/config/meeting";
+import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/trpc/client";
 
 export default function Home() {
-  const { data, isPending } = trpc.meeting.generateToken.useQuery(undefined, {
-    retry: false,
-    throwOnError: true,
-  });
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+
+  const { data: meetingToken, isPending: isMeetingTokenPending } =
+    trpc.meeting.generateToken.useQuery(undefined, {
+      enabled: !!session,
+      refetchInterval: meetingConfig.refreshIntervalMs,
+      throwOnError: true,
+    });
+
+  if (!session && !isPending) {
+    return (
+      <div className="container mx-auto h-full flex items-center justify-center">
+        Not logged in
+      </div>
+    );
+  }
+
+  if (isPending || (session && isMeetingTokenPending)) {
+    return (
+      <div className="container mx-auto flex flex-col items-center justify-center h-full gap-8">
+        <Skeleton className="w-[clamp(320px,70vmin,900px)] aspect-square" />
+      </div>
+    );
+  }
+
+  const url =
+    typeof window !== "undefined" && meetingToken?.token
+      ? `${window.location.origin}/check-in?token=${encodeURIComponent(meetingToken.token)}`
+      : "";
 
   return (
-    <div className="space-y-8">
-      <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome</h1>
-        <p className="text-muted-foreground">
-          Manage events and attendance. This is a placeholder home until the
-          dashboard is built.
-        </p>
-      </section>
-
-      <Separator />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>System check</CardTitle>
-          <CardDescription>Database connectivity via TRPC</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isPending ? (
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ) : (
-            <pre className="rounded-md bg-muted p-4 text-xs leading-relaxed">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          )}
-        </CardContent>
-      </Card>
+    <div className="container mx-auto flex flex-col items-center justify-center h-full gap-8">
+      {url ? (
+        <QRCodeSVG
+          value={url}
+          className="w-[clamp(320px,70vmin,900px)] h-auto aspect-square"
+        />
+      ) : null}
+      {process.env.NODE_ENV !== "production" ? (
+        <Button
+          onClick={() => {
+            router.push(`/check-in?token=${meetingToken?.token}`);
+          }}
+        >
+          Check In
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -3,4 +3,5 @@ export const meetingConfig = {
   iatSkewSeconds: 10,
   maxAccuracyMeters: 100,
   radiusBufferMeters: 10,
+  refreshIntervalMs: 15 * 1000,
 };
