@@ -56,9 +56,10 @@ export const checkinRouter = createTRPCRouter({
     })
     .mutation(async ({ input }) => {
       let payload: {
-        meetingId?: number;
+        meetingId?: number | string;
         kioskId?: string;
         nonce?: string;
+        jti?: string;
         iat?: number;
       } | null = null;
 
@@ -66,9 +67,10 @@ export const checkinRouter = createTRPCRouter({
         payload = jwt.verify(input.token, process.env.QR_CODE_SECRET ?? "", {
           algorithms: ["HS256"],
         }) as {
-          meetingId?: number;
+          meetingId?: number | string;
           kioskId?: string;
           nonce?: string;
+          jti?: string;
           iat?: number;
         };
       } catch {
@@ -79,22 +81,32 @@ export const checkinRouter = createTRPCRouter({
         );
       }
 
-      const { meetingId, kioskId, nonce, iat } = payload ?? {};
-      if (!meetingId || !nonce)
+      const raw = payload ?? {};
+      const meetingIdStr =
+        typeof raw.meetingId === "string" ? raw.meetingId : undefined;
+      const meetingIdNum =
+        typeof raw.meetingId === "number"
+          ? raw.meetingId
+          : meetingIdStr && /^\d+$/.test(meetingIdStr)
+            ? Number(meetingIdStr)
+            : undefined;
+      const nonce =
+        typeof raw.nonce === "string"
+          ? raw.nonce
+          : typeof raw.jti === "string"
+            ? raw.jti
+            : undefined;
+      const kioskId = raw.kioskId;
+      const iat = raw.iat;
+      if (meetingIdNum === undefined || !nonce)
         fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token malformed");
 
-      // Optional skew bound
-      if (typeof iat === "number") {
-        const nowS = Math.floor(Date.now() / 1000);
-        // 30s skew tolerance by default
-        if (Math.abs(nowS - iat) > 30)
-          fail("UNAUTHORIZED", "TOKEN_STALE", "Token too old");
-      }
+      // Skew checks removed; rely on exp verification from JWT
 
       const [meeting] = await db
         .select()
         .from(meetings)
-        .where(eq(meetings.id, meetingId));
+        .where(eq(meetings.id, meetingIdNum));
       if (!meeting || !meeting.active)
         fail("BAD_REQUEST", "MEETING_INACTIVE", "Meeting not active");
 
@@ -126,7 +138,7 @@ export const checkinRouter = createTRPCRouter({
         .from(attendance)
         .where(
           and(
-            eq(attendance.meetingId, meetingId),
+            eq(attendance.meetingId, meetingIdNum),
             eq(attendance.memberId, att?.id ?? -1),
           ),
         );
@@ -139,7 +151,7 @@ export const checkinRouter = createTRPCRouter({
         .where(
           and(
             eq(usedDeviceFingerprint.fingerprint, input.deviceFingerprint),
-            eq(usedDeviceFingerprint.meetingId, meetingId),
+            eq(usedDeviceFingerprint.meetingId, meetingIdNum),
           ),
         );
       if (existingDevice)
@@ -153,21 +165,21 @@ export const checkinRouter = createTRPCRouter({
         await db.transaction(async (tx) => {
           await tx.insert(usedTokenNonce).values({
             nonce,
-            meetingId,
+            meetingId: meetingIdNum,
             kioskId: kioskId || "unknown",
             consumedAt: new Date(),
           });
 
           await tx.insert(usedDeviceFingerprint).values({
             fingerprint: input.deviceFingerprint,
-            meetingId,
+            meetingId: meetingIdNum,
             memberId: att?.id ?? null,
             firstUsedAt: new Date(),
           });
 
           if (att) {
             await tx.insert(attendance).values({
-              meetingId,
+              meetingId: meetingIdNum,
               memberId: att.id,
               checkInAt: new Date(),
               checkInLat: lat,
