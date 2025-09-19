@@ -12,8 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 
 export default function Home() {
-  const { data, isPending } = trpc.dbCheck.useQuery();
-  const { data: me } = trpc.me.useQuery();
+  const { data, isPending } = trpc.meeting.generateToken.useQuery(undefined, {
+    retry: false,
+    throwOnError: true,
+  });
 
   return (
     <div className="space-y-8">
@@ -40,14 +42,9 @@ export default function Home() {
               <Skeleton className="h-4 w-1/2" />
             </div>
           ) : (
-            <>
-              <pre className="rounded-md bg-muted p-4 text-xs leading-relaxed">
-                {JSON.stringify(data, null, 2)}
-              </pre>
-              <pre className="rounded-md bg-muted p-4 text-xs leading-relaxed">
-                {JSON.stringify(me, null, 2)}
-              </pre>
-            </>
+            <pre className="rounded-md bg-muted p-4 text-xs leading-relaxed">
+              {JSON.stringify(data, null, 2)}
+            </pre>
           )}
         </CardContent>
       </Card>

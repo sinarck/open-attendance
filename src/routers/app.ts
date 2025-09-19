@@ -1,18 +1,8 @@
-import db from "@/db";
-import { meetings } from "@/db/schema/schema";
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "@/trpc/init";
+import { createTRPCRouter } from "@/trpc/init";
+import { meetingRouter } from "./meeting";
 
 export const appRouter = createTRPCRouter({
-  dbCheck: publicProcedure.query(() => {
-    return db.select().from(meetings);
-  }),
-  me: protectedProcedure.query(({ ctx }) => {
-    return { userId: ctx.userId };
-  }),
+  meeting: meetingRouter,
 });
 
 export type AppRouter = typeof appRouter;

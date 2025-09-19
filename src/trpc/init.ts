@@ -5,7 +5,8 @@ import { auth } from "@/utils/auth";
 interface BetterAuthSessionShape {
   user?: {
     id: string;
-    // Extend with fields you rely on (e.g., roles) when needed
+    username?: string;
+    displayUsername?: string;
   };
 }
 
@@ -34,6 +35,16 @@ export async function createTRPCContext(opts: {
 
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    const appCode = (error.cause as { appCode?: string } | undefined)?.appCode;
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        appCode: appCode ?? null,
+      },
+    };
+  },
 });
 
 export const createTRPCRouter = t.router;
@@ -53,3 +64,26 @@ const isAuthed = t.middleware(({ ctx, next }) => {
 });
 
 export const protectedProcedure = t.procedure.use(isAuthed);
+
+// Error helpers
+export type AppCode =
+  | "NO_ACTIVE_MEETING"
+  | "MULTIPLE_ACTIVE_MEETINGS"
+  | "MISSING_QR_SECRET"
+  | "UNAUTHORIZED";
+
+export class AppError extends TRPCError {
+  appCode: AppCode;
+  constructor(code: TRPCError["code"], appCode: AppCode, message?: string) {
+    super({ code, message, cause: { appCode } });
+    this.appCode = appCode;
+  }
+}
+
+export function fail(
+  code: TRPCError["code"],
+  appCode: AppCode,
+  message?: string,
+): never {
+  throw new AppError(code, appCode, message);
+}
