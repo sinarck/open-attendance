@@ -1,22 +1,17 @@
-import { z } from "zod";
 import db from "@/db";
 import { meetings } from "@/db/schema";
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "@/trpc/init";
 
 export const appRouter = createTRPCRouter({
-  hello: baseProcedure
-    .input(
-      z.object({
-        text: z.string(),
-      }),
-    )
-    .query((opts) => {
-      return {
-        greeting: `hello ${opts.input.text}`,
-      };
-    }),
-  dbCheck: baseProcedure.query(() => {
+  dbCheck: publicProcedure.query(() => {
     return db.select().from(meetings);
+  }),
+  me: protectedProcedure.query(({ ctx }) => {
+    return { userId: ctx.userId };
   }),
 });
 
