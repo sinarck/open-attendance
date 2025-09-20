@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -91,13 +91,15 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="h-svh overflow-hidden md:overflow-visible flex items-center justify-center p-6">
+    <div className="min-h-full flex items-center justify-center p-4 sm:p-6 overflow-hidden">
       <div className="w-full flex flex-col items-center gap-6">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md sm:max-w-lg rounded-xl shadow-lg">
           <CardHeader>
             <CardTitle>Meeting Check In</CardTitle>
             {typeof remainingMs === "number" ? (
-              <CardDescription>Time remaining: {formatted}</CardDescription>
+              <CardDescription className="font-mono">
+                Time remaining: {formatted}
+              </CardDescription>
             ) : null}
             <CardDescription>
               Enter your 6-digit user ID to check in to the meeting
@@ -175,6 +177,7 @@ export default function CheckinPage() {
                           placeholder="123456"
                           autoFocus
                           required
+                          className="h-12 text-base sm:h-14 sm:text-lg"
                           {...field}
                         />
                       </FormControl>
@@ -186,7 +189,7 @@ export default function CheckinPage() {
                 <div className="flex flex-col gap-3">
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full h-12 text-base sm:h-14 sm:text-lg"
                     disabled={
                       !form.formState.isValid ||
                       mutation.isPending ||
@@ -206,7 +209,7 @@ export default function CheckinPage() {
 
         {process.env.NODE_ENV === "development" &&
           (geo || deviceFingerprint) && (
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-md sm:max-w-lg rounded-xl shadow">
               <CardHeader>
                 <CardTitle className="text-sm">Debug Info</CardTitle>
               </CardHeader>
