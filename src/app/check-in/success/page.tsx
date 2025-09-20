@@ -19,7 +19,7 @@ export default function CheckinSuccess() {
     : "You’re all set. You can close this tab.";
 
   return (
-    <div className="min-h-full grid place-items-center p-6 relative">
+    <div className="flex-1 flex items-center justify-center p-6 relative">
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
@@ -43,7 +43,7 @@ export default function CheckinSuccess() {
         }}
       />
 
-      <Card className="my-auto w-full max-w-md sm:max-w-lg text-center rounded-2xl shadow-xl bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 border">
+      <Card className="w-full max-w-md sm:max-w-lg text-center rounded-2xl shadow-xl bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 border">
         <CardHeader className="space-y-2">
           <div className="mx-auto grid place-items-center">
             <div className="rounded-full bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20 p-3">
