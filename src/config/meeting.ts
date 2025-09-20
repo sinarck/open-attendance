@@ -1,7 +1,7 @@
 const offsetSeconds = 15;
 
 export const meetingConfig = {
-  qrTokenTtlSeconds: 60 + offsetSeconds,
+  qrTokenTtlSeconds: 120 + offsetSeconds,
   iatSkewSeconds: 10,
   maxAccuracyMeters: 100,
   radiusBufferMeters: 10,
