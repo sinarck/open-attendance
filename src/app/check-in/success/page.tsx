@@ -1,12 +1,10 @@
 "use client";
 
 import { CheckCircle2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Confetti from "react-confetti";
-import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -14,23 +12,11 @@ import {
 
 export default function CheckinSuccess() {
   const params = useSearchParams();
-  const router = useRouter();
   const name = params.get("name");
   const firstName = name?.trim().split(/\s+/)[0] ?? null;
   const message = firstName
     ? `You’re all set, ${firstName}. You can close this tab.`
     : "You’re all set. You can close this tab.";
-
-  const handleClose = () => {
-    if (typeof window === "undefined") return;
-    window.close();
-    // Fallbacks for environments that block window.close()
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      router.replace("/");
-    }
-  };
 
   return (
     <div className="min-h-[calc(100svh-8rem)] grid place-items-center p-6 relative">
@@ -71,11 +57,6 @@ export default function CheckinSuccess() {
             {message}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center">
-          <Button size="lg" onClick={handleClose} className="px-6">
-            Close
-          </Button>
-        </CardContent>
       </Card>
     </div>
   );

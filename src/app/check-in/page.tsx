@@ -101,9 +101,6 @@ export default function CheckinPage() {
                 Time remaining: {formatted}
               </CardDescription>
             ) : null}
-            <CardDescription>
-              Enter your 6-digit user ID to check in to the meeting
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {isExpired && (
