@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,6 +37,7 @@ export default function RootLayout({
             <Navbar />
             <main className="mx-auto w-full max-w-screen-2xl px-4 md:px-6 lg:px-8 flex-1 flex flex-col overflow-auto">
               {children}
+              <Analytics />
             </main>
             <footer className="border-t flex-shrink-0">
               <div className="mx-auto w-full max-w-screen-2xl px-4 md:px-6 lg:px-8 py-6 text-center text-sm text-muted-foreground">
