@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserMenu } from "@/components/user-menu";
@@ -8,6 +9,10 @@ import { authClient } from "@/lib/auth-client";
 
 export function Navbar() {
   const session = authClient.useSession();
+  const pathname = usePathname();
+  if (pathname?.startsWith("/checkin")) {
+    return null;
+  }
 
   const user = session.data?.user;
   const isAuthPending = session.isPending && !session.data;
@@ -38,9 +43,6 @@ export function Navbar() {
                 <Button variant="ghost" size="sm">
                   Log in
                 </Button>
-              </Link>
-              <Link href="/signup">
-                <Button size="sm">Sign up</Button>
               </Link>
             </div>
           )}

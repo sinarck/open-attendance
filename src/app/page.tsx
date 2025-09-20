@@ -21,7 +21,7 @@ export default function Home() {
 
   if (!session && !isPending) {
     return (
-      <div className="container mx-auto h-full flex items-center justify-center">
+      <div className="container mx-auto min-h-[calc(100svh-4rem-4rem)] flex items-center justify-center">
         Not logged in
       </div>
     );
@@ -29,7 +29,7 @@ export default function Home() {
 
   if (isPending || (session && isMeetingTokenPending)) {
     return (
-      <div className="container mx-auto flex flex-col items-center justify-center h-full gap-8">
+      <div className="container mx-auto flex flex-col items-center justify-center min-h-[calc(100svh-4rem-4rem)] gap-8">
         <Skeleton className="w-[clamp(320px,70vmin,900px)] aspect-square" />
       </div>
     );
@@ -41,7 +41,7 @@ export default function Home() {
       : "";
 
   return (
-    <div className="container mx-auto flex flex-col items-center justify-center h-full gap-8">
+    <div className="container mx-auto flex flex-col items-center justify-center min-h-[calc(100svh-4rem-4rem)] gap-8">
       {url ? (
         <QRCodeSVG
           value={url}

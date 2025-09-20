@@ -48,9 +48,6 @@ export function UserMenu() {
             Log in
           </Button>
         </Link>
-        <Link href="/signup">
-          <Button size="sm">Sign up</Button>
-        </Link>
       </div>
     );
   }
