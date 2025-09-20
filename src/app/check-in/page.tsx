@@ -113,12 +113,12 @@ export default function CheckinPage() {
                 </p>
               </div>
             )}
+
             {geoError && (
               <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
                 <p className="text-sm">Location error: {geoError}</p>
                 <div className="text-xs mt-2 space-y-2 opacity-90">
                   <div className="flex items-center gap-2">
-                    <span>Please enable location access and then refresh.</span>
                     {ctaLabel ? (
                       <button
                         type="button"
@@ -151,6 +151,7 @@ export default function CheckinPage() {
                 </div>
               </div>
             )}
+
             {!geo && !geoError && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-blue-600 text-sm">
