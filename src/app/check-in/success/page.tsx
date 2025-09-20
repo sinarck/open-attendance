@@ -19,7 +19,7 @@ export default function CheckinSuccess() {
     : "You’re all set. You can close this tab.";
 
   return (
-    <div className="min-h-[calc(100svh-8rem)] grid place-items-center p-6 relative">
+    <div className="min-h-full grid place-items-center p-6 relative">
       <div
         aria-hidden
         className="absolute inset-0 -z-10"

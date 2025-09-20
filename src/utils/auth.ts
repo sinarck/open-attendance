@@ -11,7 +11,6 @@ export const auth = betterAuth({
   },
   trustedOrigins: [
     "http://localhost:3000",
-    process.env.NEXT_PUBLIC_APP_URL || "",
     "https://www.attendance.voluntra.org",
   ],
   plugins: [username()],
