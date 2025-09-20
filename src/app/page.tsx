@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { meetingConfig } from "@/config/meeting";
@@ -11,11 +12,15 @@ import { trpc } from "@/trpc/client";
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
+  const [broadcasting, setBroadcasting] = useState(true);
 
   const { data: meetingToken, isPending: isMeetingTokenPending } =
     trpc.meeting.generateToken.useQuery(undefined, {
-      enabled: !!session,
-      refetchInterval: meetingConfig.refreshIntervalMs,
+      enabled: !!session && broadcasting,
+      refetchInterval: broadcasting
+        ? meetingConfig.refreshIntervalMs
+        : undefined,
+      retry: false,
       throwOnError: true,
     });
 
@@ -27,7 +32,7 @@ export default function Home() {
     );
   }
 
-  if (isPending || (session && isMeetingTokenPending)) {
+  if (isPending || (session && broadcasting && isMeetingTokenPending)) {
     return (
       <div className="container mx-auto flex flex-col items-center justify-center min-h-full gap-8">
         <Skeleton className="w-[clamp(320px,70vmin,900px)] aspect-square" />
@@ -36,7 +41,7 @@ export default function Home() {
   }
 
   const url =
-    typeof window !== "undefined" && meetingToken?.token
+    broadcasting && typeof window !== "undefined" && meetingToken?.token
       ? `${window.location.origin}/check-in?token=${encodeURIComponent(meetingToken.token)}`
       : "";
 
@@ -47,13 +52,29 @@ export default function Home() {
           value={url}
           className="w-[clamp(320px,70vmin,900px)] h-auto aspect-square"
         />
-      ) : null}
+      ) : (
+        <div className="w-[clamp(320px,70vmin,900px)] aspect-square flex items-center justify-center border rounded-md text-muted-foreground">
+          {broadcasting ? "No token" : "QR paused"}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <Button
+          variant={broadcasting ? "destructive" : "default"}
+          onClick={() => setBroadcasting((v) => !v)}
+        >
+          {broadcasting ? "Stop" : "Start"} QR
+        </Button>
+      </div>
 
       {process.env.NODE_ENV !== "production" ? (
         <Button
           onClick={() => {
-            router.push(`/check-in?token=${meetingToken?.token}`);
+            if (meetingToken?.token && broadcasting) {
+              router.push(`/check-in?token=${meetingToken?.token}`);
+            }
           }}
+          disabled={!broadcasting || !meetingToken?.token}
         >
           Check In
         </Button>
