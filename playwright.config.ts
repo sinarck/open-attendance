@@ -23,10 +23,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command:
-      process.env.E2E_DB && process.env.E2E_DB.length > 0
-        ? "pnpm run dev:test:local"
-        : "pnpm run dev:test",
+    command: "pnpm run dev:e2e",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
@@ -34,11 +31,8 @@ export default defineConfig({
       NODE_ENV: "development",
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
       QR_CODE_SECRET: process.env.QR_CODE_SECRET || "testsecret",
-      TURSO_DATABASE_URL:
-        process.env.E2E_DB ||
-        process.env.TURSO_DATABASE_URL ||
-        "file:.tmp/e2e.db",
-      TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || "local",
+      TURSO_DATABASE_URL: process.env.E2E_DB || "file:.tmp/e2e.db",
+      TURSO_AUTH_TOKEN: "local",
     },
   },
 });
