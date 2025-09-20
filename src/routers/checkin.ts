@@ -50,7 +50,7 @@ export const checkinRouter = createTRPCRouter({
         typeof v.geo.lng !== "number" ||
         typeof v.geo.accuracyM !== "number"
       ) {
-        fail("BAD_REQUEST", "BAD_REQUEST", "Invalid input");
+        fail("BAD_REQUEST", "BAD_REQUEST", "Invalid input. Try again.");
       }
       return v as Input;
     })
@@ -77,7 +77,7 @@ export const checkinRouter = createTRPCRouter({
         fail(
           "UNAUTHORIZED",
           "TOKEN_INVALID_OR_EXPIRED",
-          "Token invalid or expired",
+          "Token invalid or expired. Please scan the QR code again.",
         );
       }
 
@@ -99,7 +99,11 @@ export const checkinRouter = createTRPCRouter({
       const kioskId = raw.kioskId;
       const _iat = raw.iat;
       if (meetingIdNum === undefined || !nonce)
-        fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token malformed");
+        fail(
+          "BAD_REQUEST",
+          "TOKEN_MALFORMED",
+          "Token malformed. Please scan the QR code again.",
+        );
 
       // Skew checks removed; rely on exp verification from JWT
 
@@ -108,12 +112,16 @@ export const checkinRouter = createTRPCRouter({
         .from(meetings)
         .where(eq(meetings.id, meetingIdNum));
       if (!meeting || !meeting.active)
-        fail("BAD_REQUEST", "MEETING_INACTIVE", "Meeting not active");
+        fail("BAD_REQUEST", "MEETING_INACTIVE", "Meeting not in progress.");
 
       // Geo checks
       const { lat, lng, accuracyM } = input.geo;
       if (accuracyM > 100 + 10)
-        fail("BAD_REQUEST", "LOCATION_INACCURATE", "Location accuracy too low");
+        fail(
+          "BAD_REQUEST",
+          "LOCATION_INACCURATE",
+          "Location accuracy too low.",
+        );
 
       const distance = haversineMeters(
         lat,
@@ -122,7 +130,7 @@ export const checkinRouter = createTRPCRouter({
         meeting.centerLng,
       );
       if (distance > meeting.radiusM + 10)
-        fail("BAD_REQUEST", "NOT_IN_GEOFENCE", "Outside geofence");
+        fail("BAD_REQUEST", "NOT_IN_GEOFENCE", "Not at meeting location.");
 
       // Directory validation
       const [att] = await db
@@ -130,7 +138,11 @@ export const checkinRouter = createTRPCRouter({
         .from(members)
         .where(eq(members.clubId, input.userId));
       if (!att && meeting.strict)
-        fail("BAD_REQUEST", "UNKNOWN_USER", "Unknown user");
+        fail(
+          "BAD_REQUEST",
+          "UNKNOWN_USER",
+          "User ID not a member of this chapter.",
+        );
 
       // Check duplicates
       const [existing] = await db
@@ -143,7 +155,11 @@ export const checkinRouter = createTRPCRouter({
           ),
         );
       if (existing)
-        fail("BAD_REQUEST", "ALREADY_CHECKED_IN", "Already checked in");
+        fail(
+          "BAD_REQUEST",
+          "ALREADY_CHECKED_IN",
+          "You've already checked in to this meeting.",
+        );
 
       const [existingDevice] = await db
         .select()
@@ -158,7 +174,7 @@ export const checkinRouter = createTRPCRouter({
         fail(
           "BAD_REQUEST",
           "DEVICE_ALREADY_USED",
-          "Device already used for this meeting",
+          "Device already used to check in to this meeting.",
         );
 
       try {
@@ -196,7 +212,11 @@ export const checkinRouter = createTRPCRouter({
       } catch (e) {
         const msg = String((e as Error)?.message ?? "");
         if (msg.includes("UNIQUE") || msg.includes("constraint"))
-          fail("CONFLICT", "TOKEN_ALREADY_USED", "Token already used");
+          fail(
+            "CONFLICT",
+            "TOKEN_ALREADY_USED",
+            "Scanned QR code already used. Try again.",
+          );
         throw e;
       }
 

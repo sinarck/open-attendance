@@ -10,7 +10,7 @@ import { authClient } from "@/lib/auth-client";
 export function Navbar() {
   const session = authClient.useSession();
   const pathname = usePathname();
-  if (pathname?.startsWith("/checkin")) {
+  if (!pathname?.endsWith("/")) {
     return null;
   }
 
