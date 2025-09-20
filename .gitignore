@@ -48,3 +48,4 @@ dump.sql
 local.db
 playwright-report
 test-results/
+.tmp/
