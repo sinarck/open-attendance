@@ -10,8 +10,10 @@
     "format": "biome format --write",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "dev:test": "mkdir -p .tmp && TURSO_DATABASE_URL=file:.tmp/e2e.db TURSO_AUTH_TOKEN=local QR_CODE_SECRET=testsecret NEXT_PUBLIC_APP_URL=http://localhost:3000 pnpm exec drizzle-kit push && next dev --turbopack",
+    "dev:test": "mkdir -p .tmp && E2E_DB=${E2E_DB:-file:.tmp/e2e.db} TURSO_DATABASE_URL=$E2E_DB TURSO_AUTH_TOKEN=local QR_CODE_SECRET=testsecret NEXT_PUBLIC_APP_URL=http://localhost:3000 pnpm exec drizzle-kit push && next dev --turbopack",
+    "dev:test:local": "E2E_DB=${E2E_DB:-file:./local.db} TURSO_DATABASE_URL=$E2E_DB TURSO_AUTH_TOKEN=local QR_CODE_SECRET=testsecret NEXT_PUBLIC_APP_URL=http://localhost:3000 pnpm exec drizzle-kit push && next dev --turbopack",
     "test:e2e": "playwright test",
+    "test:e2e:local": "E2E_DB=file:./local.db playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report"
   },

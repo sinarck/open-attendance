@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Testing
+dump.sql
+local.db
+playwright-report
+test-results/

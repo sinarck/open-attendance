@@ -46,6 +46,21 @@ export async function POST() {
     meetingRow = updated;
   }
 
+  // Clean only test data scoped to this e2e meeting
+  try {
+    await db
+      .delete(usedDeviceFingerprint)
+      .where(eq(usedDeviceFingerprint.meetingId, meetingRow.id));
+  } catch {}
+  try {
+    await db
+      .delete(usedTokenNonce)
+      .where(eq(usedTokenNonce.meetingId, meetingRow.id));
+  } catch {}
+  try {
+    await db.delete(attendance).where(eq(attendance.meetingId, meetingRow.id));
+  } catch {}
+
   // Upsert a fixed range of 500 members without deleting anything
   const desiredClubIds = Array.from({ length: 500 }, (_, i) =>
     (100000 + i).toString(),
