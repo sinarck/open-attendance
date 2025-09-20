@@ -178,9 +178,10 @@ export const checkinRouter = createTRPCRouter({
         );
 
       try {
+        const derivedNonce = `${nonce}:${input.deviceFingerprint}`;
         await db.transaction(async (tx) => {
           await tx.insert(usedTokenNonce).values({
-            nonce,
+            nonce: derivedNonce,
             meetingId: meetingIdNum,
             kioskId: kioskId || "unknown",
             consumedAt: new Date(),
@@ -368,9 +369,10 @@ export const checkinRouter = createTRPCRouter({
         );
 
       try {
+        const derivedNonce = `${nonce}:${input.deviceFingerprint}`;
         await db.transaction(async (tx) => {
           await tx.insert(usedTokenNonce).values({
-            nonce,
+            nonce: derivedNonce,
             meetingId: meetingIdNum,
             kioskId: kioskId || "unknown",
             consumedAt: new Date(),

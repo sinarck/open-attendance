@@ -56,7 +56,7 @@ test("500 attendees check in concurrently", async ({ request }) => {
     ),
   );
 
-  // 5) Evaluate results: first should succeed, others fail with TOKEN_ALREADY_USED
+  // 5) With per-device derived nonce, all should succeed
   const bodies = (await Promise.all(responses.map((r) => r.json()))) as Array<
     OkBody | ErrBody
   >;
@@ -64,8 +64,8 @@ test("500 attendees check in concurrently", async ({ request }) => {
   const okCount = bodies.filter((b): b is OkBody => b.ok === true).length;
   const failures = bodies.filter((b): b is ErrBody => b.ok === false);
 
-  expect(okCount).toBe(1);
-  expect(failures.length).toBe(499);
+  expect(okCount).toBe(500);
+  expect(failures.length).toBe(0);
 });
 
 test("500 attendees check in concurrently with unique tokens", async ({
