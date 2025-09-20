@@ -92,8 +92,8 @@ export default function CheckinPage() {
 
   return (
     <div className="min-h-full flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-      <div className="w-full flex flex-col items-center gap-6">
-        <Card className="w-full max-w-md sm:max-w-lg rounded-xl shadow-lg">
+      <div className="w-full min-h-full flex flex-col items-center gap-6">
+        <Card className="my-auto w-full max-w-md sm:max-w-lg rounded-xl shadow-lg">
           <CardHeader>
             <CardTitle>Meeting Check In</CardTitle>
             {typeof remainingMs === "number" ? (
