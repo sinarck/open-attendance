@@ -9,7 +9,11 @@
     "lint": "biome check",
     "format": "biome format --write",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "dev:test": "mkdir -p .tmp && TURSO_DATABASE_URL=file:.tmp/e2e.db TURSO_AUTH_TOKEN=local QR_CODE_SECRET=testsecret NEXT_PUBLIC_APP_URL=http://localhost:3000 pnpm exec drizzle-kit push && next dev --turbopack",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -53,6 +57,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.87.4",
     "@types/jsonwebtoken": "^9.0.10",
