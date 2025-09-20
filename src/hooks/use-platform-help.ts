@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { isAndroid, isIOS } from "react-device-detect";
+import { isAndroid, isIOS, osName } from "react-device-detect";
 
 export function usePlatformHelp() {
   const openLocationSettings = useCallback(() => {
@@ -27,6 +27,13 @@ export function usePlatformHelp() {
         "Settings → Privacy & Security → Location Services → On",
         "Settings → Safari → Location → Allow",
         "Return to Safari and refresh this page",
+      ];
+    }
+    if (osName === "Chrome OS") {
+      return [
+        "On managed Chromebooks, location may be blocked by policy",
+        "If blocked, use the Chromebook Bypass button on the check-in page",
+        "Otherwise: Site settings → Location → Allow, then reload",
       ];
     }
     return [

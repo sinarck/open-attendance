@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { osName } from "react-device-detect";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -64,6 +65,18 @@ export default function CheckinPage() {
     },
   });
 
+  const chromebookBypass = trpc.checkin.verifyAndRecordChromebook.useMutation({
+    onSuccess: (data) => {
+      const name = (data as { attendee?: { name?: string | null } })?.attendee
+        ?.name;
+      const qs = name ? `?name=${encodeURIComponent(name)}` : "";
+      router.push(`/check-in/success${qs}`);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Bypass failed");
+    },
+  });
+
   const onSubmit = useCallback(
     (values: z.infer<typeof formSchema>) => {
       if (!geo || !token || !deviceFingerprint) return;
@@ -75,6 +88,18 @@ export default function CheckinPage() {
       });
     },
     [deviceFingerprint, geo, mutation, token],
+  );
+
+  const onChromebookBypass = useCallback(
+    (values: z.infer<typeof formSchema>) => {
+      if (!token || !deviceFingerprint) return;
+      chromebookBypass.mutate({
+        token,
+        userId: values.userId,
+        deviceFingerprint,
+      });
+    },
+    [chromebookBypass, deviceFingerprint, token],
   );
 
   if (!token) {
@@ -145,6 +170,30 @@ export default function CheckinPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
+
+                  {osName === "Chrome OS" && (
+                    <div className="mt-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full h-10"
+                        disabled={
+                          !form.formState.isValid ||
+                          chromebookBypass.isPending ||
+                          isExpired ||
+                          !deviceFingerprint
+                        }
+                        onClick={() => onChromebookBypass(form.getValues())}
+                      >
+                        {chromebookBypass.isPending
+                          ? "Bypassing..."
+                          : "Use Chromebook Bypass"}
+                      </Button>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        For school Chromebooks where location is blocked.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

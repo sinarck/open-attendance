@@ -1,5 +1,25 @@
 # BPA Attendance System
 
+## Chromebook geolocation bypass (v1)
+
+When managed Chromebooks block `navigator.geolocation`, the app exposes a Chromebook Bypass flow:
+
+- Client detects Chrome OS and shows a "Use Chromebook Bypass" button when geolocation fails.
+- Server endpoint `checkin.verifyAndRecordChromebook` verifies the QR token, enforces single-use nonce and device fingerprint uniqueness, and records attendance with `method: "override"` and no coordinates.
+- Bypass is protected by an environment flag.
+
+Environment variable:
+
+```
+ALLOW_CHROMEBOOK_BYPASS=true
+```
+
+Notes and risks:
+
+- Only permitted on ChromeOS (checked via User-Agent).
+- Still relies on QR token TTL and nonce uniqueness; it skips geofence checks, so enable only when necessary for deployments with managed ChromeOS.
+- All bypass entries are auditable via `method = "override"` and `notes = "Chromebook bypass"`.
+
 Fast, secure QR-based attendance for ~500 attendees in ~20 minutes. Single Next.js app with short-lived QR tokens, geofenced check-ins, and anti-fraud controls.
 
 ## Highlights

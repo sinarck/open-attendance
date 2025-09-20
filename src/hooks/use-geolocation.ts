@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { osName } from "react-device-detect";
 import { geoConfig } from "@/config/geo";
 import { useGeolocationStore } from "@/stores/geolocation";
 import type {
@@ -98,13 +99,23 @@ export function useGeolocation(
     (err: GeolocationPositionError) => {
       if (stoppedRef.current) return;
       if (err.code === err.PERMISSION_DENIED) setPermission("denied");
-      const msg =
-        err.message ||
-        (err.code === err.PERMISSION_DENIED
-          ? "Location permission denied"
-          : err.code === err.POSITION_UNAVAILABLE
-            ? "Location unavailable"
-            : "Location request timed out");
+      const isChromeOS = osName === "Chrome OS";
+      const msg = (() => {
+        if (isChromeOS && err.code === err.PERMISSION_DENIED)
+          return "Chromebook: location is blocked by policy";
+        if (isChromeOS && err.code === err.POSITION_UNAVAILABLE)
+          return "Chromebook: location unavailable (possibly blocked)";
+        if (isChromeOS && err.code === err.TIMEOUT)
+          return "Chromebook: location request timed out";
+        return (
+          err.message ||
+          (err.code === err.PERMISSION_DENIED
+            ? "Location permission denied"
+            : err.code === err.POSITION_UNAVAILABLE
+              ? "Location unavailable"
+              : "Location request timed out")
+        );
+      })();
       finalize("error", msg);
     },
     [finalize, setPermission],
@@ -162,7 +173,13 @@ export function useGeolocation(
     // Hard stop for entire attempt
     timeoutRef.current = setTimeout(() => {
       if (stoppedRef.current) return;
-      finalize("timeout", "Location request timed out");
+      const isChromeOS = osName === "Chrome OS";
+      finalize(
+        "timeout",
+        isChromeOS
+          ? "Chromebook: location request timed out"
+          : "Location request timed out",
+      );
     }, opts.timeoutMs);
 
     // Allow time for accuracy to improve, then finalize best effort
