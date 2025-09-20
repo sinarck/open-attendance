@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { osName } from "react-device-detect";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -34,6 +33,8 @@ import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { usePlatformHelp } from "@/hooks/use-platform-help";
 import { useTokenCountdown } from "@/hooks/use-token-countdown";
+// Custom Chromebook detector (see utils)
+import { isChromeOSUserAgent } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export default function CheckinPage() {
@@ -77,9 +78,23 @@ export default function CheckinPage() {
     },
   });
 
+  const isChromeOS = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return isChromeOSUserAgent(navigator.userAgent);
+  }, []);
+
   const onSubmit = useCallback(
     (values: z.infer<typeof formSchema>) => {
-      if (!geo || !token || !deviceFingerprint) return;
+      if (!token || !deviceFingerprint) return;
+      if (isChromeOS) {
+        chromebookBypass.mutate({
+          token,
+          userId: values.userId,
+          deviceFingerprint,
+        });
+        return;
+      }
+      if (!geo) return;
       mutation.mutate({
         token,
         userId: values.userId,
@@ -87,20 +102,10 @@ export default function CheckinPage() {
         deviceFingerprint,
       });
     },
-    [deviceFingerprint, geo, mutation, token],
+    [chromebookBypass, deviceFingerprint, geo, isChromeOS, mutation, token],
   );
 
-  const onChromebookBypass = useCallback(
-    (values: z.infer<typeof formSchema>) => {
-      if (!token || !deviceFingerprint) return;
-      chromebookBypass.mutate({
-        token,
-        userId: values.userId,
-        deviceFingerprint,
-      });
-    },
-    [chromebookBypass, deviceFingerprint, token],
-  );
+  // Chromebook bypass is auto-invoked in onSubmit when detected
 
   if (!token) {
     return (
@@ -136,7 +141,7 @@ export default function CheckinPage() {
               </div>
             )}
 
-            {geoError && (
+            {geoError && !isChromeOS && (
               <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
                 <p className="text-sm">Location error: {geoError}</p>
                 <div className="text-xs mt-2 space-y-2 opacity-90">
@@ -170,30 +175,6 @@ export default function CheckinPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-
-                  {osName === "Chrome OS" && (
-                    <div className="mt-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="w-full h-10"
-                        disabled={
-                          !form.formState.isValid ||
-                          chromebookBypass.isPending ||
-                          isExpired ||
-                          !deviceFingerprint
-                        }
-                        onClick={() => onChromebookBypass(form.getValues())}
-                      >
-                        {chromebookBypass.isPending
-                          ? "Bypassing..."
-                          : "Use Chromebook Bypass"}
-                      </Button>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        For school Chromebooks where location is blocked.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -239,11 +220,11 @@ export default function CheckinPage() {
                     className="w-full h-12 text-base sm:h-14 sm:text-lg"
                     disabled={
                       !form.formState.isValid ||
-                      mutation.isPending ||
-                      !geo ||
-                      !!geoError ||
                       !deviceFingerprint ||
-                      isExpired
+                      isExpired ||
+                      (isChromeOS
+                        ? chromebookBypass.isPending
+                        : mutation.isPending || !geo || !!geoError)
                     }
                   >
                     {mutation.isPending ? "Checking in..." : "Check In"}
