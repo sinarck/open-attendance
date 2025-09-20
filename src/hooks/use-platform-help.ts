@@ -23,15 +23,29 @@ export function usePlatformHelp() {
     // iOS and others: no-op; show instructions instead
   }, [info.isAndroid]);
 
-  const instructions = useMemo(() => {
+  const steps = useMemo(() => {
     if (info.isAndroid) {
-      return "Android: Settings → Location → On. Then refresh this page.";
+      return [
+        "Open Settings → Location → turn Location On",
+        "Settings → Apps → your browser → Permissions → Location → Allow",
+        "Return to this page and refresh",
+      ];
     }
     if (info.isIOS) {
-      return "iOS: Settings → Privacy & Security → Location Services → On for Safari. Then refresh.";
+      return [
+        "Settings → Privacy & Security → Location Services → On",
+        "Settings → Safari → Location → Allow",
+        "Return to Safari and refresh this page",
+      ];
     }
-    return "Desktop: Allow location in the browser site permissions, then refresh.";
+    return [
+      "Click the lock icon in the address bar",
+      "Site settings → Location → Allow",
+      "Reload this page",
+    ];
   }, [info.isAndroid, info.isIOS]);
 
-  return { ...info, openLocationSettings, instructions } as const;
+  const ctaLabel = info.isAndroid ? "Open Location Settings" : undefined;
+
+  return { ...info, openLocationSettings, steps, ctaLabel } as const;
 }

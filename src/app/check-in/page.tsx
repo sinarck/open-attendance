@@ -28,6 +28,7 @@ import { useGeolocation } from "@/hooks/use-geolocation";
 import { usePlatformHelp } from "@/hooks/use-platform-help";
 import { useTokenCountdown } from "@/hooks/use-token-countdown";
 import { trpc } from "@/trpc/client";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function CheckinPage() {
   const params = useSearchParams();
@@ -44,7 +45,7 @@ export default function CheckinPage() {
     defaultValues: { userId: "" },
     mode: "onChange",
   });
-  const { openLocationSettings } = usePlatformHelp();
+  const { openLocationSettings, steps, ctaLabel } = usePlatformHelp();
 
   const mutation = trpc.checkin.verifyAndRecord.useMutation({
     onSuccess: (data) => {
@@ -105,21 +106,36 @@ export default function CheckinPage() {
                 </p>
               </div>
             )}
-            {geoError && (
+             {geoError && (
               <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
                 <p className="text-sm">Location error: {geoError}</p>
                 <div className="text-xs mt-2 space-y-2 opacity-90">
-                  <div>
-                    Please enable location access and then refresh.
-                    <button
-                      type="button"
-                      onClick={openLocationSettings}
-                      className="ml-1 underline underline-offset-2"
-                    >
-                      Go to settings
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span>Please enable location access and then refresh.</span>
+                      {ctaLabel ? (
+                        <button
+                          type="button"
+                          onClick={openLocationSettings}
+                          className="ml-1 underline underline-offset-2"
+                        >
+                          {ctaLabel}
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <Accordion type="single" collapsible className="border rounded-md bg-background/40">
+                      <AccordionItem value="how">
+                        <AccordionTrigger className="px-3 py-2">How to enable location</AccordionTrigger>
+                        <AccordionContent className="px-3">
+                          <ol className="list-decimal pl-5 space-y-1">
+                            {steps.map((s) => (
+                              <li key={s}>{s}</li>
+                            ))}
+                          </ol>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </div>
-                </div>
               </div>
             )}
             {!geo && !geoError && (
