@@ -12,7 +12,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:3000",
     process.env.NEXT_PUBLIC_APP_URL || "",
-    "www.attendance.voluntra.org",
+    "https://www.attendance.voluntra.org",
   ],
   plugins: [username()],
   database: drizzleAdapter(db, {

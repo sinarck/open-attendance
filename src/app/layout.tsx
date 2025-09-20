@@ -42,7 +42,7 @@ export default function RootLayout({
                 Designed and built by Aadi Sanghvi
               </div>
             </footer>
-            <Toaster richColors />
+            <Toaster richColors position="top-center" />
           </TRPCProvider>
         </ThemeProvider>
       </body>

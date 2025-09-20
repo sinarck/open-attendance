@@ -79,8 +79,8 @@ export default function CheckinPage() {
 
   if (!token) {
     return (
-      <div className="mx-auto w-full mt-10 max-w-md p-6">
-        <Card>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Invalid Check-in</CardTitle>
             <CardDescription>No valid token found in URL</CardDescription>
@@ -91,7 +91,7 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="min-h-full flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 overflow-hidden">
       <div className="w-full flex flex-col items-center gap-6">
         <Card className="w-full max-w-md sm:max-w-lg rounded-xl shadow-lg">
           <CardHeader>
