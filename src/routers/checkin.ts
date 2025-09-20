@@ -331,6 +331,25 @@ export const checkinRouter = createTRPCRouter({
           "User ID not a member of this chapter.",
         );
 
+      // Member duplicate check (preempt unique constraint)
+      if (att) {
+        const [existingAttendance] = await db
+          .select()
+          .from(attendance)
+          .where(
+            and(
+              eq(attendance.meetingId, meetingIdNum),
+              eq(attendance.memberId, att.id),
+            ),
+          );
+        if (existingAttendance)
+          fail(
+            "BAD_REQUEST",
+            "ALREADY_CHECKED_IN",
+            "You've already checked in to this meeting.",
+          );
+      }
+
       // Check duplicates for device
       const [existingDevice] = await db
         .select()
@@ -382,12 +401,37 @@ export const checkinRouter = createTRPCRouter({
         });
       } catch (e) {
         const msg = String((e as Error)?.message ?? "");
-        if (msg.includes("UNIQUE") || msg.includes("constraint"))
-          fail(
-            "CONFLICT",
-            "TOKEN_ALREADY_USED",
-            "Scanned QR code already used. Try again.",
-          );
+        if (msg) {
+          const lower = msg.toLowerCase();
+          if (lower.includes("attendance")) {
+            fail(
+              "BAD_REQUEST",
+              "ALREADY_CHECKED_IN",
+              "You've already checked in to this meeting.",
+            );
+          }
+          if (
+            lower.includes("used_device_fingerprint") ||
+            lower.includes("uniq_fingerprint_per_meeting")
+          ) {
+            fail(
+              "BAD_REQUEST",
+              "DEVICE_ALREADY_USED",
+              "Device already used to check in to this meeting.",
+            );
+          }
+          if (
+            lower.includes("used_token_nonce") ||
+            lower.includes("nonce") ||
+            lower.includes("token_nonce")
+          ) {
+            fail(
+              "CONFLICT",
+              "TOKEN_ALREADY_USED",
+              "Scanned QR code already used. Try again.",
+            );
+          }
+        }
         throw e;
       }
 
