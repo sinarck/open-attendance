@@ -9,26 +9,7 @@ import {
   usedTokenNonce,
 } from "@/db/schema/schema";
 import { createTRPCRouter, fail, publicProcedure } from "@/trpc/init";
-
-const haversineMeters = (
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-) => {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371000; // meters
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+import { haversineMeters } from "@/utils/location";
 
 export const checkinRouter = createTRPCRouter({
   verifyAndRecord: publicProcedure
@@ -97,15 +78,12 @@ export const checkinRouter = createTRPCRouter({
             ? raw.jti
             : undefined;
       const kioskId = raw.kioskId;
-      const _iat = raw.iat;
       if (meetingIdNum === undefined || !nonce)
         fail(
           "BAD_REQUEST",
           "TOKEN_MALFORMED",
           "Token malformed. Please scan the QR code again.",
         );
-
-      // Skew checks removed; rely on exp verification from JWT
 
       const [meeting] = await db
         .select()
