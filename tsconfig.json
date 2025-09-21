@@ -22,6 +22,7 @@
       "@/*": ["./src/*"],
       "@/db/*": ["./src/db/*"],
       "@/lib/*": ["./src/lib/*"],
+      "@/types/*": ["./src/types/*"],
       "@/routers/*": ["./src/routers/*"],
       "@/trpc/*": ["./src/trpc/*"]
     }
