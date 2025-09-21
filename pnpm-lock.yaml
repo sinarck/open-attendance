@@ -77,6 +77,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      ky:
+        specifier: ^1.10.0
+        version: 1.10.0
       lucide-react:
         specifier: ^0.543.0
         version: 0.543.0(react@19.1.0)
@@ -3182,6 +3185,10 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  ky@1.10.0:
+    resolution: {integrity: sha512-YRPCzHEWZffbfvmRrfwa+5nwBHwZuYiTrfDX0wuhGBPV0pA/zCqcOq93MDssON/baIkpYbvehIX5aLpMxrRhaA==}
+    engines: {node: '>=18'}
 
   kysely@0.28.7:
     resolution: {integrity: sha512-u/cAuTL4DRIiO2/g4vNGRgklEKNIj5Q3CG7RoUB5DV5SfEC2hMvPxKi0GWPmnzwL2ryIeud2VTcEEmqzTzEPNw==}
@@ -7162,6 +7169,8 @@ snapshots:
   kleur@3.0.3: {}
 
   kleur@4.1.5: {}
+
+  ky@1.10.0: {}
 
   kysely@0.28.7: {}
 

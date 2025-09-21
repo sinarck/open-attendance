@@ -1,114 +1,86 @@
-# BPA Attendance System
+## Attendance (QR-based check-in)
 
-## Chromebook geolocation bypass (v1)
+Fast, geofenced, fraud‑resistant attendance for large groups. Rotating QR tokens, short TTLs, device gating, and clear UX. Designed to process ~500 check‑ins in ~20 minutes.
 
-When managed Chromebooks block `navigator.geolocation`, the app exposes a Chromebook Bypass flow:
+### Features
 
-- Client detects Chrome OS and shows a "Use Chromebook Bypass" button when geolocation fails.
-- Server endpoint `checkin.verifyAndRecordChromebook` verifies the QR token, enforces single-use nonce and device fingerprint uniqueness, and records attendance with `method: "override"` and no coordinates.
-- Bypass is protected by an environment flag.
+- **Rotating QR tokens**: HS256 JWTs with TTL ≈ 135s, refreshed every 15s.
+- **Single‑use tokens**: nonce consumption keyed to device fingerprint.
+- **Geofenced check‑ins**: Haversine distance with 10m radius buffer and ≤110m accuracy.
+- **Directory validation**: 6‑digit user ID (`members.club_id`) when `meetings.strict`.
+- **One device per meeting**: enforced via `used_device_fingerprint`.
+- **Chromebook bypass (guarded)**: ChromeOS‑only, records `method: "override"`.
+- **Auth‑protected kiosk**: only authenticated staff can mint tokens.
+- **Typed API errors**: tRPC responses include `data.appCode` for precise handling.
 
-Environment variable:
+### Tech stack
 
-```
-ALLOW_CHROMEBOOK_BYPASS=true
-```
+- **App**: Next.js 15 (App Router), React 19, shadcn/ui, Tailwind CSS v4.
+- **API**: tRPC v11 at `/api/trpc`, SuperJSON.
+- **Data**: Drizzle ORM + libSQL/Turso (SQLite).
+- **Auth**: better-auth at `/api/auth/[...all]`.
+- **Testing**: Playwright.
+- **Monitoring**: Sentry (manual setup present).
 
-Notes and risks:
+### Repository layout
 
-- Only permitted on ChromeOS (checked via User-Agent).
-- Still relies on QR token TTL and nonce uniqueness; it skips geofence checks, so enable only when necessary for deployments with managed ChromeOS.
-- All bypass entries are auditable via `method = "override"` and `notes = "Chromebook bypass"`.
+- `src/app/check-in` — pages for the attendee flow.
+- `src/routers/meeting.ts` — `generateToken` (protected kiosk token).
+- `src/routers/checkin.ts` — verify token, geofence, device/dup checks, insert; Chromebook path.
+- `src/trpc` — context, procedures, client wiring.
+- `src/db/schema` — Drizzle tables (`meetings`, `members`, `attendance`, etc.).
+- `src/config/meeting.ts` — TTL, refresh cadence, and thresholds.
+- `src/config/geo.ts` — browser geolocation options.
 
-Fast, secure QR-based attendance for ~500 attendees in ~20 minutes. Single Next.js app with short-lived QR tokens, geofenced check-ins, and anti-fraud controls.
-
-## Highlights
-
-- QR codes rotate on a short cadence with short-lived JWTs
-- Single-use tokens via nonce consumption
-- Geofenced check-ins (Haversine + accuracy thresholds + buffer)
-- Directory validation by 6-digit user ID
-- Device fingerprint gate (one device per meeting)
-- Clear user-facing messages; internal codes not exposed
-
-## Tech Stack
-
-- Runtime/Tooling: Bun, Biome, Tailwind CSS 4
-- App: Next.js 15 (App Router), React 19, shadcn/ui
-- Data: Drizzle ORM (libSQL/Turso driver)
-- API: tRPC v11 (Next.js route handler at `/api/trpc`), SuperJSON
-- Auth: better-auth (Next.js handler at `src/app/api/auth/[...all]/route.ts`)
-- QR: qrcode.react
-
-## Project Layout
-
-- `src/app/check-in/page.tsx` – check-in flow (geolocation + user ID + fingerprint)
-- `src/routers/meeting.ts` – QR token generator (protected)
-- `src/routers/checkin.ts` – verify token, geofence, directory, device-limit, insert
-- `src/trpc` – tRPC context, client, and router wiring
-- `src/db/schema` – Drizzle schema (auth + attendance)
-- `src/config/meeting.ts` – token TTL, refresh cadence, thresholds
-- `src/config/geo.ts` – geolocation options used by the hook
-- `src/hooks` – `use-geolocation`, `use-fingerprint`, etc.
-
-## Data Model (Drizzle / SQLite)
+### Data model (SQLite)
 
 - `meetings(id, name, description, slug, start_at, end_at, center_lat, center_lng, radius_m, active, strict, created_at, updated_at)`
 - `members(id, name, club_id UNIQUE, auth_user_id, created_at, updated_at)`
+- `attendance(id, meeting_id, member_id, check_in_at, check_in_lat, check_in_lng, distance_m, method, status, notes, created_at, updated_at)` — UNIQUE(member_id, meeting_id)
 - `used_token_nonce(nonce PRIMARY KEY, meeting_id, kiosk_id, consumed_at)`
-- `used_device_fingerprint(fingerprint, meeting_id, member_id, first_used_at)`
-  - Unique per meeting: `(meeting_id, fingerprint)`
-- `attendance(id, meeting_id, member_id, check_in_at, check_in_lat, check_in_lng, distance_m, method, status, notes, created_at, updated_at)`
-  - Unique: `(member_id, meeting_id)`
+- `used_device_fingerprint(fingerprint, meeting_id, member_id, first_used_at)` — UNIQUE(meeting_id, fingerprint)
 
-## How It Works
+### How it works (high level)
 
-1. Staff calls `meeting.generateToken` every `meetingConfig.refreshIntervalMs` (~15s).
-2. QR value is a URL `/check-in?token=JWT`. JWT payload includes `{ meetingId, kioskId, nonce, issuedAt }` and is HS256-signed; TTL is `meetingConfig.qrTokenTtlSeconds` (75s by default).
-3. Attendee opens `/check-in`, grants location, enters 6‑digit user ID; a local device fingerprint is captured.
-4. API verifies:
-   - JWT signature/expiration; nonce single-use (insert into `used_token_nonce`)
-   - Meeting active and time-valid
-   - Inside geofence: Haversine distance ≤ `radius_m + 10m` and accuracy ≤ `100m + 10m`
-   - `members` contains the provided `club_id` (if `meetings.strict`)
-   - Device fingerprint unused for this meeting
-   - Idempotent insert into `attendance` (unique `(member_id, meeting_id)`)
-5. Returns `{ status: "ok" }`; duplicates or invalid states surface friendly messages.
+1. Staff calls `meeting.generateToken` (auth required). Payload: `{ meetingId, kioskId, nonce, issuedAt }`.
+2. Attendee visits `/check-in?token=…`, shares location, enters 6‑digit ID; device fingerprint is captured.
+3. Server verifies signature/expiry, enforces single‑use nonce, checks geofence + accuracy, validates directory, prevents duplicates and reused devices, and inserts attendance.
+4. Chromebook path skips geo checks but logs `method: "override"` with auditability.
 
-## Configuration
+### Configuration
 
 - `src/config/meeting.ts`
-  - `qrTokenTtlSeconds` – JWT expiry for QR tokens
-  - `iatSkewSeconds` – clock skew tolerance (validation primarily via exp)
-  - `maxAccuracyMeters`, `radiusBufferMeters`, `refreshIntervalMs`
-- `src/config/geo.ts`
-  - `enableHighAccuracy`, `timeoutMs`, `maximumAgeMs`, `watchImprovementMs`, `targetAccuracyM`
+  - `qrTokenTtlSeconds`: 135 (120 + 15s skew offset).
+  - `refreshIntervalMs`: 15_000 (recommended token refresh cadence).
+  - `maxAccuracyMeters`: 100; `radiusBufferMeters`: 10; `iatSkewSeconds`: 10.
+- `src/config/geo.ts`: `enableHighAccuracy`, `timeoutMs`, `maximumAgeMs`, `watchImprovementMs`, `targetAccuracyM`.
 
-## Environment Variables
+### Environment
 
-- `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` – libSQL/Turso
-- `QR_CODE_SECRET` – HS256 signing secret for QR tokens
-- `NEXT_PUBLIC_APP_URL` – used in `trustedOrigins` for auth
+- `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` — libSQL/Turso connection.
+- `QR_CODE_SECRET` — HS256 signing secret for QR tokens.
+- `NEXT_PUBLIC_APP_URL` — used by auth.
+- `ALLOW_CHROMEBOOK_BYPASS` — `true` to enable Chromebook flow (default off).
 
-## Install & Run
+### Install and run
 
 ```bash
-# from repo root
-bun install
+# install deps
+pnpm install
 
-# Push schema to the database
-bun run db:push
+# push schema
+pnpm run db:push
 
-# (Optional) Inspect with Drizzle Studio
-bun run db:studio
+# optional: Drizzle Studio
+pnpm run db:studio
 
-# Start the app (Next.js + tRPC routes)
-bun run dev
+# start dev server (Next.js + tRPC routes)
+pnpm run dev
 ```
 
-## Seeding
+### Seeding
 
-Insert known 6‑digit user IDs into `members` (the `club_id` column):
+Add members (IDs are 6‑digit strings in `club_id`):
 
 ```sql
 INSERT INTO members (name, club_id) VALUES
@@ -116,7 +88,7 @@ INSERT INTO members (name, club_id) VALUES
 ('Jane Smith', '654321');
 ```
 
-Insert an active meeting (times are Unix epoch seconds in SQLite):
+Create an active meeting (timestamps in seconds):
 
 ```sql
 INSERT INTO meetings (name, start_at, end_at, center_lat, center_lng, radius_m, active, strict)
@@ -132,17 +104,28 @@ VALUES (
 );
 ```
 
-## Error Handling
+### Testing
 
-- Human-readable messages are returned; internal app codes are attached server-side
-- Frontend shows:
-  - success: first-time check-in
-  - warning: already checked-in
-  - error: validation/geofence/token/device errors
+- Headless E2E: `pnpm run test:e2e`
+- UI mode: `pnpm run test:e2e:ui`
+- Report: `pnpm run test:e2e:report`
 
-## Security Notes
+E2E runs with a separate SQLite DB (`file:.tmp/e2e.db`) and auto‑sets required env (see `playwright.config.ts`).
 
-- JWTs are short-lived and single-use (nonce table)
-- Geofence enforced with accuracy constraints
-- One device per meeting (used device fingerprint table)
-- No IP/UA hashing in the core path (can be added externally)
+### Chromebook geolocation bypass
+
+When managed Chromebooks block `navigator.geolocation`, enable the guarded flow:
+
+```bash
+ALLOW_CHROMEBOOK_BYPASS=true
+```
+
+- Allowed only on ChromeOS (checked via User‑Agent).
+- Still enforces token TTL, single‑use nonce, and device uniqueness.
+- Records `method: "override"` and `notes: "Chromebook bypass"` for audit.
+
+### Security notes
+
+- Short‑lived, single‑use tokens (nonce table; device‑keyed consumption).
+- Geofence + accuracy checks; one device per meeting.
+- Idempotent inserts via unique keys; clear app codes for client handling.
