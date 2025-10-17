@@ -41,18 +41,21 @@ export default function CheckinPage() {
   const params = useSearchParams();
   const router = useRouter();
   const token = useMemo(() => params.get("token") ?? "", [params]);
+
   const { reading: geo, error: geoError } = useGeolocation(Boolean(token));
   const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
   const { remainingMs, formatted, isExpired } = useTokenCountdown(token);
+  const { openLocationSettings, steps, ctaLabel } = usePlatformHelp();
+
   const formSchema = z.object({
     userId: z.string().regex(/^\d{6}$/, "User ID must be exactly 6 digits"),
   });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { userId: "" },
     mode: "onChange",
   });
-  const { openLocationSettings, steps, ctaLabel } = usePlatformHelp();
 
   const mutation = trpc.checkin.verifyAndRecord.useMutation({
     onSuccess: (data) => {
@@ -104,8 +107,6 @@ export default function CheckinPage() {
     },
     [chromebookBypass, deviceFingerprint, geo, isChromeOS, mutation, token],
   );
-
-  // Chromebook bypass is auto-invoked in onSubmit when detected
 
   if (!token) {
     return (

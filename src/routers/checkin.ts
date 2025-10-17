@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
+import z from "zod";
 import db from "@/db";
 import {
   attendance,
@@ -17,43 +18,50 @@ import type {
 } from "@/types/trpc";
 import { haversineMeters } from "@/utils/location";
 
+const verifyAndRecordInputSchema = z.object({
+  token: z.string(),
+  userId: z.string(),
+  deviceFingerprint: z.string(),
+  geo: z.object({
+    lat: z.number(),
+    lng: z.number(),
+    accuracyM: z.number(),
+  }),
+}) as z.ZodType<VerifyAndRecordInput>;
+
+const verifyAndRecordChromebookInputSchema = z.object({
+  token: z.string(),
+  userId: z.string(),
+  deviceFingerprint: z.string(),
+}) as z.ZodType<VerifyAndRecordChromebookInput>;
+
+const jwtPayloadSchema = z
+  .object({
+    meetingId: z
+      .union([z.number(), z.string().regex(/^\d+$/)])
+      .transform((val) => (typeof val === "number" ? val : Number(val))),
+    nonce: z.string().optional(),
+    jti: z.string().optional(),
+    kioskId: z.string().optional(),
+    iat: z.number().optional(),
+  })
+  .transform((data) => ({
+    meetingId: data.meetingId,
+    nonce: data.nonce ?? data.jti ?? "",
+    kioskId: data.kioskId,
+    iat: data.iat,
+  }));
+
 export const checkinRouter = createTRPCRouter({
   verifyAndRecord: publicProcedure
-    .input((val) => {
-      const v = val as Partial<VerifyAndRecordInput> | null | undefined;
-      if (
-        !v ||
-        typeof v.token !== "string" ||
-        typeof v.userId !== "string" ||
-        typeof v.deviceFingerprint !== "string" ||
-        !v.geo ||
-        typeof v.geo.lat !== "number" ||
-        typeof v.geo.lng !== "number" ||
-        typeof v.geo.accuracyM !== "number"
-      ) {
-        fail("BAD_REQUEST", "BAD_REQUEST", "Invalid input. Try again.");
-      }
-      return v as VerifyAndRecordInput;
-    })
+    .input(verifyAndRecordInputSchema)
     .mutation(async ({ input }): Promise<VerifyAndRecordOutput> => {
-      let payload: {
-        meetingId?: number | string;
-        kioskId?: string;
-        nonce?: string;
-        jti?: string;
-        iat?: number;
-      } | null = null;
+      let rawPayload: unknown;
 
       try {
-        payload = jwt.verify(input.token, process.env.QR_CODE_SECRET ?? "", {
+        rawPayload = jwt.verify(input.token, process.env.QR_CODE_SECRET ?? "", {
           algorithms: ["HS256"],
-        }) as {
-          meetingId?: number | string;
-          kioskId?: string;
-          nonce?: string;
-          jti?: string;
-          iat?: number;
-        };
+        });
       } catch {
         fail(
           "UNAUTHORIZED",
@@ -62,28 +70,23 @@ export const checkinRouter = createTRPCRouter({
         );
       }
 
-      const raw = payload ?? {};
-      const meetingIdStr =
-        typeof raw.meetingId === "string" ? raw.meetingId : undefined;
-      const meetingIdNum =
-        typeof raw.meetingId === "number"
-          ? raw.meetingId
-          : meetingIdStr && /^\d+$/.test(meetingIdStr)
-            ? Number(meetingIdStr)
-            : undefined;
-      const nonce =
-        typeof raw.nonce === "string"
-          ? raw.nonce
-          : typeof raw.jti === "string"
-            ? raw.jti
-            : undefined;
-      const kioskId = raw.kioskId;
-      if (meetingIdNum === undefined || !nonce)
+      const parseResult = jwtPayloadSchema.safeParse(rawPayload);
+      if (!parseResult.success) {
         fail(
           "BAD_REQUEST",
           "TOKEN_MALFORMED",
           "Token malformed. Please scan the QR code again.",
         );
+      }
+
+      const { meetingId: meetingIdNum, nonce, kioskId } = parseResult.data;
+      if (!nonce) {
+        fail(
+          "BAD_REQUEST",
+          "TOKEN_MALFORMED",
+          "Token malformed. Please scan the QR code again.",
+        );
+      }
 
       const [meeting] = await db
         .select()
@@ -208,21 +211,7 @@ export const checkinRouter = createTRPCRouter({
       };
     }),
   verifyAndRecordChromebook: publicProcedure
-    .input((val) => {
-      const v = val as
-        | Partial<VerifyAndRecordChromebookInput>
-        | null
-        | undefined;
-      if (
-        !v ||
-        typeof v.token !== "string" ||
-        typeof v.userId !== "string" ||
-        typeof v.deviceFingerprint !== "string"
-      ) {
-        fail("BAD_REQUEST", "BAD_REQUEST", "Invalid input. Try again.");
-      }
-      return v as VerifyAndRecordChromebookInput;
-    })
+    .input(verifyAndRecordChromebookInputSchema)
     .mutation(
       async ({ input, ctx }): Promise<VerifyAndRecordChromebookOutput> => {
         const allowBypass =
@@ -243,24 +232,16 @@ export const checkinRouter = createTRPCRouter({
             "Chromebook bypass allowed only on ChromeOS.",
           );
 
-        let payload: {
-          meetingId?: number | string;
-          kioskId?: string;
-          nonce?: string;
-          jti?: string;
-          iat?: number;
-        } | null = null;
+        let rawPayload: unknown;
 
         try {
-          payload = jwt.verify(input.token, process.env.QR_CODE_SECRET ?? "", {
-            algorithms: ["HS256"],
-          }) as {
-            meetingId?: number | string;
-            kioskId?: string;
-            nonce?: string;
-            jti?: string;
-            iat?: number;
-          };
+          rawPayload = jwt.verify(
+            input.token,
+            process.env.QR_CODE_SECRET ?? "",
+            {
+              algorithms: ["HS256"],
+            },
+          );
         } catch {
           fail(
             "UNAUTHORIZED",
@@ -269,33 +250,27 @@ export const checkinRouter = createTRPCRouter({
           );
         }
 
-        const raw = payload ?? {};
-        const meetingIdStr =
-          typeof raw.meetingId === "string" ? raw.meetingId : undefined;
-        const meetingIdNum =
-          typeof raw.meetingId === "number"
-            ? raw.meetingId
-            : meetingIdStr && /^\d+$/.test(meetingIdStr)
-              ? Number(meetingIdStr)
-              : undefined;
-        const nonce =
-          typeof raw.nonce === "string"
-            ? raw.nonce
-            : typeof raw.jti === "string"
-              ? raw.jti
-              : undefined;
-        const kioskId = raw.kioskId;
-        const _iat = raw.iat;
-
-        if (meetingIdNum === undefined || !nonce)
+        const parseResult = jwtPayloadSchema.safeParse(rawPayload);
+        if (!parseResult.success) {
           fail(
             "BAD_REQUEST",
             "TOKEN_MALFORMED",
             "Token malformed. Please scan the QR code again.",
           );
+        }
 
-        if (!kioskId)
+        const { meetingId: meetingIdNum, nonce, kioskId } = parseResult.data;
+        if (!nonce) {
+          fail(
+            "BAD_REQUEST",
+            "TOKEN_MALFORMED",
+            "Token malformed. Please scan the QR code again.",
+          );
+        }
+
+        if (!kioskId) {
           fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token missing kiosk id.");
+        }
 
         const [meeting] = await db
           .select()
