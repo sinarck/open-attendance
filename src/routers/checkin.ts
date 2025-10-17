@@ -7,7 +7,6 @@ import {
   meetings,
   members,
   usedDeviceFingerprint,
-  usedTokenNonce,
 } from "@/db/schema/schema";
 import { createTRPCRouter, fail, publicProcedure } from "@/trpc/init";
 import type {
@@ -35,22 +34,13 @@ const verifyAndRecordChromebookInputSchema = z.object({
   deviceFingerprint: z.string(),
 }) as z.ZodType<VerifyAndRecordChromebookInput>;
 
-const jwtPayloadSchema = z
-  .object({
-    meetingId: z
-      .union([z.number(), z.string().regex(/^\d+$/)])
-      .transform((val) => (typeof val === "number" ? val : Number(val))),
-    nonce: z.string().optional(),
-    jti: z.string().optional(),
-    kioskId: z.string().optional(),
-    iat: z.number().optional(),
-  })
-  .transform((data) => ({
-    meetingId: data.meetingId,
-    nonce: data.nonce ?? data.jti ?? "",
-    kioskId: data.kioskId,
-    iat: data.iat,
-  }));
+const jwtPayloadSchema = z.object({
+  meetingId: z
+    .union([z.number(), z.string().regex(/^\d+$/)])
+    .transform((val) => (typeof val === "number" ? val : Number(val))),
+  kioskId: z.string().optional(),
+  iat: z.number().optional(),
+});
 
 export const checkinRouter = createTRPCRouter({
   verifyAndRecord: publicProcedure
@@ -79,14 +69,7 @@ export const checkinRouter = createTRPCRouter({
         );
       }
 
-      const { meetingId: meetingIdNum, nonce, kioskId } = parseResult.data;
-      if (!nonce) {
-        fail(
-          "BAD_REQUEST",
-          "TOKEN_MALFORMED",
-          "Token malformed. Please scan the QR code again.",
-        );
-      }
+      const { meetingId: meetingIdNum } = parseResult.data;
 
       const [meeting] = await db
         .select()
@@ -161,16 +144,7 @@ export const checkinRouter = createTRPCRouter({
         );
 
       try {
-        const derivedNonce = `${nonce}:${input.deviceFingerprint}`;
-
         await db.transaction(async (tx) => {
-          await tx.insert(usedTokenNonce).values({
-            nonce: derivedNonce,
-            meetingId: meetingIdNum,
-            kioskId: kioskId || "unknown",
-            consumedAt: new Date(),
-          });
-
           await tx.insert(usedDeviceFingerprint).values({
             fingerprint: input.deviceFingerprint,
             meetingId: meetingIdNum,
@@ -199,8 +173,8 @@ export const checkinRouter = createTRPCRouter({
         if (msg.includes("UNIQUE") || msg.includes("constraint"))
           fail(
             "CONFLICT",
-            "TOKEN_ALREADY_USED",
-            "Scanned QR code already used. Try again.",
+            "DEVICE_ALREADY_USED",
+            "Device already used to check in. Try again.",
           );
         throw e;
       }
@@ -259,15 +233,7 @@ export const checkinRouter = createTRPCRouter({
           );
         }
 
-        const { meetingId: meetingIdNum, nonce, kioskId } = parseResult.data;
-        if (!nonce) {
-          fail(
-            "BAD_REQUEST",
-            "TOKEN_MALFORMED",
-            "Token malformed. Please scan the QR code again.",
-          );
-        }
-
+        const { meetingId: meetingIdNum, kioskId } = parseResult.data;
         if (!kioskId) {
           fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token missing kiosk id.");
         }
@@ -328,15 +294,7 @@ export const checkinRouter = createTRPCRouter({
           );
 
         try {
-          const derivedNonce = `${nonce}:${input.deviceFingerprint}`;
           await db.transaction(async (tx) => {
-            await tx.insert(usedTokenNonce).values({
-              nonce: derivedNonce,
-              meetingId: meetingIdNum,
-              kioskId: kioskId || "unknown",
-              consumedAt: new Date(),
-            });
-
             await tx.insert(usedDeviceFingerprint).values({
               fingerprint: input.deviceFingerprint,
               meetingId: meetingIdNum,
@@ -379,17 +337,6 @@ export const checkinRouter = createTRPCRouter({
                 "BAD_REQUEST",
                 "DEVICE_ALREADY_USED",
                 "Device already used to check in to this meeting.",
-              );
-            }
-            if (
-              lower.includes("used_token_nonce") ||
-              lower.includes("nonce") ||
-              lower.includes("token_nonce")
-            ) {
-              fail(
-                "CONFLICT",
-                "TOKEN_ALREADY_USED",
-                "Scanned QR code already used. Try again.",
               );
             }
           }

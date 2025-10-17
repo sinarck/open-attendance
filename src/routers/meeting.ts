@@ -49,7 +49,6 @@ export const meetingRouter = createTRPCRouter({
         meetingId: meeting.id,
         kioskId,
         issuedAt: Math.floor(Date.now() / 1000),
-        nonce: crypto.randomUUID(),
       } as const;
 
       const token = jwt.sign(payload, process.env.QR_CODE_SECRET, {

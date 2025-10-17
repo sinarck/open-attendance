@@ -3,17 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "db:ensure-indexes": "bun tsx scripts/ensure-app-indexes.ts",
+    "db:create-missing-index": "bun tsx scripts/create-missing-index.ts",
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "dev:e2e": "E2E_DB=${E2E_DB:-file:.tmp/e2e.db} TURSO_DATABASE_URL=$E2E_DB TURSO_AUTH_TOKEN=local QR_CODE_SECRET=testsecret NEXT_PUBLIC_APP_URL=http://localhost:3000 pnpm exec drizzle-kit push && next dev --turbopack",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -49,6 +47,7 @@
     "react-device-detect": "^2.2.3",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
+    "remove": "^0.1.5",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "superjson": "^2.2.2",
@@ -58,7 +57,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
-    "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.87.4",
     "@types/js-cookie": "^3.0.6",
@@ -66,7 +64,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.4",
+    "drizzle-kit": "^0.31.5",
     "js-cookie": "^3.0.5",
     "shadcn": "^3.3.1",
     "store2": "^2.14.4",
