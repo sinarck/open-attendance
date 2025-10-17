@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
-  email: z.string().email("Enter a valid email"),
+  email: z.email("Enter a valid email"),
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -49,7 +49,6 @@ export default function SignupPage() {
         name: values.name,
         email: values.email,
         password: values.password,
-        // Username plugin augments email sign-up; include username here
         username: values.username,
         callbackURL: "/",
       },
@@ -66,6 +65,7 @@ export default function SignupPage() {
         },
       },
     );
+
     if (!error) {
       // no-op; success handled in callback
     }
