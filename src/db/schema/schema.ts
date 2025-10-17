@@ -65,7 +65,6 @@ export const members = sqliteTable(
       .notNull(),
   },
   (table) => ({
-    clubIdUq: uniqueIndex("members_club_id_uq").on(table.clubId),
     authUserIdx: index("members_auth_user_idx").on(table.authUserId),
   }),
 );
@@ -113,18 +112,6 @@ export const attendance = sqliteTable(
     checkInIdx: index("attendance_check_in_idx").on(table.checkInAt),
   }),
 );
-
-export const usedTokenNonce = sqliteTable("used_token_nonce", {
-  nonce: text("nonce").primaryKey(),
-  meetingId: integer("meeting_id")
-    .notNull()
-    .references(() => meetings.id, { onDelete: "cascade" }),
-  kioskId: text("kiosk_id"),
-  consumedAt: integer("consumed_at", { mode: "timestamp" })
-    .default(sql`0`)
-    .$default(() => new Date())
-    .notNull(),
-});
 
 export const usedDeviceFingerprint = sqliteTable(
   "used_device_fingerprint",

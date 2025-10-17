@@ -5,7 +5,7 @@ Fast, geofenced, fraud‑resistant attendance for large groups. Rotating QR toke
 ### Features
 
 - **Rotating QR tokens**: HS256 JWTs with TTL ≈ 135s, refreshed every 15s.
-- **Single‑use tokens**: nonce consumption keyed to device fingerprint.
+- **Device-based fraud prevention**: One device per meeting via device fingerprint.
 - **Geofenced check‑ins**: Haversine distance with 10m radius buffer and ≤110m accuracy.
 - **Directory validation**: 6‑digit user ID (`members.club_id`) when `meetings.strict`.
 - **One device per meeting**: enforced via `used_device_fingerprint`.
@@ -37,14 +37,13 @@ Fast, geofenced, fraud‑resistant attendance for large groups. Rotating QR toke
 - `meetings(id, name, description, slug, start_at, end_at, center_lat, center_lng, radius_m, active, strict, created_at, updated_at)`
 - `members(id, name, club_id UNIQUE, auth_user_id, created_at, updated_at)`
 - `attendance(id, meeting_id, member_id, check_in_at, check_in_lat, check_in_lng, distance_m, method, status, notes, created_at, updated_at)` — UNIQUE(member_id, meeting_id)
-- `used_token_nonce(nonce PRIMARY KEY, meeting_id, kiosk_id, consumed_at)`
 - `used_device_fingerprint(fingerprint, meeting_id, member_id, first_used_at)` — UNIQUE(meeting_id, fingerprint)
 
 ### How it works (high level)
 
-1. Staff calls `meeting.generateToken` (auth required). Payload: `{ meetingId, kioskId, nonce, issuedAt }`.
+1. Staff calls `meeting.generateToken` (auth required). Payload: `{ meetingId, kioskId, issuedAt }`.
 2. Attendee visits `/check-in?token=…`, shares location, enters 6‑digit ID; device fingerprint is captured.
-3. Server verifies signature/expiry, enforces single‑use nonce, checks geofence + accuracy, validates directory, prevents duplicates and reused devices, and inserts attendance.
+3. Server verifies signature/expiry, checks geofence + accuracy, validates directory, prevents duplicates and reused devices, and inserts attendance.
 4. Chromebook path skips geo checks but logs `method: "override"` with auditability.
 
 ### Configuration
@@ -121,11 +120,11 @@ ALLOW_CHROMEBOOK_BYPASS=true
 ```
 
 - Allowed only on ChromeOS (checked via User‑Agent).
-- Still enforces token TTL, single‑use nonce, and device uniqueness.
+- Still enforces token TTL and device uniqueness.
 - Records `method: "override"` and `notes: "Chromebook bypass"` for audit.
 
 ### Security notes
 
-- Short‑lived, single‑use tokens (nonce table; device‑keyed consumption).
+- Short‑lived tokens with device fingerprint enforcement.
 - Geofence + accuracy checks; one device per meeting.
 - Idempotent inserts via unique keys; clear app codes for client handling.
