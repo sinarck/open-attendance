@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import { trpc } from "@/trpc/client";
 
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
-  const router = useRouter();
   const [broadcasting, setBroadcasting] = useState(false);
 
   const { data: meetingToken, isPending: isMeetingTokenPending } =
@@ -64,8 +62,13 @@ export default function Home() {
     );
   }
 
+  const shortUrl =
+    broadcasting && typeof window !== "undefined"
+      ? `${window.location.origin}/go`
+      : "";
+
   const url =
-    broadcasting && typeof window !== "undefined" && meetingToken?.token
+    shortUrl && meetingToken?.token
       ? `${window.location.origin}/check-in?token=${encodeURIComponent(meetingToken.token)}`
       : "";
 
@@ -90,31 +93,18 @@ export default function Home() {
             >
               {broadcasting ? "Stop checking in" : "Start checking in"}
             </Button>
-            {process.env.NODE_ENV !== "production" ? (
-              <Button
-                onClick={() => {
-                  if (meetingToken?.token && broadcasting) {
-                    router.push(`/check-in?token=${meetingToken?.token}`);
-                  }
-                }}
-                disabled={!broadcasting || !meetingToken?.token}
-                variant="outline"
-              >
-                Dev: Open Check-In
-              </Button>
-            ) : null}
           </div>
         </header>
 
         {/* QR Area */}
-        <section className="relative flex items-center justify-center">
-          <div className="aspect-square w-[min(85vmin,75svh)] max-w-full">
+        <section className="relative flex items-center justify-center min-h-0 px-4">
+          <div className="aspect-square w-[min(82vmin,68svh)] max-w-full">
             {url ? (
-              <div className="w-full h-full rounded-xl border bg-background p-4">
+              <div className="w-full h-full rounded-xl border bg-background p-3 sm:p-4">
                 <QRCodeSVG
                   value={url}
                   className="w-full h-full"
-                  includeMargin
+                  marginSize={1}
                 />
               </div>
             ) : (
@@ -126,6 +116,16 @@ export default function Home() {
             )}
           </div>
         </section>
+        {broadcasting && shortUrl ? (
+          <div className="mt-1 px-4 text-center">
+            <a
+              href={shortUrl}
+              className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight leading-tight break-all select-all font-mono"
+            >
+              {shortUrl}
+            </a>
+          </div>
+        ) : null}
       </div>
     </div>
   );
