@@ -3,10 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "db:ensure-indexes": "bun tsx scripts/ensure-app-indexes.ts",
-    "db:create-missing-index": "bun tsx scripts/create-missing-index.ts",
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
