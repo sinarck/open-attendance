@@ -6,6 +6,20 @@ export type GenerateTokenOutput = {
   token: string;
 };
 
+export type CurrentMeetingOutput = {
+  id: number;
+  name: string;
+  description: string | null;
+  slug: string | null;
+  startAt: Date;
+  endAt: Date;
+  centerLat: number;
+  centerLng: number;
+  radiusM: number;
+  strict: boolean;
+  active: boolean;
+};
+
 // Check-in router
 export type VerifyAndRecordInput = {
   token: string;
