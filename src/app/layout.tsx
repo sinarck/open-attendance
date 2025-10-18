@@ -40,7 +40,7 @@ export default function RootLayout({
               <Analytics />
             </main>
             <footer className="border-t flex-shrink-0">
-              <div className="mx-auto w-full max-w-screen-2xl px-4 md:px-6 lg:px-8 py-6 text-center text-sm text-muted-foreground">
+              <div className="mx-auto w-full max-w-screen-2xl px-4 md:px-6 lg:px-8 py-4 text-center text-sm text-muted-foreground">
                 Designed and built by Aadi Sanghvi
               </div>
             </footer>
