@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-
 export default function NotFound() {
   return (
     <div className="flex flex-1 items-center justify-center py-16">
