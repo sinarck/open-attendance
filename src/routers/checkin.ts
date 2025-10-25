@@ -233,10 +233,7 @@ export const checkinRouter = createTRPCRouter({
           );
         }
 
-        const { meetingId: meetingIdNum, kioskId } = parseResult.data;
-        if (!kioskId) {
-          fail("BAD_REQUEST", "TOKEN_MALFORMED", "Token missing kiosk id.");
-        }
+        const { meetingId: meetingIdNum } = parseResult.data;
 
         const [meeting] = await db
           .select()
