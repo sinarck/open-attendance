@@ -118,7 +118,7 @@ export default function Home() {
         </section>
 
         {broadcasting && shortUrl && (
-          <div className="mt-1 px-4 text-center">
+          <div className="mt-1 mb-6 md:mb-8 px-4 text-center">
             <a
               href={shortUrl}
               className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight leading-tight break-all select-all font-mono"
