@@ -116,7 +116,8 @@ export default function Home() {
             )}
           </div>
         </section>
-        {broadcasting && shortUrl ? (
+
+        {broadcasting && shortUrl && (
           <div className="mt-1 px-4 text-center">
             <a
               href={shortUrl}
@@ -125,7 +126,7 @@ export default function Home() {
               {shortUrl}
             </a>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
