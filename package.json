@@ -8,8 +8,10 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
+    "test": "bun test",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:dev": "turso db shell attendance .dump > .tmp/dump.sql && sqlite3 .tmp/local.db < .tmp/dump.sql"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

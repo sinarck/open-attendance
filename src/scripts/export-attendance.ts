@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { writeFile } from "node:fs/promises";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { attendance, meetings, members } from "@/db/schema/schema";
@@ -113,7 +114,12 @@ async function main() {
 
   const csv = toCsv(rows);
   if (args.output) {
-    await Bun.write(args.output, csv);
+    // Use Bun.write if available (Bun runtime), otherwise use Node.js fs
+    if (typeof Bun !== "undefined") {
+      await Bun.write(args.output, csv);
+    } else {
+      await writeFile(args.output, csv, "utf8");
+    }
     // eslint-disable-next-line no-console
     console.log(`Wrote ${rows.length} rows to ${args.output}`);
   } else {
