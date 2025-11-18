@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { osName } from "react-device-detect";
 import { geoConfig } from "@/config/geo";
 import { useGeolocationStore } from "@/stores/geolocation";
@@ -10,6 +10,31 @@ import type {
 
 const DEFAULTS: Required<UseGeolocationOptions> =
   geoConfig as Required<UseGeolocationOptions>;
+
+const MAX_TRANSIENT_RESTARTS = 3;
+
+const createAttemptId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      // ignore and fall back below
+    }
+  }
+  return `geo-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+};
+
+const isTransientLocationError = (err: GeolocationPositionError) => {
+  const message = err.message?.toLowerCase() ?? "";
+  return (
+    err.code === err.POSITION_UNAVAILABLE ||
+    message.includes("kclerrorlocationunknown") ||
+    message.includes("kclerrordomain") ||
+    message.includes("error domain error 0")
+  );
+};
 
 export function useGeolocation(
   enabled: boolean,
@@ -42,14 +67,27 @@ export function useGeolocation(
   const improveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
   const bestRef = useRef<GeolocationReading | null>(null);
+  const attemptIdRef = useRef<string | null>(null);
+  const retryCountRef = useRef(0);
+  const optionsRef = useRef<PositionOptions>({
+    enableHighAccuracy: DEFAULTS.enableHighAccuracy,
+    timeout: DEFAULTS.timeoutMs,
+    maximumAge: DEFAULTS.maximumAgeMs,
+  });
 
-  const clearTimersAndWatch = useCallback(() => {
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+
+  const clearWatch = useCallback(() => {
     if (watchIdRef.current !== null && isSupported) {
       try {
         navigator.geolocation.clearWatch(watchIdRef.current);
       } catch {}
       watchIdRef.current = null;
     }
+  }, [isSupported]);
+
+  const clearTimersAndWatch = useCallback(() => {
+    clearWatch();
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -58,7 +96,7 @@ export function useGeolocation(
       clearTimeout(improveRef.current);
       improveRef.current = null;
     }
-  }, [isSupported]);
+  }, [clearWatch]);
 
   const finalize = useCallback(
     (finalStatus: "ready" | "timeout" | "error", finalError?: string) => {
@@ -95,6 +133,24 @@ export function useGeolocation(
     [finalize, opts.targetAccuracyM, setReading],
   );
 
+  const beginWatch = useCallback(
+    (errorHandler: PositionErrorCallback) => {
+      if (!isSupported) return false;
+      clearWatch();
+      try {
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          onSuccess,
+          errorHandler,
+          optionsRef.current,
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [clearWatch, isSupported, onSuccess],
+  );
+
   const onError = useCallback(
     (err: GeolocationPositionError) => {
       if (stoppedRef.current) return;
@@ -116,9 +172,22 @@ export function useGeolocation(
               : "Location request timed out")
         );
       })();
+
+      if (
+        isTransientLocationError(err) &&
+        retryCountRef.current < MAX_TRANSIENT_RESTARTS
+      ) {
+        retryCountRef.current += 1;
+        const restarted = beginWatch(onError);
+        if (!restarted) {
+          finalize("error", msg);
+        }
+        return;
+      }
+
       finalize("error", msg);
     },
-    [finalize, setPermission],
+    [beginWatch, finalize, setPermission],
   );
 
   const request = useCallback(() => {
@@ -131,8 +200,12 @@ export function useGeolocation(
     // reset state
     stoppedRef.current = false;
     bestRef.current = null;
+    retryCountRef.current = 0;
     setError(null);
     setStatus("locating");
+    const newAttemptId = createAttemptId();
+    attemptIdRef.current = newAttemptId;
+    setAttemptId(newAttemptId);
 
     // Observe permission if supported (non-blocking)
     const navPerm = (
@@ -155,18 +228,12 @@ export function useGeolocation(
       timeout: opts.timeoutMs,
       maximumAge: opts.maximumAgeMs,
     };
+    optionsRef.current = positionOptions;
 
-    try {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        onSuccess,
-        onError,
-        positionOptions,
-      );
-    } catch (e) {
-      finalize(
-        "error",
-        e instanceof Error ? e.message : "Failed to start geolocation",
-      );
+    const started = beginWatch(onError);
+    if (!started) {
+      const errMsg = "Failed to start geolocation";
+      finalize("error", errMsg);
       return;
     }
 
@@ -185,13 +252,14 @@ export function useGeolocation(
     // Allow time for accuracy to improve, then finalize best effort
     improveRef.current = setTimeout(() => {
       if (stoppedRef.current) return;
+      if (!bestRef.current) return;
       finalize("ready");
     }, opts.watchImprovementMs);
   }, [
+    beginWatch,
     finalize,
     isSupported,
     onError,
-    onSuccess,
     opts,
     setPermission,
     setStatus,
@@ -226,5 +294,6 @@ export function useGeolocation(
     refresh: request,
     cancel,
     reset,
+    attemptId,
   } as const;
 }

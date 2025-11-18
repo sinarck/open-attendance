@@ -22,6 +22,8 @@ export const meetings = sqliteTable(
     centerLat: real("center_lat").notNull(),
     centerLng: real("center_lng").notNull(),
     radiusM: integer("radius_m").notNull(),
+    maxAccuracyM: integer("max_accuracy_m"),
+    radiusBufferM: integer("radius_buffer_m"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     strict: integer("strict", { mode: "boolean" }).notNull().default(true),
     createdAt: integer("created_at", { mode: "timestamp" })

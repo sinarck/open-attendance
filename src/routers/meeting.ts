@@ -45,6 +45,8 @@ export const meetingRouter = createTRPCRouter({
       centerLat: meeting.centerLat,
       centerLng: meeting.centerLng,
       radiusM: meeting.radiusM,
+      maxAccuracyM: meeting.maxAccuracyM ?? meetingConfig.maxAccuracyMeters,
+      radiusBufferM: meeting.radiusBufferM ?? meetingConfig.radiusBufferMeters,
       strict: meeting.strict,
       active: meeting.active,
     };
