@@ -8,6 +8,7 @@ import {
   members,
   usedDeviceFingerprint,
 } from "@/db/schema/schema";
+import { logger } from "@/lib/logger";
 import { createTRPCRouter, fail, publicProcedure } from "@/trpc/init";
 import type {
   VerifyAndRecordChromebookInput,
@@ -15,7 +16,12 @@ import type {
   VerifyAndRecordInput,
   VerifyAndRecordOutput,
 } from "@/types/trpc";
-import { haversineMeters } from "@/utils/location";
+import {
+  buildMeetingGeoPolicy,
+  haversineMeters,
+  isAccuracyAcceptable,
+  isWithinAdjustedRadius,
+} from "@/utils/location";
 
 const verifyAndRecordInputSchema = z.object({
   token: z.string(),
@@ -25,6 +31,7 @@ const verifyAndRecordInputSchema = z.object({
     lat: z.number(),
     lng: z.number(),
     accuracyM: z.number(),
+    attemptId: z.string().optional().nullable(),
   }),
 }) as z.ZodType<VerifyAndRecordInput>;
 
@@ -79,13 +86,23 @@ export const checkinRouter = createTRPCRouter({
         fail("BAD_REQUEST", "MEETING_INACTIVE", "Meeting not in progress.");
 
       // Geo checks
-      const { lat, lng, accuracyM } = input.geo;
-      if (accuracyM > 100 + 10)
+      const { lat, lng, accuracyM, attemptId: geoAttemptId } = input.geo;
+      const geoPolicy = buildMeetingGeoPolicy(meeting);
+      if (!isAccuracyAcceptable(accuracyM, geoPolicy.maxAccuracyM)) {
+        logger.warn("geo_accuracy_reject", {
+          attemptId: geoAttemptId ?? null,
+          meetingId: meeting.id,
+          userId: input.userId,
+          accuracyM,
+          maxAccuracyM: geoPolicy.maxAccuracyM,
+          radiusBufferM: geoPolicy.radiusBufferM,
+        });
         fail(
           "BAD_REQUEST",
           "LOCATION_INACCURATE",
           "Location accuracy too low.",
         );
+      }
 
       const distance = haversineMeters(
         lat,
@@ -93,8 +110,27 @@ export const checkinRouter = createTRPCRouter({
         meeting.centerLat,
         meeting.centerLng,
       );
-      if (distance > meeting.radiusM + 10)
+      const withinFence = isWithinAdjustedRadius({
+        distanceM: distance,
+        accuracyM,
+        radiusM: meeting.radiusM,
+        radiusBufferM: geoPolicy.radiusBufferM,
+      });
+      if (!withinFence) {
+        const adjustedDistance = Math.max(distance - accuracyM, 0);
+        logger.warn("geo_radius_reject", {
+          attemptId: geoAttemptId ?? null,
+          meetingId: meeting.id,
+          userId: input.userId,
+          accuracyM,
+          distanceM: distance,
+          adjustedDistanceM: adjustedDistance,
+          effectiveRadiusM: meeting.radiusM + geoPolicy.radiusBufferM,
+          radiusM: meeting.radiusM,
+          radiusBufferM: geoPolicy.radiusBufferM,
+        });
         fail("BAD_REQUEST", "NOT_IN_GEOFENCE", "Not at meeting location.");
+      }
 
       // Directory validation
       const [att] = await db

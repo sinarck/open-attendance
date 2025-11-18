@@ -16,6 +16,8 @@ export type CurrentMeetingOutput = {
   centerLat: number;
   centerLng: number;
   radiusM: number;
+  maxAccuracyM: number;
+  radiusBufferM: number;
   strict: boolean;
   active: boolean;
 };
@@ -25,7 +27,12 @@ export type VerifyAndRecordInput = {
   token: string;
   userId: string;
   deviceFingerprint: string;
-  geo: { lat: number; lng: number; accuracyM: number };
+  geo: {
+    lat: number;
+    lng: number;
+    accuracyM: number;
+    attemptId?: string | null;
+  };
 };
 
 export type VerifyAndRecordOutput = {

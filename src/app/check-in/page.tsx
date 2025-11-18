@@ -42,7 +42,11 @@ export default function CheckinPage() {
   const router = useRouter();
   const token = useMemo(() => params.get("token") ?? "", [params]);
 
-  const { reading: geo, error: geoError } = useGeolocation(Boolean(token));
+  const {
+    reading: geo,
+    error: geoError,
+    attemptId,
+  } = useGeolocation(Boolean(token));
   const { fingerprint: deviceFingerprint } = useFingerprint(Boolean(token));
   const { remainingMs, formatted, isExpired } = useTokenCountdown(token);
   const { openLocationSettings, steps, ctaLabel } = usePlatformHelp();
@@ -101,11 +105,24 @@ export default function CheckinPage() {
       mutation.mutate({
         token,
         userId: values.userId,
-        geo: { lat: geo.lat, lng: geo.lng, accuracyM: geo.accuracyM },
+        geo: {
+          lat: geo.lat,
+          lng: geo.lng,
+          accuracyM: geo.accuracyM,
+          attemptId: attemptId ?? undefined,
+        },
         deviceFingerprint,
       });
     },
-    [chromebookBypass, deviceFingerprint, geo, isChromeOS, mutation, token],
+    [
+      chromebookBypass,
+      deviceFingerprint,
+      geo,
+      isChromeOS,
+      mutation,
+      token,
+      attemptId,
+    ],
   );
 
   if (!token) {
@@ -143,7 +160,11 @@ export default function CheckinPage() {
             )}
 
             {geoError && !isChromeOS && (
-              <div className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive">
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="mb-4 p-3 rounded-md border bg-destructive/10 border-destructive/20 text-destructive"
+              >
                 <p className="text-sm">Location error: {geoError}</p>
                 <div className="text-xs mt-2 space-y-2 opacity-90">
                   <div className="flex items-center gap-2">
@@ -181,7 +202,10 @@ export default function CheckinPage() {
             )}
 
             {!geo && !geoError && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div
+                className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md"
+                aria-live="polite"
+              >
                 <p className="text-blue-600 text-sm">
                   Getting your location...
                 </p>
