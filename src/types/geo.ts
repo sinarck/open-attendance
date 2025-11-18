@@ -20,4 +20,5 @@ export type UseGeolocationOptions = Partial<{
   maximumAgeMs: number;
   watchImprovementMs: number;
   targetAccuracyM: number;
+  transientRetryLimit: number;
 }>;
