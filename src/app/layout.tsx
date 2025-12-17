@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { WebVitals } from "@/lib/axiom/client";
 import { TRPCProvider } from "@/trpc/client";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} h-screen bg-background antialiased flex flex-col overflow-hidden`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <WebVitals />
           <TRPCProvider>
             <Navbar />
             <main className="mx-auto w-full max-w-screen-2xl px-4 md:px-6 lg:px-8 flex-1 flex flex-col overflow-auto">
