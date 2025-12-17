@@ -1,7 +1,7 @@
 "use client";
 
 import { QRCodeSVG } from "qrcode.react";
-import { , useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { meetingConfig } from "@/config/meeting";
