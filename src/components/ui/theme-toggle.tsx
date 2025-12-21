@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "@/components/ui/menu";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "./skeleton";
 
 const themes = [
   { value: "system", label: "System" },
@@ -23,9 +23,10 @@ const ThemeToggle = () => {
   }, []);
 
   if (!mounted) {
+    // Prevents hydration mismatch, since `theme` is not available during SSR
     return (
       <Skeleton
-        className={buttonVariants({ size: "icon", variant: "outline" })}
+        className={buttonVariants({ size: "icon", variant: "ghost" })}
       />
     );
   }
