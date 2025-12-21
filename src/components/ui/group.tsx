@@ -2,9 +2,8 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
-
-import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const groupVariants = cva(
   "flex w-fit *:focus-visible:z-10 has-[>[data-slot=group]]:gap-2 *:has-focus-visible:z-10",
@@ -32,17 +31,16 @@ function Group({
   className?: string;
   orientation?: VariantProps<typeof groupVariants>["orientation"];
   children: React.ReactNode;
-} & React.ComponentProps<"div">) {
+} & React.ComponentProps<"fieldset">) {
   return (
-    <div
+    <fieldset
       className={cn(groupVariants({ orientation }), className)}
       data-orientation={orientation}
       data-slot="group"
-      role="group"
       {...props}
     >
       {children}
-    </div>
+    </fieldset>
   );
 }
 

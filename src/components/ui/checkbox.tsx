@@ -1,28 +1,29 @@
 "use client";
 
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
-
 import { cn } from "@/lib/utils";
 
 function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        "relative inline-flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border border-input bg-background bg-clip-padding shadow-xs outline-none ring-ring transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[3px] not-data-disabled:not-data-checked:not-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-background aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/48 data-disabled:opacity-64 sm:size-4 dark:not-data-checked:bg-input/32 dark:bg-clip-border dark:aria-invalid:ring-destructive/24 dark:not-data-disabled:not-data-checked:not-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/8%)] [[data-disabled],[data-checked],[aria-invalid]]:shadow-none",
+        "relative inline-flex size-4.5 shrink-0 items-center justify-center rounded-lg border border-input bg-background bg-clip-padding shadow-xs outline-none ring-ring transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[3px] not-data-disabled:not-data-checked:not-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-background aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/48 data-disabled:opacity-64 sm:size-4 dark:not-data-checked:bg-input/32 dark:bg-clip-border dark:aria-invalid:ring-destructive/24 dark:not-data-disabled:not-data-checked:not-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/8%)] [[data-disabled],[data-checked],[aria-invalid]]:shadow-none",
         className,
       )}
       data-slot="checkbox"
       {...props}
     >
       <CheckboxPrimitive.Indicator
-        className="-inset-px absolute flex items-center justify-center rounded-[4px] text-primary-foreground data-unchecked:hidden data-checked:bg-primary data-indeterminate:text-foreground"
+        className="-inset-px absolute flex items-center justify-center rounded-lg text-primary-foreground data-unchecked:hidden data-checked:bg-primary data-indeterminate:text-foreground"
         data-slot="checkbox-indicator"
         render={(props, state) => (
           <span {...props}>
             {state.indeterminate ? (
               <svg
+                aria-hidden="true"
                 className="size-3.5 sm:size-3"
                 fill="none"
+                focusable="false"
                 height="24"
                 stroke="currentColor"
                 strokeLinecap="round"
@@ -36,8 +37,10 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
               </svg>
             ) : (
               <svg
+                aria-hidden="true"
                 className="size-3.5 sm:size-3"
                 fill="none"
+                focusable="false"
                 height="24"
                 stroke="currentColor"
                 strokeLinecap="round"

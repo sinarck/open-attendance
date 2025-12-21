@@ -1,11 +1,9 @@
 "use client";
 
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
-
 import { cn } from "@/lib/utils";
 
 const AlertDialog = AlertDialogPrimitive.Root;
-
 const AlertDialogPortal = AlertDialogPrimitive.Portal;
 
 function AlertDialogTrigger(props: AlertDialogPrimitive.Trigger.Props) {
