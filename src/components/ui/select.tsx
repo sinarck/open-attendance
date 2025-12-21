@@ -6,7 +6,6 @@ import {
   ChevronsUpDownIcon,
   ChevronUpIcon,
 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 
 const Select = SelectPrimitive.Root;
@@ -120,6 +119,8 @@ function SelectItem({
     >
       <SelectPrimitive.ItemIndicator className="col-start-1">
         <svg
+          focusable="false"
+          aria-hidden="true"
           fill="none"
           height="24"
           stroke="currentColor"

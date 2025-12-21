@@ -1,13 +1,10 @@
 "use client";
 
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
-
 import { cn } from "@/lib/utils";
 
 const TooltipCreateHandle = TooltipPrimitive.createHandle;
-
 const TooltipProvider = TooltipPrimitive.Provider;
-
 const Tooltip = TooltipPrimitive.Root;
 
 function TooltipTrigger(props: TooltipPrimitive.Trigger.Props) {

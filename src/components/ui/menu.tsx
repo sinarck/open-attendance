@@ -6,7 +6,6 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const Menu = MenuPrimitive.Root;
-
 const MenuPortal = MenuPrimitive.Portal;
 
 function MenuTrigger(props: MenuPrimitive.Trigger.Props) {
@@ -99,6 +98,8 @@ function MenuCheckboxItem({
     >
       <MenuPrimitive.CheckboxItemIndicator className="col-start-1">
         <svg
+          focusable="false"
+          aria-hidden="true"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -137,6 +138,8 @@ function MenuRadioItem({
     >
       <MenuPrimitive.RadioItemIndicator className="col-start-1">
         <svg
+          focusable="false"
+          aria-hidden="true"
           fill="none"
           height="24"
           stroke="currentColor"

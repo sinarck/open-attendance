@@ -3,7 +3,6 @@
 import { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
 import { SearchIcon } from "lucide-react";
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import {
   Autocomplete,
   AutocompleteCollection,
@@ -15,6 +14,7 @@ import {
   AutocompleteList,
   AutocompleteSeparator,
 } from "@/components/ui/autocomplete";
+import { cn } from "@/lib/utils";
 
 const CommandInputContext = React.createContext<{
   inputRef: React.RefObject<HTMLInputElement | null> | null;
@@ -23,7 +23,6 @@ const CommandInputContext = React.createContext<{
 });
 
 const CommandDialog = CommandDialogPrimitive.Root;
-
 const CommandDialogPortal = CommandDialogPrimitive.Portal;
 
 function CommandDialogTrigger(props: CommandDialogPrimitive.Trigger.Props) {
