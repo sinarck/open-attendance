@@ -4,6 +4,10 @@ import type { NextConfig } from "next";
 import { env } from "@/lib/env";
 
 const nextConfig: NextConfig = {
+  compiler: {
+    removeConsole: true,
+  },
+  typedRoutes: true,
   reactCompiler: true,
 };
 
