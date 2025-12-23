@@ -1,7 +1,8 @@
 "use client";
 
 import { NumberField as NumberFieldPrimitive } from "@base-ui/react/number-field";
-import { MinusIcon, PlusIcon } from "lucide-react";
+import { MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -63,7 +64,7 @@ function NumberFieldDecrement({
       data-slot="number-field-decrement"
       {...props}
     >
-      <MinusIcon />
+      <HugeiconsIcon icon={MinusSignIcon} />
     </NumberFieldPrimitive.Decrement>
   );
 }
@@ -81,7 +82,7 @@ function NumberFieldIncrement({
       data-slot="number-field-increment"
       {...props}
     >
-      <PlusIcon />
+      <HugeiconsIcon icon={PlusSignIcon} />
     </NumberFieldPrimitive.Increment>
   );
 }
