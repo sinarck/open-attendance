@@ -1,9 +1,6 @@
-"use client";
-
-import { Route01Icon } from "@hugeicons/core-free-icons";
+import { Book02Icon, Route01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { BookIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -15,8 +12,6 @@ import {
 } from "@/components/ui/empty";
 
 export default function NotFound() {
-  const router = useRouter();
-
   return (
     <Empty className="flex justify-center items-center min-h-screen">
       <EmptyHeader>
@@ -30,11 +25,8 @@ export default function NotFound() {
       </EmptyHeader>
       <EmptyContent>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => router.back()}>
-            Go back
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => router.push("/")}>
-            <BookIcon />
+          <Button size="sm" variant="outline" render={<Link href="/" />}>
+            <HugeiconsIcon icon={Book02Icon} />
             Return home
           </Button>
         </div>

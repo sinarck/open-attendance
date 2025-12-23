@@ -1,10 +1,11 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
   MoreHorizontalIcon,
-} from "lucide-react";
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type * as React from "react";
 import { type Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -82,7 +83,7 @@ function PaginationPrevious({
       size="default"
       {...props}
     >
-      <ChevronLeftIcon className="sm:-ms-1" />
+      <HugeiconsIcon className="sm:-ms-1" icon={ArrowLeft01Icon} />
       <span className="max-sm:hidden">Previous</span>
     </PaginationLink>
   );
@@ -100,7 +101,7 @@ function PaginationNext({
       {...props}
     >
       <span className="max-sm:hidden">Next</span>
-      <ChevronRightIcon className="sm:-me-1" />
+      <HugeiconsIcon className="sm:-me-1" icon={ArrowRight01Icon} />
     </PaginationLink>
   );
 }
@@ -116,7 +117,7 @@ function PaginationEllipsis({
       data-slot="pagination-ellipsis"
       {...props}
     >
-      <MoreHorizontalIcon className="size-5 sm:size-4" />
+      <HugeiconsIcon className="size-5 sm:size-4" icon={MoreHorizontalIcon} />
       <span className="sr-only">More pages</span>
     </span>
   );

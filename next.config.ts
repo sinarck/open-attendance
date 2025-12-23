@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   },
   typedRoutes: true,
   reactCompiler: true,
+  serverExternalPackages: ["pino", "pino-pretty"],
+  experimental: {
+    optimizePackageImports: ["@phosphor-icons/react"],
+  },
 };
 
 export default nextConfig;
