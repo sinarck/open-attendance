@@ -23,10 +23,7 @@ export const externalLinks = {
 export const footerSections = [
   {
     title: "Product",
-    links: [
-      { href: "/features", label: "Features" },
-
-    ],
+    links: [{ href: "/features", label: "Features" }],
   },
   {
     title: "Company",
