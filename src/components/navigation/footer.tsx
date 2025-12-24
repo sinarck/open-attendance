@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { footerLinks, siteConfig } from "@/config";
+import { footerSections, siteConfig } from "@/config";
 
 function StatusIndicator() {
   return (
@@ -33,64 +33,23 @@ export function Footer() {
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-12">
-            <nav aria-label="Product">
-              <h3 className="text-sm font-medium">Product</h3>
-              <ul className="mt-3 space-y-2">
-                {footerLinks.product.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <nav aria-label="Company">
-              <h3 className="text-sm font-medium">Company</h3>
-              <ul className="mt-3 space-y-2">
-                {footerLinks.company.map((link) => (
-                  <li key={link.href}>
-                    {"external" in link ? (
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
+            {footerSections.map((section) => (
+              <nav key={section.title} aria-label={section.title}>
+                <h3 className="text-sm font-medium">{section.title}</h3>
+                <ul className="mt-3 space-y-2">
+                  {section.links.map(({ href, label }) => (
+                    <li key={href}>
                       <Link
-                        href={link.href}
+                        href={href}
                         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        {link.label}
+                        {label}
                       </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <nav aria-label="Legal">
-              <h3 className="text-sm font-medium">Legal</h3>
-              <ul className="mt-3 space-y-2">
-                {footerLinks.legal.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
         </div>
 
