@@ -25,7 +25,7 @@ export const footerSections = [
     title: "Product",
     links: [
       { href: "/features", label: "Features" },
-      { href: "/changelog", label: "Changelog" },
+
     ],
   },
   {
