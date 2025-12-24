@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/theme-toggle";
@@ -31,11 +29,11 @@ export function Navbar() {
 
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <Button size="sm" variant="ghost" render={<Link href={"/login"} />}>
+          <Button size="sm" variant="ghost" render={<Link href="/login" />}>
             Log in
           </Button>
-          <Button size="sm" render={<Link href={"/signup"} />}>
-            Sign up
+          <Button size="sm" render={<Link href="/signup" />}>
+            Get Started
           </Button>
         </div>
       </nav>
