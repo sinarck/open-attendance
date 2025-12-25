@@ -101,7 +101,7 @@ export default function LoginForm() {
             {(field) => (
               <Field invalid={field.state.meta.errors.length > 0}>
                 <FieldLabel>Password</FieldLabel>
-                <div className="relative">
+                <div className="relative w-full">
                   <Input
                     name={field.name}
                     value={field.state.value}
