@@ -1,12 +1,8 @@
 "use client";
 
-import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,124 +12,54 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { signIn, signUp } from "@/lib/auth-client";
+import { toast } from "@/lib/toast";
 
-const signUpSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    username: z
-      .string()
-      .min(3, "Username must be at least 3 characters")
-      .max(30, "Username must be at most 30 characters")
-      .regex(
-        /^[a-zA-Z0-9_.]+$/,
-        "Only letters, numbers, underscores, and dots",
-      ),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-function PasswordField({
-  name,
-  label,
-  placeholder,
-  value,
-  onChange,
-  onBlur,
-  show,
-  onToggle,
-  disabled,
-  error,
-}: {
-  name: string;
-  label: string;
-  placeholder: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  show: boolean;
-  onToggle: () => void;
-  disabled: boolean;
-  error?: string;
-}) {
-  return (
-    <Field invalid={!!error}>
-      <FieldLabel>{label}</FieldLabel>
-      <div className="relative w-full">
-        <Input
-          name={name}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          type={show ? "text" : "password"}
-          placeholder={placeholder}
-          autoComplete="new-password"
-          className="pr-10"
-          disabled={disabled}
-        />
-        <button
-          type="button"
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-          onClick={onToggle}
-          aria-label={show ? "Hide password" : "Show password"}
-        >
-          <HugeiconsIcon icon={show ? ViewOffIcon : ViewIcon} size={18} />
-        </button>
-      </div>
-      {error && (
-        <span className="text-xs text-destructive-foreground">{error}</span>
-      )}
-    </Field>
-  );
-}
-
-// TODO: Fix the absolute mess that is this form
 export default function SignUpForm() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [rootError, setRootError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const form = useForm({
-    defaultValues: {
-      name: "",
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-    validators: {
-      onChange: signUpSchema,
-    },
-    onSubmit: async ({ value }) => {
-      setRootError(null);
-      const { error } = await signUp.email({
-        name: value.name,
-        username: value.username,
-        email: value.email,
-        password: value.password,
-        callbackURL: "/dashboard",
-      });
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    console.log("Signup form submitted");
+    setLoading(true);
 
-      if (error) {
-        setRootError(error.message ?? "Failed to create account");
-        return;
-      }
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const username = formData.get("username") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
 
-      router.push("/dashboard");
-    },
-  });
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await signUp.email({
+      name,
+      username,
+      email,
+      password,
+      callbackURL: "/dashboard",
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error(
+        "Sign up failed",
+        error.message ?? "Failed to create account",
+      );
+      return;
+    }
+
+    toast.success("Account created!", "Welcome to the platform");
+    router.push("/dashboard");
+  }
 
   return (
     <Card>
@@ -142,129 +68,77 @@ export default function SignUpForm() {
         <CardDescription>Enter your details to get started</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <form.Field name="name">
-            {(field) => (
-              <Field invalid={field.state.meta.errors.length > 0}>
-                <FieldLabel>Name</FieldLabel>
-                <Input
-                  name={field.name}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="John Doe"
-                  autoComplete="name"
-                  disabled={form.state.isSubmitting}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <span className="text-xs text-destructive-foreground">
-                    {field.state.meta.errors[0]?.message}
-                  </span>
-                )}
-              </Field>
-            )}
-          </form.Field>
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+          <Field>
+            <FieldLabel>Name</FieldLabel>
+            <Input
+              name="name"
+              placeholder="John Doe"
+              autoComplete="name"
+              required
+              minLength={2}
+              disabled={loading}
+            />
+          </Field>
 
-          <form.Field name="username">
-            {(field) => (
-              <Field invalid={field.state.meta.errors.length > 0}>
-                <FieldLabel>Username</FieldLabel>
-                <Input
-                  name={field.name}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="johndoe"
-                  autoComplete="username"
-                  disabled={form.state.isSubmitting}
-                />
-                <FieldDescription>
-                  Letters, numbers, underscores, and dots only.
-                </FieldDescription>
-                {field.state.meta.errors.length > 0 && (
-                  <span className="text-xs text-destructive-foreground">
-                    {field.state.meta.errors[0]?.message}
-                  </span>
-                )}
-              </Field>
-            )}
-          </form.Field>
+          <Field>
+            <FieldLabel>Username</FieldLabel>
+            <Input
+              name="username"
+              placeholder="johndoe"
+              autoComplete="username"
+              required
+              minLength={3}
+              maxLength={30}
+              pattern="^[a-zA-Z0-9_.]+$"
+              disabled={loading}
+            />
+            <FieldDescription>
+              Letters, numbers, underscores, and dots only.
+            </FieldDescription>
+          </Field>
 
-          <form.Field name="email">
-            {(field) => (
-              <Field invalid={field.state.meta.errors.length > 0}>
-                <FieldLabel>Email</FieldLabel>
-                <Input
-                  name={field.name}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  disabled={form.state.isSubmitting}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <span className="text-xs text-destructive-foreground">
-                    {field.state.meta.errors[0]?.message}
-                  </span>
-                )}
-              </Field>
-            )}
-          </form.Field>
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <Input
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              disabled={loading}
+            />
+          </Field>
 
-          <form.Field name="password">
-            {(field) => (
-              <PasswordField
-                name={field.name}
-                label="Password"
-                placeholder="Create a password"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                show={showPassword}
-                onToggle={() => setShowPassword((v) => !v)}
-                disabled={form.state.isSubmitting}
-                error={field.state.meta.errors[0]?.message}
-              />
-            )}
-          </form.Field>
+          <Field>
+            <FieldLabel>Password</FieldLabel>
+            <Input
+              name="password"
+              type="password"
+              placeholder="Create a password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              disabled={loading}
+            />
+          </Field>
 
-          <form.Field name="confirmPassword">
-            {(field) => (
-              <PasswordField
-                name={field.name}
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                show={showConfirm}
-                onToggle={() => setShowConfirm((v) => !v)}
-                disabled={form.state.isSubmitting}
-                error={field.state.meta.errors[0]?.message}
-              />
-            )}
-          </form.Field>
+          <Field>
+            <FieldLabel>Confirm Password</FieldLabel>
+            <Input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              disabled={loading}
+            />
+          </Field>
 
-          {rootError && (
-            <p className="text-center text-sm text-destructive-foreground">
-              {rootError}
-            </p>
-          )}
-
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Creating account..." : "Create account"}
-              </Button>
-            )}
-          </form.Subscribe>
+          <Button type="submit" className="w-full" loading={loading}>
+            Create account
+          </Button>
 
           <div className="flex items-center gap-4">
             <Separator className="flex-1" />
@@ -276,9 +150,8 @@ export default function SignUpForm() {
 
           <div className="grid gap-2">
             <Button
-              type="button"
               variant="outline"
-              disabled={form.state.isSubmitting}
+              disabled={loading}
               onClick={() =>
                 signIn.social({ provider: "google", callbackURL: "/dashboard" })
               }
@@ -286,9 +159,8 @@ export default function SignUpForm() {
               Continue with Google
             </Button>
             <Button
-              type="button"
               variant="outline"
-              disabled={form.state.isSubmitting}
+              disabled={loading}
               onClick={() =>
                 signIn.social({ provider: "apple", callbackURL: "/dashboard" })
               }
@@ -306,7 +178,7 @@ export default function SignUpForm() {
               Sign in
             </Link>
           </p>
-        </Form>
+        </form>
       </CardContent>
     </Card>
   );

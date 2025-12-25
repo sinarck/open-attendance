@@ -1,7 +1,7 @@
-import { mergeProps } from "@base-ui/react/merge-props";
-import { useRender } from "@base-ui/react/use-render";
+import { Loading03Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { cva, type VariantProps } from "class-variance-authority";
-import type * as React from "react";
+import { cloneElement, isValidElement } from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -44,26 +44,52 @@ const buttonVariants = cva(
   },
 );
 
-interface ButtonProps extends useRender.ComponentProps<"button"> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: VariantProps<typeof buttonVariants>["variant"];
   size?: VariantProps<typeof buttonVariants>["size"];
+  loading?: boolean;
+  render?: React.ReactElement;
 }
 
-function Button({ className, variant, size, render, ...props }: ButtonProps) {
-  const typeValue: React.ButtonHTMLAttributes<HTMLButtonElement>["type"] =
-    render ? undefined : "button";
+function Button({
+  className,
+  variant,
+  size,
+  loading,
+  disabled,
+  children,
+  render,
+  ...props
+}: ButtonProps) {
+  const buttonClassName = cn(buttonVariants({ className, size, variant }));
+  const content = (
+    <>
+      {loading && (
+        <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+      )}
+      {children}
+    </>
+  );
 
-  const defaultProps = {
-    className: cn(buttonVariants({ className, size, variant })),
-    "data-slot": "button",
-    type: typeValue,
-  };
+  if (render && isValidElement(render)) {
+    return cloneElement(render, {
+      className: buttonClassName,
+      "data-slot": "button",
+      children: content,
+      ...props,
+    } as React.HTMLAttributes<HTMLElement>);
+  }
 
-  return useRender({
-    defaultTagName: "button",
-    props: mergeProps<"button">(defaultProps, props),
-    render,
-  });
+  return (
+    <button
+      className={buttonClassName}
+      data-slot="button"
+      disabled={disabled || loading}
+      {...props}
+    >
+      {content}
+    </button>
+  );
 }
 
 export { Button, buttonVariants };
