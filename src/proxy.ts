@@ -1,15 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getSessionCookie } from "better-auth/cookies";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const sessionCookie = getSessionCookie(request);
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
 
   // Insecure, optimistic redirect (secure checks implemented in routes)
-  if (!session) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+  if (!sessionCookie) {
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
