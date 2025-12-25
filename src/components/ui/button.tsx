@@ -75,6 +75,7 @@ function Button({
     return cloneElement(render, {
       className: buttonClassName,
       "data-slot": "button",
+      "aria-disabled": disabled || loading || undefined,
       children: content,
       ...props,
     } as React.HTMLAttributes<HTMLElement>);

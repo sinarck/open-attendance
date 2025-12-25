@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { emailHarmony } from "better-auth-harmony";
 import { db } from "@/db";
+import * as schema from "@/db/schema/auth";
 
 export const auth = betterAuth({
   session: {
@@ -15,6 +16,7 @@ export const auth = betterAuth({
   },
   database: drizzleAdapter(db, {
     provider: "pg",
+    schema: schema,
   }),
   emailAndPassword: {
     enabled: true,
