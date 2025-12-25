@@ -70,7 +70,7 @@ function PasswordField({
   return (
     <Field invalid={!!error}>
       <FieldLabel>{label}</FieldLabel>
-      <div className="relative">
+      <div className="relative w-full">
         <Input
           name={name}
           value={value}
