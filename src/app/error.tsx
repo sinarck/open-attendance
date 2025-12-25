@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import posthog from "posthog-js";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,9 +18,22 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
+  const capturedRef = useRef(false);
+
+  // Capture the error once when the component renders
+  if (!capturedRef.current) {
+    capturedRef.current = true;
     console.error("Route error:", error);
-  }, [error]);
+
+    // Capture route error in PostHog
+    posthog.capture("route_error_occurred", {
+      error_message: error.message,
+      error_name: error.name,
+      error_digest: error.digest,
+      error_stack: error.stack,
+    });
+    posthog.captureException(error);
+  }
 
   function goHome() {
     window.location.href = "/";

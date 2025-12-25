@@ -1,7 +1,6 @@
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { TrackedLinkButton } from "@/components/tracked-link-button";
 import { homeHighlights } from "@/config";
 
 export default function Home() {
@@ -34,16 +33,29 @@ export default function Home() {
         </ul>
 
         <div className="mt-10 flex flex-wrap gap-3">
-          <Button size="lg" render={<Link href="/signup" />}>
+          <TrackedLinkButton
+            size="lg"
+            href="/signup"
+            eventName="cta_get_started_clicked"
+            eventProperties={{
+              source: "homepage",
+              cta_text: "Get started for free",
+            }}
+          >
             Get started for free
-          </Button>
-          <Button
+          </TrackedLinkButton>
+          <TrackedLinkButton
             size="lg"
             variant="outline"
-            render={<Link href="/features" />}
+            href="/features"
+            eventName="cta_see_features_clicked"
+            eventProperties={{
+              source: "homepage",
+              cta_text: "See how it works",
+            }}
           >
             See how it works
-          </Button>
+          </TrackedLinkButton>
         </div>
       </div>
     </main>

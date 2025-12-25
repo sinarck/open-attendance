@@ -1,8 +1,7 @@
 import { UserAdd01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import Link from "next/link";
 import { MemberRow } from "@/components/attendance";
-import { Button } from "@/components/ui/button";
+import { TrackedLinkButton } from "@/components/tracked-link-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -23,10 +22,14 @@ export default function MembersPage() {
             Manage your roster and track attendance.
           </p>
         </div>
-        <Button render={<Link href="/dashboard" />}>
+        <TrackedLinkButton
+          href="/dashboard"
+          eventName="add_member_clicked"
+          eventProperties={{ source: "members_page" }}
+        >
           <HugeiconsIcon icon={UserAdd01Icon} size={16} />
           Add Member
-        </Button>
+        </TrackedLinkButton>
       </div>
 
       <div className="mt-8">
