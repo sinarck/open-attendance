@@ -5,8 +5,11 @@ import { username } from "better-auth/plugins";
 import { emailHarmony } from "better-auth-harmony";
 import { db } from "@/db";
 import * as schema from "@/db/schema/auth";
+import { env } from "./env";
 
 export const auth = betterAuth({
+  baseURL:
+    env.VERCEL_ENV === "production" ? env.VERCEL_URL : env.BETTER_AUTH_URL,
   session: {
     cookieCache: {
       enabled: true,
