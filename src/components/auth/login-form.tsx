@@ -1,12 +1,8 @@
 "use client";
 
-import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,49 +13,42 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { signIn } from "@/lib/auth-client";
+import { toast } from "@/lib/toast";
 
-const loginSchema = z.object({
-  email: z.email("Email is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  rememberMe: z.boolean(),
-});
-
-// TODO: Fix the absolute mess that is this form
 export default function LoginForm() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [rootError, setRootError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const form = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-      rememberMe: false,
-    },
-    validators: {
-      onChange: loginSchema,
-    },
-    onSubmit: async ({ value }) => {
-      setRootError(null);
-      const { error } = await signIn.email({
-        email: value.email,
-        password: value.password,
-        rememberMe: value.rememberMe,
-      });
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    console.log("Login form submitted");
+    setLoading(true);
 
-      if (error) {
-        setRootError(error.message ?? "Invalid credentials");
-        return;
-      }
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-      router.push("/dashboard");
-    },
-  });
+    const { error } = await signIn.email({
+      email,
+      password,
+      rememberMe,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error("Sign in failed", error.message ?? "Invalid credentials");
+      return;
+    }
+
+    toast.success("Welcome back!");
+    router.push("/dashboard");
+  }
 
   return (
     <Card>
@@ -68,102 +57,44 @@ export default function LoginForm() {
         <CardDescription>Enter your credentials to continue</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <form.Field name="email">
-            {(field) => (
-              <Field invalid={field.state.meta.errors.length > 0}>
-                <FieldLabel>Email</FieldLabel>
-                <Input
-                  name={field.name}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  disabled={form.state.isSubmitting}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <span className="text-xs text-destructive-foreground">
-                    {field.state.meta.errors[0]?.message}
-                  </span>
-                )}
-              </Field>
-            )}
-          </form.Field>
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <Input
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              disabled={loading}
+            />
+          </Field>
 
-          <form.Field name="password">
-            {(field) => (
-              <Field invalid={field.state.meta.errors.length > 0}>
-                <FieldLabel>Password</FieldLabel>
-                <div className="relative w-full">
-                  <Input
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    className="pr-10"
-                    disabled={form.state.isSubmitting}
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    <HugeiconsIcon
-                      icon={showPassword ? ViewOffIcon : ViewIcon}
-                      size={18}
-                    />
-                  </button>
-                </div>
-                {field.state.meta.errors.length > 0 && (
-                  <span className="text-xs text-destructive-foreground">
-                    {field.state.meta.errors[0]?.message}
-                  </span>
-                )}
-              </Field>
-            )}
-          </form.Field>
+          <Field>
+            <FieldLabel>Password</FieldLabel>
+            <Input
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+              minLength={8}
+              disabled={loading}
+            />
+          </Field>
 
-          <form.Field name="rememberMe">
-            {(field) => (
-              <Label className="flex cursor-pointer items-center gap-2 font-normal">
-                <Checkbox
-                  checked={field.state.value}
-                  onCheckedChange={(checked) =>
-                    field.handleChange(checked === true)
-                  }
-                  disabled={form.state.isSubmitting}
-                />
-                Remember me
-              </Label>
-            )}
-          </form.Field>
+          <Label className="flex cursor-pointer items-center gap-2 font-normal">
+            <Checkbox
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked === true)}
+              disabled={loading}
+            />
+            Remember me
+          </Label>
 
-          {rootError && (
-            <p className="text-center text-sm text-destructive-foreground">
-              {rootError}
-            </p>
-          )}
-
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Signing in..." : "Sign in"}
-              </Button>
-            )}
-          </form.Subscribe>
+          <Button type="submit" className="w-full" loading={loading}>
+            Sign in
+          </Button>
 
           <div className="flex items-center gap-4">
             <Separator className="flex-1" />
@@ -175,9 +106,8 @@ export default function LoginForm() {
 
           <div className="grid gap-2">
             <Button
-              type="button"
               variant="outline"
-              disabled={form.state.isSubmitting}
+              disabled={loading}
               onClick={() =>
                 signIn.social({ provider: "google", callbackURL: "/dashboard" })
               }
@@ -185,9 +115,8 @@ export default function LoginForm() {
               Continue with Google
             </Button>
             <Button
-              type="button"
               variant="outline"
-              disabled={form.state.isSubmitting}
+              disabled={loading}
               onClick={() =>
                 signIn.social({ provider: "apple", callbackURL: "/dashboard" })
               }
@@ -205,7 +134,7 @@ export default function LoginForm() {
               Sign up
             </Link>
           </p>
-        </Form>
+        </form>
       </CardContent>
     </Card>
   );

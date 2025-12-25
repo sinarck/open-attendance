@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "next-themes";
 import { Footer } from "@/components/navigation/footer";
 import { Navbar } from "@/components/navigation/navbar";
+import { Providers } from "@/components/providers";
 import { siteConfig } from "@/config";
 import { cn } from "@/lib/utils";
 import { figtree, geistMono } from "./ui/fonts";
@@ -24,11 +24,11 @@ export default function RootLayout({
       className={cn(figtree.variable, geistMono.variable)}
     >
       <body className="antialiased pt-header">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Providers>
           <Navbar />
           {children}
           <Footer />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
