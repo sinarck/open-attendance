@@ -7,6 +7,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { SessionRow } from "@/components/attendance";
+import SignOutButton from "@/components/auth/signout-button";
 import { StatCard } from "@/components/stats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,7 @@ export default function DashboardPage() {
           <HugeiconsIcon icon={Add01Icon} size={16} />
           New Session
         </Button>
+        <SignOutButton />
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">

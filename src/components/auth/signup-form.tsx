@@ -23,7 +23,6 @@ export default function SignUpForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    console.log("Signup form submitted");
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -150,6 +149,7 @@ export default function SignUpForm() {
 
           <div className="grid gap-2">
             <Button
+              type="button"
               variant="outline"
               disabled={loading}
               onClick={() =>
@@ -159,6 +159,7 @@ export default function SignUpForm() {
               Continue with Google
             </Button>
             <Button
+              type="button"
               variant="outline"
               disabled={loading}
               onClick={() =>
