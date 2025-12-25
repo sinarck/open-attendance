@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,16 @@ export default function SignUpForm() {
       );
       return;
     }
+
+    // Identify user and capture signup event
+    posthog.identify(email, {
+      email: email,
+      name: name,
+      username: username,
+    });
+    posthog.capture("user_signed_up", {
+      method: "email",
+    });
 
     toast.success("Account created!", "Welcome to the platform");
     router.push("/dashboard");
@@ -152,9 +163,15 @@ export default function SignUpForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() =>
-                signIn.social({ provider: "google", callbackURL: "/dashboard" })
-              }
+              onClick={() => {
+                posthog.capture("user_signed_up_social", {
+                  provider: "google",
+                });
+                signIn.social({
+                  provider: "google",
+                  callbackURL: "/dashboard",
+                });
+              }}
             >
               Continue with Google
             </Button>
@@ -162,9 +179,12 @@ export default function SignUpForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() =>
-                signIn.social({ provider: "apple", callbackURL: "/dashboard" })
-              }
+              onClick={() => {
+                posthog.capture("user_signed_up_social", {
+                  provider: "apple",
+                });
+                signIn.social({ provider: "apple", callbackURL: "/dashboard" });
+              }}
             >
               Continue with Apple
             </Button>

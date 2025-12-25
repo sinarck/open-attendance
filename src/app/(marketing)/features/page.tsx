@@ -1,6 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { TrackedLinkButton } from "@/components/tracked-link-button";
 import {
   Card,
   CardDescription,
@@ -47,9 +46,17 @@ export default function FeaturesPage() {
           It&apos;s free and takes less than a minute to set up.
         </p>
         <div className="mt-6">
-          <Button size="lg" render={<Link href="/signup" />}>
+          <TrackedLinkButton
+            size="lg"
+            href="/signup"
+            eventName="features_cta_clicked"
+            eventProperties={{
+              source: "features_page",
+              cta_text: "Get Started",
+            }}
+          >
             Get Started
-          </Button>
+          </TrackedLinkButton>
         </div>
       </div>
     </main>

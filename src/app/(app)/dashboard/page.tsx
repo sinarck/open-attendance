@@ -5,11 +5,10 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import Link from "next/link";
 import { SessionRow } from "@/components/attendance";
 import SignOutButton from "@/components/auth/signout-button";
 import { StatCard } from "@/components/stats";
-import { Button } from "@/components/ui/button";
+import { TrackedLinkButton } from "@/components/tracked-link-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -51,10 +50,14 @@ export default function DashboardPage() {
             Welcome back. Here&apos;s what&apos;s happening.
           </p>
         </div>
-        <Button render={<Link href="/sessions" />}>
+        <TrackedLinkButton
+          href="/sessions"
+          eventName="new_session_clicked"
+          eventProperties={{ source: "dashboard" }}
+        >
           <HugeiconsIcon icon={Add01Icon} size={16} />
           New Session
-        </Button>
+        </TrackedLinkButton>
         <SignOutButton />
       </div>
 

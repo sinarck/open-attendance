@@ -8,7 +8,14 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url().nonempty(),
   },
-  client: {},
+  client: {
+    NEXT_PUBLIC_POSTHOG_KEY: z.string().min(32),
+    NEXT_PUBLIC_POSTHOG_HOST: z.url().nonempty(),
+  },
   extends: [vercel()],
-  experimental__runtimeEnv: process.env,
+  // Only client-side env vars must be destructed below
+  experimental__runtimeEnv: {
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  },
 });

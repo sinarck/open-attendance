@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +45,14 @@ export default function LoginForm() {
       toast.error("Sign in failed", error.message ?? "Invalid credentials");
       return;
     }
+
+    // Identify user and capture login event
+    posthog.identify(email, {
+      email: email,
+    });
+    posthog.capture("user_logged_in", {
+      method: "email",
+    });
 
     toast.success("Welcome back!");
     router.push("/dashboard");
@@ -108,9 +117,15 @@ export default function LoginForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() =>
-                signIn.social({ provider: "google", callbackURL: "/dashboard" })
-              }
+              onClick={() => {
+                posthog.capture("user_logged_in_social", {
+                  provider: "google",
+                });
+                signIn.social({
+                  provider: "google",
+                  callbackURL: "/dashboard",
+                });
+              }}
             >
               Continue with Google
             </Button>
@@ -118,9 +133,12 @@ export default function LoginForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() =>
-                signIn.social({ provider: "apple", callbackURL: "/dashboard" })
-              }
+              onClick={() => {
+                posthog.capture("user_logged_in_social", {
+                  provider: "apple",
+                });
+                signIn.social({ provider: "apple", callbackURL: "/dashboard" });
+              }}
             >
               Continue with Apple
             </Button>
