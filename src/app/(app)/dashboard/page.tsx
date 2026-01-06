@@ -8,7 +8,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { SessionRow } from "@/components/attendance";
 import SignOutButton from "@/components/auth/signout-button";
 import { StatCard } from "@/components/stats";
-import { TrackedLinkButton } from "@/components/tracked-link-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -17,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { mockSessions, mockStats } from "@/config";
 
 // Derived from mock data
