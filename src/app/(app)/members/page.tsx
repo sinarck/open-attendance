@@ -1,7 +1,6 @@
 import { UserAdd01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MemberRow } from "@/components/attendance";
-import { TrackedLinkButton } from "@/components/tracked-link-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -10,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { mockMembers } from "@/config";
 
 export default function MembersPage() {

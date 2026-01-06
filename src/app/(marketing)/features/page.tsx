@@ -1,11 +1,11 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import { TrackedLinkButton } from "@/components/tracked-link-button";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { featuresList } from "@/config";
 
 export default function FeaturesPage() {
