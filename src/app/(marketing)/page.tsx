@@ -1,6 +1,6 @@
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { TrackedLinkButton } from "@/components/tracked-link-button";
+import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { homeHighlights } from "@/config";
 
 export default function Home() {
