@@ -1,7 +1,8 @@
 "use client";
 
-import posthog from "posthog-js";
-import { useRef } from "react";
+import * as Sentry from "@sentry/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,33 +12,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function ErrorPage({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
+interface ErrorPageProps {
   reset: () => void;
-}) {
-  const capturedRef = useRef(false);
+  error: Error & { digest?: string };
+}
 
-  // Capture the error once when the component renders
-  if (!capturedRef.current) {
-    capturedRef.current = true;
-    console.error("Route error:", error);
+export default function ErrorPage({ reset, error }: ErrorPageProps) {
+  const router = useRouter();
 
-    // Capture route error in PostHog
-    posthog.capture("route_error_occurred", {
-      error_message: error.message,
-      error_name: error.name,
-      error_digest: error.digest,
-      error_stack: error.stack,
-    });
-    posthog.captureException(error);
-  }
-
-  function goHome() {
-    window.location.href = "/";
-  }
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
 
   return (
     <main className="flex min-h-svh items-center justify-center p-6">
@@ -51,7 +36,7 @@ export default function ErrorPage({
         </CardHeader>
         <CardContent className="flex gap-2">
           <Button onClick={reset}>Try again</Button>
-          <Button variant="outline" onClick={goHome}>
+          <Button variant="outline" onClick={() => router.push("/")}>
             Go home
           </Button>
         </CardContent>
