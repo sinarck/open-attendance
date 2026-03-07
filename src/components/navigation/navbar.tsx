@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "@/components/ui/theme-toggle";
+import { getOptionalSession } from "@/lib/session";
 
-export function Navbar() {
+export async function Navbar() {
+  const session = await getOptionalSession();
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
       <nav className="mx-auto flex h-header max-w-5xl items-center justify-between px-page">
@@ -10,15 +12,20 @@ export function Navbar() {
           open/attendance
         </Link>
 
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <Button size="sm" variant="ghost" render={<Link href="/login" />}>
-            Log in
+        {session ? (
+          <Button size="sm" render={<Link href={"/dashboard" as never} />}>
+            Open App
           </Button>
-          <Button size="sm" render={<Link href="/signup" />}>
-            Get Started
-          </Button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="ghost" render={<Link href="/login" />}>
+              Log in
+            </Button>
+            <Button size="sm" render={<Link href="/signup" />}>
+              Get Started
+            </Button>
+          </div>
+        )}
       </nav>
     </header>
   );

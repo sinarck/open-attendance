@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ui/theme-toggle";
 import { footerSections, siteConfig } from "@/config";
 import { StatusIndicator } from "./status-indicator";
 
@@ -46,17 +47,20 @@ export function Footer() {
           <p>
             &copy; {new Date().getFullYear()} {siteConfig.name}. MIT License.
           </p>
-          <p>
-            Designed and built by{" "}
-            <Link
-              href={siteConfig.author.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground underline underline-offset-4"
-            >
-              {siteConfig.author.name}
-            </Link>
-          </p>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <p>
+              Designed and built by{" "}
+              <Link
+                href={siteConfig.author.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground underline underline-offset-4"
+              >
+                {siteConfig.author.name}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
