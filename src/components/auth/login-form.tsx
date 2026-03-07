@@ -103,8 +103,13 @@ export default function LoginForm() {
             />
           </Field>
 
-          <Label className="flex cursor-pointer items-center gap-2 font-normal">
+          <Label
+            htmlFor="rememberMe"
+            className="flex cursor-pointer items-center gap-2 font-normal"
+          >
             <Checkbox
+              id="rememberMe"
+              name="rememberMe"
               checked={rememberMe}
               onCheckedChange={(checked) => setRememberMe(checked === true)}
               disabled={loading}
