@@ -6,8 +6,8 @@ export function Footer() {
   return (
     <footer className="border-t bg-card">
       <div className="mx-auto max-w-5xl px-page py-12 sm:py-16">
-        <div className="flex flex-col justify-between gap-12 lg:flex-row">
-          <div className="max-w-xs">
+        <div className="flex flex-col justify-between gap-10 sm:flex-row">
+          <div>
             <Link href="/" className="font-mono text-sm tracking-tight">
               open/attendance
             </Link>
@@ -16,12 +16,12 @@ export function Footer() {
               <br />
               Built for everyone.
             </p>
-            <div className="mt-6">
+            <div className="mt-4">
               <StatusIndicator />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-12">
+          <div className="flex gap-10 sm:gap-12">
             {footerSections.map((section) => (
               <nav key={section.title} aria-label={section.title}>
                 <h3 className="text-sm font-medium">{section.title}</h3>

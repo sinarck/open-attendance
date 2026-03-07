@@ -1,10 +1,7 @@
 import { siteConfig } from "./site";
 
 // Public navigation (marketing site)
-export const navLinks = [
-  { href: "/features", label: "Features" },
-  { href: "/about", label: "About" },
-] as const;
+export const navLinks = [] as const;
 
 // Authenticated navigation (app)
 export const appLinks = [
@@ -23,14 +20,7 @@ export const externalLinks = {
 export const footerSections = [
   {
     title: "Product",
-    links: [{ href: "/features", label: "Features" }],
-  },
-  {
-    title: "Company",
-    links: [
-      { href: "/about", label: "About" },
-      { href: externalLinks.github, label: "GitHub", external: true },
-    ],
+    links: [{ href: externalLinks.github, label: "GitHub", external: true }],
   },
   {
     title: "Legal",
