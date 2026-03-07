@@ -5,6 +5,8 @@ import posthog from "posthog-js";
 import type { ComponentProps, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
+const EMPTY_EVENT_PROPERTIES: Record<string, unknown> = {};
+
 interface TrackedLinkButtonProps extends ComponentProps<typeof Button> {
   href: string;
   eventName: string;
@@ -15,7 +17,7 @@ interface TrackedLinkButtonProps extends ComponentProps<typeof Button> {
 export function TrackedLinkButton({
   href,
   eventName,
-  eventProperties = {},
+  eventProperties = EMPTY_EVENT_PROPERTIES,
   children,
   ...buttonProps
 }: TrackedLinkButtonProps) {

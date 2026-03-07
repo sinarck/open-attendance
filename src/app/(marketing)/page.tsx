@@ -1,7 +1,13 @@
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Metadata } from "next";
 import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { homePreviewSession, siteConfig } from "@/config";
+
+export const metadata: Metadata = {
+  title: siteConfig.name,
+  description: siteConfig.description,
+};
 
 export default function Home() {
   const totalMembers = homePreviewSession.rows.length;

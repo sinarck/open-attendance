@@ -13,7 +13,7 @@ function Slider({
   max = 100,
   ...props
 }: SliderPrimitive.Root.Props) {
-  const _values = React.useMemo(() => {
+  const values = React.useMemo(() => {
     if (value !== undefined) {
       return Array.isArray(value) ? value : [value];
     }
@@ -22,6 +22,8 @@ function Slider({
     }
     return [min];
   }, [value, defaultValue, min]);
+
+  const thumbCounts = new Map<number, number>();
 
   return (
     <SliderPrimitive.Root
@@ -49,13 +51,19 @@ function Slider({
             className="select-none rounded-full bg-primary data-[orientation=horizontal]:ms-0.5 data-[orientation=vertical]:mb-0.5"
             data-slot="slider-indicator"
           />
-          {Array.from({ length: _values.length }, (_, index) => (
-            <SliderPrimitive.Thumb
-              className="block size-5 shrink-0 select-none rounded-full border border-input bg-white bg-clip-padding shadow-xs outline-none transition-shadow before:absolute before:inset-0 before:rounded-full before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:ring-[3px] focus-visible:ring-ring/24 has-focus-visible:ring-[3px] has-focus-visible:ring-ring/24 data-dragging:ring-[3px] data-dragging:ring-ring/24 sm:size-4 dark:border-background dark:bg-clip-border dark:data-dragging:ring-ring/48 dark:focus-visible:ring-ring/48 [:focus-visible,[data-dragging]]:shadow-none"
-              data-slot="slider-thumb"
-              key={String(index)}
-            />
-          ))}
+          {values.map((thumbValue, index) => {
+            const occurrence = thumbCounts.get(thumbValue) ?? 0;
+            thumbCounts.set(thumbValue, occurrence + 1);
+
+            return (
+              <SliderPrimitive.Thumb
+                className="block size-5 shrink-0 select-none rounded-full border border-input bg-white bg-clip-padding shadow-xs outline-none transition-shadow before:absolute before:inset-0 before:rounded-full before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:ring-[3px] focus-visible:ring-ring/24 has-focus-visible:ring-[3px] has-focus-visible:ring-ring/24 data-dragging:ring-[3px] data-dragging:ring-ring/24 sm:size-4 dark:border-background dark:bg-clip-border dark:data-dragging:ring-ring/48 dark:focus-visible:ring-ring/48 [:focus-visible,[data-dragging]]:shadow-none"
+                data-slot="slider-thumb"
+                index={index}
+                key={`${thumbValue}-${occurrence}`}
+              />
+            );
+          })}
         </SliderPrimitive.Track>
       </SliderPrimitive.Control>
     </SliderPrimitive.Root>
