@@ -36,8 +36,10 @@ CREATE TABLE "user" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"username" text,
 	"display_username" text,
+	"normalized_email" text,
 	CONSTRAINT "user_email_unique" UNIQUE("email"),
-	CONSTRAINT "user_username_unique" UNIQUE("username")
+	CONSTRAINT "user_username_unique" UNIQUE("username"),
+	CONSTRAINT "user_normalized_email_unique" UNIQUE("normalized_email")
 );
 --> statement-breakpoint
 CREATE TABLE "verification" (

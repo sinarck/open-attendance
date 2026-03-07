@@ -1,5 +1,5 @@
 {
-  "id": "06eb52d5-19ed-4e0e-a948-bba64acfddef",
+  "id": "bae0aaa3-75fe-42d2-9cdf-5bd41ec6024d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -276,6 +276,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "normalized_email": {
+          "name": "normalized_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -291,6 +297,11 @@
           "name": "user_username_unique",
           "nullsNotDistinct": false,
           "columns": ["username"]
+        },
+        "user_normalized_email_unique": {
+          "name": "user_normalized_email_unique",
+          "nullsNotDistinct": false,
+          "columns": ["normalized_email"]
         }
       },
       "policies": {},

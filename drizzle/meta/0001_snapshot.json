@@ -1,6 +1,6 @@
 {
-  "id": "41d4f366-b6f7-41ce-a0db-14616901fdbc",
-  "prevId": "06eb52d5-19ed-4e0e-a948-bba64acfddef",
+  "id": "c0b3f11c-6347-45b5-bbb0-1a22d9d2b20d",
+  "prevId": "bae0aaa3-75fe-42d2-9cdf-5bd41ec6024d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -371,60 +371,6 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.users": {
-      "name": "users",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "users_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "age": {
-          "name": "age",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "users_email_unique": {
-          "name": "users_email_unique",
-          "nullsNotDistinct": false,
-          "columns": ["email"]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
