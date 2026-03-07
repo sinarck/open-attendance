@@ -19,7 +19,7 @@ export default function NotFound() {
   return (
     <Empty className="min-h-[calc(100svh-var(--header-height))] justify-center px-6 py-10">
       <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-2">
-        <Empty className="min-h-[24rem] rounded-[calc(var(--radius-2xl)-2px)] border border-dashed border-border/70 bg-background p-8 md:p-10">
+        <Empty className="min-h-96 rounded-[calc(var(--radius-2xl)-2px)] border border-dashed border-border/70 bg-background p-8 md:p-10">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <HugeiconsIcon icon={Route01Icon} />
