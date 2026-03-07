@@ -17,29 +17,29 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { signIn, signUp } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
+import { getFormValues, signupFormSchema } from "@/lib/validation/auth";
 
 export default function SignUpForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name") as string;
-    const username = formData.get("username") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
+    const result = signupFormSchema.safeParse(
+      getFormValues(new FormData(e.currentTarget)),
+    );
 
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+    if (!result.success) {
       setLoading(false);
+      toast.error("Sign up failed", result.error.issues[0]?.message);
       return;
     }
 
-    const { error } = await signUp.email({
+    const { name, username, email, password } = result.data;
+
+    const { data, error } = await signUp.email({
       name,
       username,
       email,
@@ -57,15 +57,18 @@ export default function SignUpForm() {
       return;
     }
 
-    // Identify user and capture signup event
-    posthog.identify(email, {
-      email: email,
-      name: name,
-      username: username,
-    });
-    posthog.capture("user_signed_up", {
-      method: "email",
-    });
+    if (data?.user?.id) {
+      posthog.identify(data.user.id, {
+        email,
+        name,
+        username,
+      });
+
+      posthog.capture("user_signed_up", {
+        method: "email",
+        user_id: data.user.id,
+      });
+    }
 
     toast.success("Account created!", "Welcome to the platform");
     router.push("/dashboard");

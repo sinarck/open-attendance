@@ -19,21 +19,30 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
+import { getFormValues, loginFormSchema } from "@/lib/validation/auth";
 
 export default function LoginForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const result = loginFormSchema.safeParse(
+      getFormValues(new FormData(e.currentTarget)),
+    );
 
-    const { error } = await signIn.email({
+    if (!result.success) {
+      setLoading(false);
+      toast.error("Sign in failed", result.error.issues[0]?.message);
+      return;
+    }
+
+    const { email, password } = result.data;
+
+    const { data, error } = await signIn.email({
       email,
       password,
       rememberMe,
@@ -46,15 +55,18 @@ export default function LoginForm() {
       return;
     }
 
-    // Identify user and capture login event
-    posthog.identify(email, {
-      email: email,
-    });
-    posthog.capture("user_logged_in", {
-      method: "email",
-    });
+    if (data?.user?.id) {
+      posthog.identify(data.user.id, {
+        email,
+        name: data.user.name,
+      });
 
-    toast.success("Welcome back!");
+      posthog.capture("user_logged_in", {
+        method: "email",
+        user_id: data.user.id,
+      });
+    }
+
     router.push("/dashboard");
   }
 

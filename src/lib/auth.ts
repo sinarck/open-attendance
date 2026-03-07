@@ -5,11 +5,23 @@ import { username } from "better-auth/plugins";
 import { emailHarmony } from "better-auth-harmony";
 import { db } from "@/db";
 import * as schema from "@/db/schema/auth";
-import { env } from "./env";
+import { env } from "@/lib/env";
 
 export const auth = betterAuth({
-  baseURL:
-    env.VERCEL_ENV === "production" ? env.VERCEL_URL : env.BETTER_AUTH_URL,
+  baseURL: {
+    fallback: env.BETTER_AUTH_URL,
+    allowedHosts: ["openattendance.com", "www.openattendance.com"],
+    protocol: "auto",
+  },
+  account: {
+    encryptOAuthTokens: true,
+  },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
+    },
+    trustedProxyHeaders: Boolean(env.VERCEL_URL),
+  },
   session: {
     cookieCache: {
       enabled: true,
@@ -23,6 +35,8 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    maxPasswordLength: 128,
+    minPasswordLength: 8,
   },
   plugins: [username(), emailHarmony(), nextCookies()], // Next Cookies must be last
 });

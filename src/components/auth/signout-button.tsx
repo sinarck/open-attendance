@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export default function SignOutButton() {
         signOut({
           fetchOptions: {
             onSuccess: () => {
+              Sentry.setUser(null);
               posthog.reset();
               router.push("/");
             },
