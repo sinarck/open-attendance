@@ -21,7 +21,6 @@
     "@hugeicons/react": "^1.1.5",
     "@neondatabase/serverless": "^1.0.2",
     "@phosphor-icons/react": "^2.1.10",
-    "@sentry/nextjs": "^10.42.0",
     "@t3-oss/env-nextjs": "^0.13.10",
     "@typescript/native-preview": "^7.0.0-dev.20260307.1",
     "better-auth": "^1.5.4",
@@ -41,6 +40,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
+    "@posthog/nextjs-config": "^1.8.19",
     "@react-grab/mcp": "^0.1.25",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^20.19.37",

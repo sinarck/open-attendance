@@ -8,9 +8,14 @@ export const posthogOptions = {
   defaults: "2025-05-24",
   person_profiles: "identified_only",
   autocapture: false,
-  capture_exceptions: false,
+  capture_exceptions: {
+    capture_console_errors: false,
+    capture_unhandled_errors: true,
+    capture_unhandled_rejections: true,
+  },
   capture_pageleave: false,
   capture_pageview: false,
   disable_session_recording: true,
+  enable_recording_console_log: true,
   debug: process.env.NODE_ENV === "development",
 } as const;

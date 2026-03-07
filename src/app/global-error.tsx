@@ -1,7 +1,7 @@
 "use client";
 
 import "./globals.css";
-import * as Sentry from "@sentry/nextjs";
+import posthog from "posthog-js";
 import { useEffect } from "react";
 import { ErrorFallback } from "@/components/error-fallback";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    posthog.captureException(error);
   }, [error]);
 
   return (

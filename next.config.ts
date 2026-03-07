@@ -1,4 +1,4 @@
-import { withSentryConfig } from "@sentry/nextjs";
+import { withPostHogConfig } from "@posthog/nextjs-config";
 import type { NextConfig } from "next";
 import { env } from "@/lib/env"; // Never remove (validate at build time)
 
@@ -27,31 +27,15 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-const sentryConfig = {
-  org: "spare-studio",
-  project: "open-attendance",
+const hasPostHogSourceMaps =
+  Boolean(process.env.POSTHOG_API_KEY) &&
+  Boolean(process.env.POSTHOG_PROJECT_ID);
 
-  // Only print logs for uploading source maps in CI
-  silent: !env.CI,
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-  // side errors will fail.
-  tunnelRoute: env.SENTRY_TUNNEL_ROUTE,
-
-  webpack: {
-    automaticVercelMonitors: true,
-    treeshake: {
-      removeDebugLogging: true,
-    },
+export default withPostHogConfig(nextConfig, {
+  host: env.NEXT_PUBLIC_POSTHOG_HOST,
+  personalApiKey: process.env.POSTHOG_API_KEY ?? "",
+  projectId: process.env.POSTHOG_PROJECT_ID ?? "",
+  sourcemaps: {
+    enabled: hasPostHogSourceMaps,
   },
-} as const;
-
-export default withSentryConfig(
-  nextConfig,
-  sentryConfig as Parameters<typeof withSentryConfig>[1],
-);
+});

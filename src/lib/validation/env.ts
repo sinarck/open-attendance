@@ -13,7 +13,6 @@ export const serverEnvSchema = {
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
-  SENTRY_TUNNEL_ROUTE: slashPrefixedPath("SENTRY_TUNNEL_ROUTE"),
 };
 
 export const clientEnvSchema = {
