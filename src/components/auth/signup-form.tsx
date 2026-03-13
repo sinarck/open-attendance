@@ -23,6 +23,11 @@ export default function SignUpForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  function handleSocialSignIn(provider: "google" | "apple") {
+    posthog.capture("user_signed_up_social", { provider });
+    signIn.social({ provider, callbackURL: "/dashboard" });
+  }
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -39,7 +44,7 @@ export default function SignUpForm() {
 
     const { name, username, email, password } = result.data;
 
-    const { data, error } = await signUp.email({
+    const { error } = await signUp.email({
       name,
       username,
       email,
@@ -47,9 +52,8 @@ export default function SignUpForm() {
       callbackURL: "/dashboard",
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast.error(
         "Sign up failed",
         error.message ?? "Failed to create account",
@@ -57,21 +61,9 @@ export default function SignUpForm() {
       return;
     }
 
-    if (data?.user?.id) {
-      posthog.identify(data.user.id, {
-        email,
-        name,
-        username,
-      });
-
-      posthog.capture("user_signed_up", {
-        method: "email",
-        user_id: data.user.id,
-      });
-    }
-
+    posthog.capture("user_signed_up", { method: "email" });
     toast.success("Account created!", "Welcome to the platform");
-    router.push("/dashboard");
+    router.replace("/dashboard");
   }
 
   return (
@@ -166,15 +158,7 @@ export default function SignUpForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() => {
-                posthog.capture("user_signed_up_social", {
-                  provider: "google",
-                });
-                signIn.social({
-                  provider: "google",
-                  callbackURL: "/dashboard",
-                });
-              }}
+              onClick={() => handleSocialSignIn("google")}
             >
               Continue with Google
             </Button>
@@ -182,12 +166,7 @@ export default function SignUpForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() => {
-                posthog.capture("user_signed_up_social", {
-                  provider: "apple",
-                });
-                signIn.social({ provider: "apple", callbackURL: "/dashboard" });
-              }}
+              onClick={() => handleSocialSignIn("apple")}
             >
               Continue with Apple
             </Button>

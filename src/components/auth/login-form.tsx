@@ -26,6 +26,11 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  function handleSocialSignIn(provider: "google" | "apple") {
+    posthog.capture("user_logged_in_social", { provider });
+    signIn.social({ provider, callbackURL: "/dashboard" });
+  }
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -42,32 +47,20 @@ export default function LoginForm() {
 
     const { email, password } = result.data;
 
-    const { data, error } = await signIn.email({
+    const { error } = await signIn.email({
       email,
       password,
       rememberMe,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast.error("Sign in failed", error.message ?? "Invalid credentials");
       return;
     }
 
-    if (data?.user?.id) {
-      posthog.identify(data.user.id, {
-        email,
-        name: data.user.name,
-      });
-
-      posthog.capture("user_logged_in", {
-        method: "email",
-        user_id: data.user.id,
-      });
-    }
-
-    router.push("/dashboard");
+    posthog.capture("user_logged_in", { method: "email" });
+    router.replace("/dashboard");
   }
 
   return (
@@ -134,15 +127,7 @@ export default function LoginForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() => {
-                posthog.capture("user_logged_in_social", {
-                  provider: "google",
-                });
-                signIn.social({
-                  provider: "google",
-                  callbackURL: "/dashboard",
-                });
-              }}
+              onClick={() => handleSocialSignIn("google")}
             >
               Continue with Google
             </Button>
@@ -150,12 +135,7 @@ export default function LoginForm() {
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() => {
-                posthog.capture("user_logged_in_social", {
-                  provider: "apple",
-                });
-                signIn.social({ provider: "apple", callbackURL: "/dashboard" });
-              }}
+              onClick={() => handleSocialSignIn("apple")}
             >
               Continue with Apple
             </Button>
