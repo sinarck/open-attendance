@@ -1,8 +1,4 @@
-import {
-  Calendar03Icon,
-  ChartAverageIcon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons";
+import { Calendar, TrendingUp, Users } from "lucide-react";
 import { MonthlyTrendRow, SessionHistoryRow } from "@/components/attendance";
 import { TrendStatCard } from "@/components/stats";
 import {
@@ -12,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -27,21 +24,21 @@ const stats = [
     value: mockStats.totalMembers.toString(),
     change: `+${mockStats.memberChange}`,
     trend: "up" as const,
-    icon: UserGroupIcon,
+    icon: Users,
   },
   {
     title: "Total Sessions",
     value: (mockStats.sessionsThisMonth * 4).toString(),
     change: `+${mockStats.sessionChange}`,
     trend: "up" as const,
-    icon: Calendar03Icon,
+    icon: Calendar,
   },
   {
     title: "Avg Attendance",
     value: `${mockStats.avgAttendance}%`,
     change: `+${mockStats.attendanceChange}%`,
     trend: "up" as const,
-    icon: ChartAverageIcon,
+    icon: TrendingUp,
   },
 ];
 
@@ -51,12 +48,15 @@ const completedSessions = mockSessions
 
 export default function ReportsPage() {
   return (
-    <main className="mx-auto max-w-5xl px-page py-24">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
-        <p className="text-muted-foreground">
-          Attendance insights and analytics.
-        </p>
+    <main className="p-6">
+      <div className="flex items-center gap-3">
+        <SidebarTrigger />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
+          <p className="text-muted-foreground">
+            Attendance insights and analytics.
+          </p>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">

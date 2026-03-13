@@ -1,5 +1,4 @@
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { homePreviewSession, siteConfig } from "@/config";
@@ -38,7 +37,7 @@ export default function Home() {
             eventProperties={{ source: "homepage", cta_text: "Start tracking" }}
           >
             Start tracking
-            <HugeiconsIcon icon={ArrowRight01Icon} />
+            <ArrowRight />
           </TrackedLinkButton>
           <TrackedLinkButton
             variant="ghost"

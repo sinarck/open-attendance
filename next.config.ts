@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   },
   typedRoutes: true,
   experimental: {
-    optimizePackageImports: ["@phosphor-icons/react"],
+    optimizePackageImports: ["lucide-react"],
   },
   // PostHog reverse proxy configuration
   async rewrites() {

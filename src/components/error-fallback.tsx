@@ -1,9 +1,4 @@
-import {
-  Alert02Icon,
-  Home09Icon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Home, RotateCcw, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +23,7 @@ export function ErrorFallback({ className, reset }: ErrorFallbackProps) {
         <Empty className="min-h-[24rem] rounded-[calc(var(--radius-2xl)-2px)] border border-dashed border-border/70 bg-background p-8 md:p-10">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={Alert02Icon} />
+              <TriangleAlert />
             </EmptyMedia>
             <EmptyTitle className="text-2xl tracking-[-0.04em] sm:text-3xl">
               Something went wrong
@@ -41,11 +36,11 @@ export function ErrorFallback({ className, reset }: ErrorFallbackProps) {
           <EmptyContent className="max-w-md">
             <div className="flex w-full flex-wrap justify-center gap-2">
               <Button onClick={reset}>
-                <HugeiconsIcon icon={RefreshIcon} />
+                <RotateCcw />
                 Try again
               </Button>
               <Button variant="outline" render={<Link href="/" />}>
-                <HugeiconsIcon icon={Home09Icon} />
+                <Home />
                 Go home
               </Button>
             </div>

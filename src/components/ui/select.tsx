@@ -1,12 +1,7 @@
 "use client";
 
 import { Select as SelectPrimitive } from "@base-ui/react/select";
-import {
-  ArrowDown01Icon,
-  ArrowUp01Icon,
-  UnfoldMoreIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Select = SelectPrimitive.Root;
@@ -33,10 +28,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon data-slot="select-icon">
-        <HugeiconsIcon
-          className="-me-1 size-4.5 opacity-80 sm:size-4"
-          icon={UnfoldMoreIcon}
-        />
+        <ChevronsUpDown className="-me-1 size-4.5 opacity-80 sm:size-4" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -82,10 +74,7 @@ function SelectPopup({
             className="top-0 z-50 flex h-6 w-full cursor-default items-center justify-center before:pointer-events-none before:absolute before:inset-x-px before:top-px before:h-[200%] before:rounded-t-[calc(var(--radius-lg)-1px)] before:bg-linear-to-b before:from-50% before:from-popover"
             data-slot="select-scroll-up-arrow"
           >
-            <HugeiconsIcon
-              className="relative size-4.5 sm:size-4"
-              icon={ArrowUp01Icon}
-            />
+            <ChevronUp className="relative size-4.5 sm:size-4" />
           </SelectPrimitive.ScrollUpArrow>
           <span className="relative block h-full rounded-lg border bg-popover bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-lg dark:not-in-data-[slot=group]:bg-clip-border">
             <SelectPrimitive.List
@@ -102,10 +91,7 @@ function SelectPopup({
             className="bottom-0 z-50 flex h-6 w-full cursor-default items-center justify-center before:pointer-events-none before:absolute before:inset-x-px before:bottom-px before:h-[200%] before:rounded-b-[calc(var(--radius-lg)-1px)] before:bg-linear-to-t before:from-50% before:from-popover"
             data-slot="select-scroll-down-arrow"
           >
-            <HugeiconsIcon
-              className="relative size-4.5 sm:size-4"
-              icon={ArrowDown01Icon}
-            />
+            <ChevronDown className="relative size-4.5 sm:size-4" />
           </SelectPrimitive.ScrollDownArrow>
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>

@@ -1,8 +1,7 @@
 "use client";
 
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
-import { Cancel01Icon, UnfoldMoreIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronsUpDown, X } from "lucide-react";
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -100,7 +99,7 @@ function ComboboxInput({
             sizeValue === "sm" ? "inset-e-0" : "inset-e-0.5",
           )}
         >
-          <HugeiconsIcon icon={UnfoldMoreIcon} />
+          <ChevronsUpDown />
         </ComboboxTrigger>
       )}
       {showClear && (
@@ -110,7 +109,7 @@ function ComboboxInput({
             sizeValue === "sm" ? "inset-e-0" : "inset-e-0.5",
           )}
         >
-          <HugeiconsIcon icon={Cancel01Icon} />
+          <X />
         </ComboboxClear>
       )}
     </div>
@@ -382,7 +381,7 @@ function ComboboxChipRemove(props: ComboboxPrimitive.ChipRemove.Props) {
       data-slot="combobox-chip-remove"
       {...props}
     >
-      <HugeiconsIcon icon={Cancel01Icon} />
+      <X />
     </ComboboxPrimitive.ChipRemove>
   );
 }

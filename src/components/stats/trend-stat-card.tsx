@@ -1,5 +1,5 @@
-import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import type { LucideIcon } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +8,7 @@ interface TrendStatCardProps {
   value: string;
   change: string;
   trend: "up" | "down";
-  icon: IconSvgElement;
+  icon: LucideIcon;
 }
 
 export function TrendStatCard({
@@ -16,9 +16,10 @@ export function TrendStatCard({
   value,
   change,
   trend,
-  icon,
+  icon: Icon,
 }: TrendStatCardProps) {
   const isUp = trend === "up";
+  const TrendIcon = isUp ? TrendingUp : TrendingDown;
 
   return (
     <Card>
@@ -26,11 +27,7 @@ export function TrendStatCard({
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <HugeiconsIcon
-          icon={icon}
-          size={18}
-          className="text-muted-foreground"
-        />
+        <Icon size={18} className="text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <div className="flex items-baseline gap-2">
@@ -41,10 +38,7 @@ export function TrendStatCard({
               isUp ? "text-success-foreground" : "text-destructive-foreground",
             )}
           >
-            <HugeiconsIcon
-              icon={isUp ? ArrowUp01Icon : ArrowDown01Icon}
-              size={14}
-            />
+            <TrendIcon size={14} />
             {change}
           </span>
         </div>

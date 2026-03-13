@@ -1,7 +1,6 @@
 "use client";
 
-import { Moon02Icon, Sun02Icon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Check, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "@/components/ui/menu";
@@ -22,14 +21,8 @@ const ThemeToggle = () => {
           <Button aria-label="Toggle theme" size="icon" variant="outline" />
         }
       >
-        <HugeiconsIcon
-          className="scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
-          icon={Sun02Icon}
-        />
-        <HugeiconsIcon
-          className="absolute scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
-          icon={Moon02Icon}
-        />
+        <Sun className="scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+        <Moon className="absolute scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
       </MenuTrigger>
       <MenuPopup align="end">
         {themes.map((t) => (
@@ -37,7 +30,7 @@ const ThemeToggle = () => {
             {t.label}
             {theme === t.value && (
               <span className="ml-auto text-muted-foreground">
-                <HugeiconsIcon icon={Tick02Icon} />
+                <Check />
               </span>
             )}
           </MenuItem>

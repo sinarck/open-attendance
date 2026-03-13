@@ -1,6 +1,5 @@
-import { Loading03Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { LoaderCircle } from "lucide-react";
 import { cloneElement, isValidElement } from "react";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +63,7 @@ function Button({
   const buttonClassName = cn(buttonVariants({ className, size, variant }));
   const content = (
     <>
-      {loading && (
-        <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
-      )}
+      {loading && <LoaderCircle className="animate-spin" />}
       {children}
     </>
   );

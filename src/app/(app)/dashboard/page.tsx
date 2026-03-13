@@ -1,14 +1,8 @@
-import {
-  Add01Icon,
-  Calendar03Icon,
-  ChartAverageIcon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Calendar, Plus, TrendingUp, Users } from "lucide-react";
 import { SessionRow } from "@/components/attendance";
-import SignOutButton from "@/components/auth/signout-button";
 import { StatCard } from "@/components/stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -24,17 +18,17 @@ const stats = [
   {
     title: "Total Members",
     value: mockStats.totalMembers.toString(),
-    icon: UserGroupIcon,
+    icon: Users,
   },
   {
     title: "Sessions This Month",
     value: mockStats.sessionsThisMonth.toString(),
-    icon: Calendar03Icon,
+    icon: Calendar,
   },
   {
     title: "Avg Attendance",
     value: `${mockStats.avgAttendance}%`,
-    icon: ChartAverageIcon,
+    icon: TrendingUp,
   },
 ];
 
@@ -42,23 +36,25 @@ const recentSessions = mockSessions.slice(0, 4);
 
 export default function DashboardPage() {
   return (
-    <main className="mx-auto max-w-5xl px-page py-24">
+    <main className="p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back. Here&apos;s what&apos;s happening.
-          </p>
+        <div className="flex items-center gap-3">
+          <SidebarTrigger />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back. Here&apos;s what&apos;s happening.
+            </p>
+          </div>
         </div>
         <TrackedLinkButton
           href="/sessions"
           eventName="new_session_clicked"
           eventProperties={{ source: "dashboard" }}
         >
-          <HugeiconsIcon icon={Add01Icon} size={16} />
+          <Plus size={16} />
           New Session
         </TrackedLinkButton>
-        <SignOutButton />
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">

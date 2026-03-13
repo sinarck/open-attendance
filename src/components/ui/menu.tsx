@@ -1,8 +1,7 @@
 "use client";
 
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronRight } from "lucide-react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -225,10 +224,7 @@ function MenuSubTrigger({
       {...props}
     >
       {children}
-      <HugeiconsIcon
-        className="-me-0.5 ms-auto opacity-80"
-        icon={ArrowRight01Icon}
-      />
+      <ChevronRight className="-me-0.5 ms-auto opacity-80" />
     </MenuPrimitive.SubmenuTrigger>
   );
 }

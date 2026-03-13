@@ -1,9 +1,4 @@
-import {
-  ArrowRight01Icon,
-  Home09Icon,
-  Route01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight, Home, Route } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +17,7 @@ export default function NotFound() {
         <Empty className="min-h-96 rounded-[calc(var(--radius-2xl)-2px)] border border-dashed border-border/70 bg-background p-8 md:p-10">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={Route01Icon} />
+              <Route />
             </EmptyMedia>
             <EmptyTitle className="text-2xl tracking-[-0.04em] sm:text-3xl">
               Page not found
@@ -35,12 +30,12 @@ export default function NotFound() {
           <EmptyContent className="max-w-md">
             <div className="flex w-full flex-wrap justify-center gap-2">
               <Button render={<Link href="/" />}>
-                <HugeiconsIcon icon={Home09Icon} />
+                <Home />
                 Return home
               </Button>
             </div>
             <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-              <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+              <ArrowRight className="size-3.5" />
               <span>Check the web address, or use the main navigation.</span>
             </div>
           </EmptyContent>

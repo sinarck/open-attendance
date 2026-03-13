@@ -1,7 +1,7 @@
-import { UserAdd01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { UserPlus } from "lucide-react";
 import { MemberRow } from "@/components/attendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -14,20 +14,23 @@ import { mockMembers } from "@/config";
 
 export default function MembersPage() {
   return (
-    <main className="mx-auto max-w-5xl px-page py-24">
+    <main className="p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground">
-            Manage your roster and track attendance.
-          </p>
+        <div className="flex items-center gap-3">
+          <SidebarTrigger />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Members</h1>
+            <p className="text-muted-foreground">
+              Manage your roster and track attendance.
+            </p>
+          </div>
         </div>
         <TrackedLinkButton
           href="/dashboard"
           eventName="add_member_clicked"
           eventProperties={{ source: "members_page" }}
         >
-          <HugeiconsIcon icon={UserAdd01Icon} size={16} />
+          <UserPlus size={16} />
           Add Member
         </TrackedLinkButton>
       </div>

@@ -1,9 +1,4 @@
-import {
-  Calendar03Icon,
-  ChartLineData01Icon,
-  SecurityCheckIcon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons";
+import { Calendar, LineChart, ShieldCheck, Users } from "lucide-react";
 
 // Home page highlights
 export const homeHighlights = [
@@ -34,25 +29,25 @@ export const aboutValues = [
 // Features page content
 export const featuresList = [
   {
-    icon: Calendar03Icon,
+    icon: Calendar,
     title: "Simple Sessions",
     description:
       "Create sessions for your meetings, classes, or events. Take attendance in seconds with a clean, intuitive interface.",
   },
   {
-    icon: UserGroupIcon,
+    icon: Users,
     title: "Manage Members",
     description:
       "Keep track of your roster. Add members, view attendance history, and see who's consistently showing up.",
   },
   {
-    icon: ChartLineData01Icon,
+    icon: LineChart,
     title: "Attendance Reports",
     description:
       "Get insights into attendance patterns. Export data, track trends, and make informed decisions.",
   },
   {
-    icon: SecurityCheckIcon,
+    icon: ShieldCheck,
     title: "Secure & Private",
     description:
       "Your data stays yours. Built with security in mind for school and organization use.",
