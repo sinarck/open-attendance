@@ -29,7 +29,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       updateAge: 60 * 60 * 24, // Refresh expiry daily
       cookieCache: {
         enabled: true,
-        maxAge: 5 * 60, // 5 min, avoids DB hit on every getSession
+        maxAge: 5 * 60, // 5 min, avoids DB hit on every `getSession`
       },
     },
     plugins: [username(), emailHarmony(), convex({ authConfig })],
