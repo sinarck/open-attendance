@@ -8,8 +8,15 @@
  * @module
  */
 
+import type * as attendance from "../attendance.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as lib_checkInCode from "../lib/checkInCode.js";
+import type * as lib_rateLimits from "../lib/rateLimits.js";
+import type * as meetings from "../meetings.js";
+import type * as members from "../members.js";
+import type * as organizations from "../organizations.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +25,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  attendance: typeof attendance;
   auth: typeof auth;
   http: typeof http;
+  "lib/auth": typeof lib_auth;
+  "lib/checkInCode": typeof lib_checkInCode;
+  "lib/rateLimits": typeof lib_rateLimits;
+  meetings: typeof meetings;
+  members: typeof members;
+  organizations: typeof organizations;
 }>;
 
 /**
