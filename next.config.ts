@@ -28,13 +28,12 @@ const nextConfig: NextConfig = {
 };
 
 const hasPostHogSourceMaps =
-  Boolean(process.env.POSTHOG_API_KEY) &&
-  Boolean(process.env.POSTHOG_PROJECT_ID);
+  Boolean(env.POSTHOG_API_KEY) && Boolean(env.POSTHOG_PROJECT_ID);
 
 export default withPostHogConfig(nextConfig, {
   host: env.NEXT_PUBLIC_POSTHOG_HOST,
-  personalApiKey: process.env.POSTHOG_API_KEY ?? "",
-  projectId: process.env.POSTHOG_PROJECT_ID ?? "",
+  personalApiKey: env.POSTHOG_API_KEY ?? "",
+  projectId: env.POSTHOG_PROJECT_ID ?? "",
   sourcemaps: {
     enabled: hasPostHogSourceMaps,
   },
