@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     removeConsole: true,
   },
   typedRoutes: true,
+  cacheComponents: true,
+  reactCompiler: true,
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
@@ -35,6 +37,6 @@ export default withPostHogConfig(nextConfig, {
   personalApiKey: env.POSTHOG_API_KEY ?? "",
   projectId: env.POSTHOG_PROJECT_ID ?? "",
   sourcemaps: {
-    enabled: hasPostHogSourceMaps,
+    enabled: process.env.NODE_ENV === "production" && hasPostHogSourceMaps, // Don't bother uploading source maps in development
   },
 });

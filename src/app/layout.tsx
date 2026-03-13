@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
-import { Providers } from "@/components/providers";
+import { RootProviders } from "@/components/providers";
 import { siteConfig } from "@/config";
-import { getToken } from "@/lib/auth-server";
 import { cn } from "@/lib/utils";
 import { figtree, geistMono } from "./ui/fonts";
 
@@ -12,13 +11,11 @@ export const metadata: Metadata = {
   description: siteConfig.description,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const token = await getToken();
-
   return (
     <html
       lang="en"
@@ -40,8 +37,8 @@ export default async function RootLayout({
           />
         )}
       </head>
-      <body className="antialiased pt-header">
-        <Providers initialToken={token}>{children}</Providers>
+      <body className="antialiased">
+        <RootProviders>{children}</RootProviders>
       </body>
     </html>
   );

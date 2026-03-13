@@ -3,6 +3,9 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import { footerSections, siteConfig } from "@/config";
 import { StatusIndicator } from "./status-indicator";
 
+/** Hardcoded at build time — avoids `new Date()` which is a PPR violation. */
+const CURRENT_YEAR = 2026;
+
 export function Footer() {
   return (
     <footer className="border-t bg-card">
@@ -45,7 +48,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t pt-8 text-sm text-muted-foreground sm:flex-row sm:items-center">
           <p>
-            &copy; {new Date().getFullYear()} {siteConfig.name}. MIT License.
+            &copy; {CURRENT_YEAR} {siteConfig.name}. MIT License.
           </p>
           <div className="flex items-center gap-3">
             <ThemeToggle />

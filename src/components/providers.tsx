@@ -11,7 +11,23 @@ import { env } from "@/lib/env";
 
 const convex = new ConvexReactClient(env.NEXT_PUBLIC_CONVEX_URL);
 
-export function Providers({
+/**
+ * Root providers for the entire app. Intentionally excludes Convex/auth so
+ * marketing pages stay static (no WebSocket, no blocking getToken()).
+ */
+export function RootProviders({ children }: { children: ReactNode }) {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ToastProvider position="bottom-right">{children}</ToastProvider>
+    </ThemeProvider>
+  );
+}
+
+/**
+ * Auth-aware providers for the (app) route group only. Wraps children in
+ * ConvexBetterAuthProvider with a pre-fetched token for instant hydration.
+ */
+export function AppProviders({
   children,
   initialToken,
 }: {
@@ -19,17 +35,13 @@ export function Providers({
   initialToken?: string | null;
 }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ConvexBetterAuthProvider
-        client={convex}
-        authClient={authClient}
-        initialToken={initialToken}
-      >
-        <ToastProvider position="bottom-right">
-          <AuthObservability />
-          {children}
-        </ToastProvider>
-      </ConvexBetterAuthProvider>
-    </ThemeProvider>
+    <ConvexBetterAuthProvider
+      client={convex}
+      authClient={authClient}
+      initialToken={initialToken}
+    >
+      <AuthObservability />
+      {children}
+    </ConvexBetterAuthProvider>
   );
 }

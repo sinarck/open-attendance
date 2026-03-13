@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SessionsLoading() {
   return (
-    <main className="mx-auto max-w-5xl px-page py-24">
+    <main className="p-6">
       <div className="flex items-center justify-between">
         <div>
           <Skeleton className="h-8 w-24" />
