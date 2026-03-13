@@ -82,7 +82,7 @@ function DialogPopup({
           {showCloseButton && (
             <DialogPrimitive.Close
               aria-label="Close"
-              className="absolute end-2 top-2"
+              className="absolute inset-e-2 top-2"
               render={<Button size="icon" variant="ghost" />}
             >
               <HugeiconsIcon icon={Cancel01Icon} />
