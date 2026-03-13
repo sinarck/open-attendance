@@ -1,16 +1,14 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { getOptionalSession } from "@/lib/session";
+import { isAuthenticated } from "@/lib/auth-server";
 
 export default async function AuthLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const session = await getOptionalSession();
-
-  if (session) {
-    redirect("/dashboard" as never);
+  if (await isAuthenticated()) {
+    redirect("/dashboard");
   }
 
   return children;

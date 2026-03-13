@@ -1,14 +1,21 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  const sessionCookie = getSessionCookie(request);
-  const url = request.nextUrl.clone();
-  url.pathname = "/login";
+const AUTH_ROUTES = new Set(["/login", "/signup"]);
 
-  // Insecure, optimistic redirect (secure checks implemented in routes)
-  if (!sessionCookie) {
-    return NextResponse.redirect(url);
+export async function proxy(request: NextRequest) {
+  const session = getSessionCookie(request);
+  const { pathname } = request.nextUrl;
+  const isAuthRoute = AUTH_ROUTES.has(pathname);
+
+  // Authenticated users shouldn't see login/signup pages
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // Unauthenticated users can't access protected routes
+  if (!session && !isAuthRoute) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
@@ -20,5 +27,7 @@ export const config = {
     "/members/:path*",
     "/reports/:path*",
     "/sessions/:path*",
+    "/login",
+    "/signup",
   ],
 };
