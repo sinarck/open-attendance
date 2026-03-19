@@ -1,42 +1,49 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <main className="p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="mt-2 h-5 w-64" />
-        </div>
-        <Skeleton className="h-10 w-32" />
-      </div>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {["stat-1", "stat-2", "stat-3"].map((key) => (
+    <main className="space-y-6 p-4 sm:p-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {["stat-1", "stat-2", "stat-3", "stat-4"].map((key) => (
           <Card key={key}>
-            <CardHeader className="flex-row items-center justify-between pb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="size-5" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-9 w-16" />
+            <CardContent className="pt-5 pb-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="mt-2 h-7 w-12" />
+              <Skeleton className="mt-1.5 h-3 w-20" />
             </CardContent>
           </Card>
         ))}
       </div>
-
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-36" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {["row-1", "row-2", "row-3", "row-4"].map((key) => (
-              <Skeleton key={key} className="h-12 w-full" />
-            ))}
-          </CardContent>
-        </Card>
+      <Card className="border-emerald-500/20 bg-emerald-500/5">
+        <CardContent className="flex items-center gap-4 py-4">
+          <Skeleton className="size-2 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+        </CardContent>
+      </Card>
+      <div className="rounded-lg border px-4 py-2">
+        <div className="py-3">
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="grid grid-cols-[1fr_120px] border-t py-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        {["row-1", "row-2", "row-3", "row-4"].map((key) => (
+          <div
+            key={key}
+            className="grid grid-cols-[1fr_120px] items-center border-t py-2"
+          >
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-6 w-14 rounded-full" />
+          </div>
+        ))}
       </div>
     </main>
   );

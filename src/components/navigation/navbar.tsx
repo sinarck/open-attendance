@@ -11,18 +11,7 @@ export function Navbar() {
           open/attendance
         </Link>
 
-        <Suspense
-          fallback={
-            <div className="flex items-center gap-1">
-              <Button size="sm" variant="ghost" render={<Link href="/login" />}>
-                Log in
-              </Button>
-              <Button size="sm" render={<Link href="/signup" />}>
-                Get Started
-              </Button>
-            </div>
-          }
-        >
+        <Suspense fallback={<NavbarFallback />}>
           <NavbarAuth />
         </Suspense>
       </nav>
@@ -30,25 +19,29 @@ export function Navbar() {
   );
 }
 
+function NavbarFallback() {
+  return <div className="h-9 w-[172px] shrink-0 rounded-md" />;
+}
+
 async function NavbarAuth() {
   const authed = await isAuthenticated();
 
-  if (authed) {
-    return (
-      <Button size="sm" render={<Link href={"/dashboard"} />}>
-        Open App
-      </Button>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-1">
-      <Button size="sm" variant="ghost" render={<Link href="/login" />}>
-        Log in
-      </Button>
-      <Button size="sm" render={<Link href="/signup" />}>
-        Get Started
-      </Button>
+    <div className="flex w-[172px] shrink-0 justify-end">
+      {authed ? (
+        <Button size="sm" render={<Link href={"/dashboard" as "/"} />}>
+          Open App
+        </Button>
+      ) : (
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" render={<Link href="/login" />}>
+            Log in
+          </Button>
+          <Button size="sm" render={<Link href="/signup" />}>
+            Get Started
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

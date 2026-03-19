@@ -1,117 +1,161 @@
-import { Calendar, TrendingUp, Users } from "lucide-react";
-import { MonthlyTrendRow, SessionHistoryRow } from "@/components/attendance";
-import { TrendStatCard } from "@/components/stats";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { mockMonthlyTrends, mockSessions, mockStats } from "@/config";
+"use client";
 
-const stats = [
-  {
-    title: "Total Members",
-    value: mockStats.totalMembers.toString(),
-    change: `+${mockStats.memberChange}`,
-    trend: "up" as const,
-    icon: Users,
-  },
-  {
-    title: "Total Sessions",
-    value: (mockStats.sessionsThisMonth * 4).toString(),
-    change: `+${mockStats.sessionChange}`,
-    trend: "up" as const,
-    icon: Calendar,
-  },
-  {
-    title: "Avg Attendance",
-    value: `${mockStats.avgAttendance}%`,
-    change: `+${mockStats.attendanceChange}%`,
-    trend: "up" as const,
-    icon: TrendingUp,
-  },
-];
+import { useQuery } from "convex/react";
 
-const completedSessions = mockSessions
-  .filter((s) => s.status === "completed")
-  .slice(0, 5);
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "../../../../convex/_generated/api";
+import type { Doc } from "../../../../convex/_generated/dataModel";
+import { meetingColumns, memberColumns } from "./columns";
+
+const EMPTY_MEETINGS: Doc<"meetings">[] = [];
+const EMPTY_MEMBERS: Doc<"members">[] = [];
 
 export default function ReportsPage() {
-  return (
-    <main className="p-6">
-      <div className="flex items-center gap-3">
-        <SidebarTrigger />
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">
-            Attendance insights and analytics.
-          </p>
+  const meetings = useQuery(api.meetings.list);
+  const members = useQuery(api.members.list);
+  const allMembers = useQuery(api.members.listAll);
+  const meetingsData = meetings ?? EMPTY_MEETINGS;
+  const membersData = allMembers ?? EMPTY_MEMBERS;
+  if (
+    meetings === undefined ||
+    members === undefined ||
+    allMembers === undefined
+  )
+    return (
+      <div className="space-y-6 p-4 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-5 pb-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-2 h-7 w-12" />
+                <Skeleton className="mt-1.5 h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </div>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {stats.map((stat) => (
-          <TrendStatCard key={stat.title} {...stat} />
-        ))}
-      </div>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Monthly Trends</CardTitle>
-            <CardDescription>Attendance patterns over time</CardDescription>
+          <CardHeader className="pb-3">
+            <Skeleton className="h-4 w-24" />
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Sessions</TableHead>
-                  <TableHead>Avg Attendance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockMonthlyTrends.map((data) => (
-                  <MonthlyTrendRow key={data.month} data={data} />
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid grid-cols-[1fr_140px_140px_120px] border-b py-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_140px_140px_120px] items-center border-b py-2 last:border-0"
+              >
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-20" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-10 rounded-full" />
+                  <Skeleton className="h-5 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-14 rounded-full" />
+              </div>
+            ))}
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Sessions</CardTitle>
-            <CardDescription>Session attendance breakdown</CardDescription>
+          <CardHeader className="pb-3">
+            <Skeleton className="h-4 w-32" />
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Attendance</TableHead>
-                  <TableHead>Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {completedSessions.map((session) => (
-                  <SessionHistoryRow key={session.id} session={session} />
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid grid-cols-[1fr_160px_120px] border-b py-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_160px_120px] items-center border-b py-2 last:border-0"
+              >
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-6 w-14 rounded-full" />
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
-    </main>
+    );
+  const activeMeetingCount = meetings.filter((m) => m.isActive).length;
+  return (
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Stat
+          label="Total Members"
+          value={allMembers.length}
+          sub={`${members.length} active`}
+        />
+        <Stat
+          label="Total Meetings"
+          value={meetings.length}
+          sub={`${activeMeetingCount} active`}
+        />
+        <Stat
+          label="Active Members"
+          value={members.length}
+          sub={`${allMembers.length - members.length} archived`}
+        />
+      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">All Meetings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={meetingColumns}
+            data={meetingsData}
+            emptyTitle="No meetings yet"
+            emptyDescription="Meetings need to exist before reports can show trends and breakdowns."
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">
+            Members Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={memberColumns}
+            data={membersData}
+            emptyTitle="No members yet"
+            emptyDescription="Add members to see roster and attendance reporting here."
+            rowClassName={(row) => (!row.isActive ? "opacity-50" : "")}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: number;
+  sub: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-5 pb-4">
+        <p className="text-[13px] text-muted-foreground">{label}</p>
+        <p className="mt-1 text-2xl font-semibold">{value}</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,22 +1,9 @@
 import { siteConfig } from "./site";
 
-// Public navigation (marketing site)
-export const navLinks = [] as const;
-
-// Authenticated navigation (app)
-export const appLinks = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/sessions", label: "Sessions" },
-  { href: "/members", label: "Members" },
-  { href: "/reports", label: "Reports" },
-] as const;
-
-// External links
 export const externalLinks = {
   github: siteConfig.repo,
 } as const;
 
-// Footer link sections (used for efficient single-pass rendering)
 export const footerSections = [
   {
     title: "Product",
