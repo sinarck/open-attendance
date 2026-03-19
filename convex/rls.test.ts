@@ -46,7 +46,7 @@ describe("RLS: members isolation", () => {
     );
 
     expect(result).not.toBeNull();
-    expect(result!.organizationId).toBe(orgA);
+    expect(result?.organizationId).toBe(orgA);
   });
 });
 
@@ -209,12 +209,12 @@ describe("RLS: organizations isolation", () => {
 
     const canOrgAReadOrgB = await t.run(async (ctx) => {
       const docB = await ctx.db.get(orgB);
-      return docB!._id === orgA;
+      return docB?._id === orgA;
     });
 
     const canOrgAReadOrgA = await t.run(async (ctx) => {
       const docA = await ctx.db.get(orgA);
-      return docA!._id === orgA;
+      return docA?._id === orgA;
     });
 
     expect(canOrgAReadOrgB).toBe(false);
@@ -224,138 +224,138 @@ describe("RLS: organizations isolation", () => {
 
 describe("RLS: read predicates", () => {
   it("organizations: allows when doc._id matches", () => {
-    const orgId = "org123" as any;
-    const doc = { _id: "org123" } as any;
+    const orgId = "org123";
+    const doc = { _id: "org123" };
     expect(doc._id === orgId).toBe(true);
   });
 
   it("organizations: denies when doc._id differs", () => {
-    const orgId = "org123" as any;
-    const doc = { _id: "org456" } as any;
+    const orgId = "org123";
+    const doc = { _id: "org456" };
     expect(doc._id === orgId).toBe(false);
   });
 
   it("members: allows when organizationId matches", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org123" };
     expect(doc.organizationId === orgId).toBe(true);
   });
 
   it("members: denies when organizationId differs", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org456" };
     expect(doc.organizationId === orgId).toBe(false);
   });
 
   it("meetings: allows when organizationId matches", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org123" };
     expect(doc.organizationId === orgId).toBe(true);
   });
 
   it("meetings: denies when organizationId differs", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org456" };
     expect(doc.organizationId === orgId).toBe(false);
   });
 
   it("attendanceRecords: allows when organizationId matches", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org123" };
     expect(doc.organizationId === orgId).toBe(true);
   });
 
   it("attendanceRecords: denies when organizationId differs", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org456" };
     expect(doc.organizationId === orgId).toBe(false);
   });
 });
 
 describe("RLS: modify predicates", () => {
   it("organizations: allows when doc._id matches", () => {
-    const orgId = "org123" as any;
-    const doc = { _id: "org123" } as any;
+    const orgId = "org123";
+    const doc = { _id: "org123" };
     expect(doc._id === orgId).toBe(true);
   });
 
   it("organizations: denies when doc._id differs", () => {
-    const orgId = "org123" as any;
-    const doc = { _id: "org456" } as any;
+    const orgId = "org123";
+    const doc = { _id: "org456" };
     expect(doc._id === orgId).toBe(false);
   });
 
   it("members: allows when organizationId matches", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org123" };
     expect(doc.organizationId === orgId).toBe(true);
   });
 
   it("members: denies when organizationId differs", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org456" };
     expect(doc.organizationId === orgId).toBe(false);
   });
 
   it("meetings: allows when organizationId matches", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org123" };
     expect(doc.organizationId === orgId).toBe(true);
   });
 
   it("meetings: denies when organizationId differs", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org456" };
     expect(doc.organizationId === orgId).toBe(false);
   });
 
   it("attendanceRecords: allows when organizationId matches", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org123" };
     expect(doc.organizationId === orgId).toBe(true);
   });
 
   it("attendanceRecords: denies when organizationId differs", () => {
-    const orgId = "org123" as any;
-    const doc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const doc = { organizationId: "org456" };
     expect(doc.organizationId === orgId).toBe(false);
   });
 });
 
 describe("RLS: insert predicates", () => {
   it("members: allows when doc.organizationId matches caller's org", () => {
-    const orgId = "org123" as any;
-    const newDoc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const newDoc = { organizationId: "org123" };
     expect(newDoc.organizationId === orgId).toBe(true);
   });
 
   it("members: denies when doc.organizationId does not match", () => {
-    const orgId = "org123" as any;
-    const newDoc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const newDoc = { organizationId: "org456" };
     expect(newDoc.organizationId === orgId).toBe(false);
   });
 
   it("meetings: allows when doc.organizationId matches caller's org", () => {
-    const orgId = "org123" as any;
-    const newDoc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const newDoc = { organizationId: "org123" };
     expect(newDoc.organizationId === orgId).toBe(true);
   });
 
   it("meetings: denies when doc.organizationId does not match", () => {
-    const orgId = "org123" as any;
-    const newDoc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const newDoc = { organizationId: "org456" };
     expect(newDoc.organizationId === orgId).toBe(false);
   });
 
   it("attendanceRecords: allows when doc.organizationId matches", () => {
-    const orgId = "org123" as any;
-    const newDoc = { organizationId: "org123" } as any;
+    const orgId = "org123";
+    const newDoc = { organizationId: "org123" };
     expect(newDoc.organizationId === orgId).toBe(true);
   });
 
   it("attendanceRecords: denies when doc.organizationId does not match", () => {
-    const orgId = "org123" as any;
-    const newDoc = { organizationId: "org456" } as any;
+    const orgId = "org123";
+    const newDoc = { organizationId: "org456" };
     expect(newDoc.organizationId === orgId).toBe(false);
   });
 });
@@ -372,15 +372,15 @@ describe("RLS: cross-org write isolation", () => {
     });
 
     const member = await t.run(async (ctx) => ctx.db.get(memberA));
-    expect(member!.organizationId).toBe(orgA);
+    expect(member?.organizationId).toBe(orgA);
 
-    const canOrgBModify = member!.organizationId === orgB;
+    const canOrgBModify = member?.organizationId === orgB;
     expect(canOrgBModify).toBe(false);
   });
 
   it("inserting a meeting into another org is denied by RLS insert rule", async () => {
-    const orgA = "org_aaa" as any;
-    const orgB = "org_bbb" as any;
+    const orgA = "org_aaa";
+    const orgB = "org_bbb";
 
     const callerOrgId = orgA;
     const newDoc = { organizationId: orgB };
@@ -388,8 +388,8 @@ describe("RLS: cross-org write isolation", () => {
   });
 
   it("inserting an attendance record into another org is denied by RLS insert rule", async () => {
-    const orgA = "org_aaa" as any;
-    const orgB = "org_bbb" as any;
+    const orgA = "org_aaa";
+    const orgB = "org_bbb";
 
     const callerOrgId = orgA;
     const newDoc = { organizationId: orgB };
@@ -399,7 +399,7 @@ describe("RLS: cross-org write isolation", () => {
 
 describe("RLS: defaultPolicy deny", () => {
   it("rlsConfig has defaultPolicy set to deny", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const authFile = readFileSync(
       new URL("./lib/auth.ts", import.meta.url),
       "utf8",

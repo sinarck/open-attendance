@@ -65,8 +65,8 @@ describe("attendance:checkIn", () => {
 
     expect(recordId).toBeTruthy();
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("present");
-    expect(record!.method).toBe("self");
+    expect(record?.status).toBe("present");
+    expect(record?.method).toBe("self");
   });
 
   it("records 'present' when checking in before lateAfter", async () => {
@@ -84,7 +84,7 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("present");
+    expect(record?.status).toBe("present");
   });
 
   it("records 'late' when checking in after lateAfter", async () => {
@@ -102,8 +102,8 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("late");
-    expect(record!.method).toBe("self");
+    expect(record?.status).toBe("late");
+    expect(record?.method).toBe("self");
   });
 
   it("records 'present' when checking in exactly at lateAfter (via direct DB)", async () => {
@@ -135,8 +135,8 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("present");
-    expect(record!.method).toBe("self");
+    expect(record?.status).toBe("present");
+    expect(record?.method).toBe("self");
   });
 
   it("rejects invalid check-in code", async () => {
@@ -391,7 +391,7 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.deviceFingerprint).toBe("device-xyz");
+    expect(record?.deviceFingerprint).toBe("device-xyz");
   });
 
   it("does not store deviceFingerprint when meeting does not require it", async () => {
@@ -405,7 +405,7 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.deviceFingerprint).toBeUndefined();
+    expect(record?.deviceFingerprint).toBeUndefined();
   });
 
   it("allows same fingerprint across different meetings", async () => {
@@ -1150,8 +1150,8 @@ describe("attendance:markManual", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("excused");
-    expect(record!.method).toBe("manual");
+    expect(record?.status).toBe("excused");
+    expect(record?.method).toBe("manual");
   });
 
   it("updates status of existing record (upsert)", async () => {
@@ -1175,16 +1175,16 @@ describe("attendance:markManual", () => {
           q.eq("meetingId", meetingId).eq("memberId", memberId),
         )
         .unique();
-      expect(existing).not.toBeNull();
-      await ctx.db.patch(existing!._id, {
+      if (!existing) throw new Error("Expected attendance record to exist");
+      await ctx.db.patch(existing._id, {
         status: "excused",
         method: "manual",
       });
     });
 
     const updated = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(updated!.status).toBe("excused");
-    expect(updated!.method).toBe("manual");
+    expect(updated?.status).toBe("excused");
+    expect(updated?.method).toBe("manual");
   });
 });
 
@@ -1194,7 +1194,7 @@ describe("attendance:markManual (error paths)", () => {
 
     await t.run(async (ctx) => {
       const fakeMeetingId =
-        "meetings:fake00000000000000000000" as any as Id<"meetings">;
+        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       const meeting = await ctx.db.get(fakeMeetingId);
       expect(meeting).toBeNull();
     });
@@ -1207,7 +1207,7 @@ describe("attendance:markManual (error paths)", () => {
 
     await t.run(async (ctx) => {
       const fakeMemberId =
-        "members:fake00000000000000000000" as any as Id<"members">;
+        "members:fake00000000000000000000" as unknown as Id<"members">;
       const member = await ctx.db.get(fakeMemberId);
       expect(member).toBeNull();
     });
@@ -1233,13 +1233,13 @@ describe("attendance:markManual (error paths)", () => {
       await ctx.db.patch(recordId, { status: "late", method: "manual" });
     });
     let record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("late");
+    expect(record?.status).toBe("late");
 
     await t.run(async (ctx) => {
       await ctx.db.patch(recordId, { status: "excused", method: "manual" });
     });
     record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record!.status).toBe("excused");
+    expect(record?.status).toBe("excused");
   });
 });
 
@@ -1271,7 +1271,7 @@ describe("attendance:removeRecord", () => {
 
     const result = await t.run(async (ctx) => {
       const fakeId =
-        "attendanceRecords:fake00000000000000000000" as any as Id<"attendanceRecords">;
+        "attendanceRecords:fake00000000000000000000" as unknown as Id<"attendanceRecords">;
       return ctx.db.get(fakeId);
     });
 
@@ -1302,6 +1302,6 @@ describe("attendance:removeRecord", () => {
 
     const remaining = await t.run(async (ctx) => ctx.db.get(r2));
     expect(remaining).not.toBeNull();
-    expect(remaining!.memberId).toBe(m2);
+    expect(remaining?.memberId).toBe(m2);
   });
 });

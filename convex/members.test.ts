@@ -19,10 +19,10 @@ describe("members:create", () => {
 
     const member = await t.run(async (ctx) => ctx.db.get(memberId));
     expect(member).not.toBeNull();
-    expect(member!.name).toBe("Alice");
-    expect(member!.identifier).toBe("STU001");
-    expect(member!.isActive).toBe(true);
-    expect(member!.organizationId).toBe(orgId);
+    expect(member?.name).toBe("Alice");
+    expect(member?.identifier).toBe("STU001");
+    expect(member?.isActive).toBe(true);
+    expect(member?.organizationId).toBe(orgId);
   });
 
   it("rejects duplicate identifier within the same org", async () => {
@@ -76,7 +76,7 @@ describe("members:update", () => {
     });
 
     const updated = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(updated!.name).toBe("Alice Updated");
+    expect(updated?.name).toBe("Alice Updated");
   });
 
   it("updates member identifier when new one is unique", async () => {
@@ -99,7 +99,7 @@ describe("members:update", () => {
     });
 
     const updated = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(updated!.identifier).toBe("NEW001");
+    expect(updated?.identifier).toBe("NEW001");
   });
 
   it("rejects changing identifier to a duplicate", async () => {
@@ -135,7 +135,7 @@ describe("members:archive and restore", () => {
     });
 
     const archived = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(archived!.isActive).toBe(false);
+    expect(archived?.isActive).toBe(false);
   });
 
   it("restores an archived member (sets isActive to true)", async () => {
@@ -151,7 +151,7 @@ describe("members:archive and restore", () => {
     });
 
     const restored = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(restored!.isActive).toBe(true);
+    expect(restored?.isActive).toBe(true);
   });
 
   it("archived members are excluded from active list query", async () => {
@@ -349,15 +349,16 @@ describe("members:get", () => {
 
     const member = await t.run(async (ctx) => ctx.db.get(memberId));
     expect(member).not.toBeNull();
-    expect(member!.name).toBe("Alice");
-    expect(member!.identifier).toBe("A001");
+    expect(member?.name).toBe("Alice");
+    expect(member?.identifier).toBe("A001");
   });
 
   it("returns null for a non-existent member ID", async () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId = "members:fake00000000000000000000" as any as Id<"members">;
+      const fakeId =
+        "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -487,7 +488,7 @@ describe("members:update (edge cases)", () => {
       const member = await ctx.db.get(memberId);
       const newIdentifier = "STU001";
       const shouldCheck =
-        newIdentifier !== undefined && newIdentifier !== member!.identifier;
+        newIdentifier !== undefined && newIdentifier !== member?.identifier;
       expect(shouldCheck).toBe(false);
     });
   });
@@ -513,8 +514,8 @@ describe("members:update (edge cases)", () => {
     });
 
     const updated = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(updated!.name).toBe("Bob");
-    expect(updated!.identifier).toBe("NEW");
+    expect(updated?.name).toBe("Bob");
+    expect(updated?.identifier).toBe("NEW");
   });
 
   it("handles empty patch (no name or identifier provided)", async () => {
@@ -532,15 +533,16 @@ describe("members:update (edge cases)", () => {
     });
 
     const unchanged = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(unchanged!.name).toBe("Alice");
-    expect(unchanged!.identifier).toBe("STU001");
+    expect(unchanged?.name).toBe("Alice");
+    expect(unchanged?.identifier).toBe("STU001");
   });
 
   it("throws when member not found for update", async () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId = "members:fake00000000000000000000" as any as Id<"members">;
+      const fakeId =
+        "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -553,7 +555,8 @@ describe("members:archive and restore (error & idempotency)", () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId = "members:fake00000000000000000000" as any as Id<"members">;
+      const fakeId =
+        "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -573,14 +576,15 @@ describe("members:archive and restore (error & idempotency)", () => {
     });
 
     const member = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(member!.isActive).toBe(false);
+    expect(member?.isActive).toBe(false);
   });
 
   it("restore: throws when member not found", async () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId = "members:fake00000000000000000000" as any as Id<"members">;
+      const fakeId =
+        "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -600,6 +604,6 @@ describe("members:archive and restore (error & idempotency)", () => {
     });
 
     const member = await t.run(async (ctx) => ctx.db.get(memberId));
-    expect(member!.isActive).toBe(true);
+    expect(member?.isActive).toBe(true);
   });
 });

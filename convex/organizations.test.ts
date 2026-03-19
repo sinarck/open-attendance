@@ -16,7 +16,7 @@ describe("organizations:getCurrent (authId lookup)", () => {
     );
 
     expect(org).not.toBeNull();
-    expect(org!._id).toBe(orgId);
+    expect(org?._id).toBe(orgId);
   });
 
   it("returns null when authId does not match", async () => {
@@ -53,9 +53,9 @@ describe("organizations:completeOnboarding", () => {
     });
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org!.name).toBe("My Classroom");
-    expect(org!.slug).toBe("my-classroom");
-    expect(org!.timezone).toBe("America/New_York");
+    expect(org?.name).toBe("My Classroom");
+    expect(org?.slug).toBe("my-classroom");
+    expect(org?.timezone).toBe("America/New_York");
   });
 
   it("rejects onboarding if slug is already set (already onboarded)", async () => {
@@ -68,7 +68,7 @@ describe("organizations:completeOnboarding", () => {
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     // The production code checks `org.slug !== ""`.
-    expect(org!.slug).not.toBe("");
+    expect(org?.slug).not.toBe("");
   });
 });
 
@@ -343,20 +343,20 @@ describe("organizations:completeOnboarding (returns org._id)", () => {
     // Simulate completeOnboarding: patch and return org._id.
     const returnedId = await t.run(async (ctx) => {
       const org = await ctx.db.get(orgId);
-      expect(org!.slug).toBe("");
-      await ctx.db.patch(org!._id, {
+      expect(org?.slug).toBe("");
+      await ctx.db.patch(org?._id, {
         name: "My Org",
         slug: "my-org",
         timezone: "America/Chicago",
       });
-      return org!._id;
+      return org?._id;
     });
 
     expect(returnedId).toBe(orgId);
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org!.name).toBe("My Org");
-    expect(org!.slug).toBe("my-org");
+    expect(org?.name).toBe("My Org");
+    expect(org?.slug).toBe("my-org");
   });
 });
 
@@ -422,9 +422,9 @@ describe("organizations:user.onCreate trigger", () => {
     });
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org!.authId).toBe("new_user_123");
-    expect(org!.name).toBe("");
-    expect(org!.slug).toBe("");
-    expect(org!.timezone).toBe("UTC");
+    expect(org?.authId).toBe("new_user_123");
+    expect(org?.name).toBe("");
+    expect(org?.slug).toBe("");
+    expect(org?.timezone).toBe("UTC");
   });
 });

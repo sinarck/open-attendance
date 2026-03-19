@@ -34,10 +34,10 @@ describe("meetings:create", () => {
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
     expect(meeting).not.toBeNull();
-    expect(meeting!.name).toBe("Team Standup");
-    expect(meeting!.isActive).toBe(false);
-    expect(meeting!.checkInCode).toMatch(UUID_RE);
-    expect(meeting!.requireFingerprint).toBe(false);
+    expect(meeting?.name).toBe("Team Standup");
+    expect(meeting?.isActive).toBe(false);
+    expect(meeting?.checkInCode).toMatch(UUID_RE);
+    expect(meeting?.requireFingerprint).toBe(false);
   });
 
   it("rejects endTime <= startTime", async () => {
@@ -117,14 +117,14 @@ describe("meetings:create", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.description).toBe("A comprehensive meeting");
-    expect(meeting!.location).toBe("Room 101");
-    expect(meeting!.lateAfter).toBe(now + 10 * 60_000);
-    expect(meeting!.tags).toEqual(["important", "weekly"]);
-    expect(meeting!.geoFenceLatitude).toBe(40.0);
-    expect(meeting!.geoFenceLongitude).toBe(-74.0);
-    expect(meeting!.geoFenceRadiusM).toBe(500);
-    expect(meeting!.requireFingerprint).toBe(true);
+    expect(meeting?.description).toBe("A comprehensive meeting");
+    expect(meeting?.location).toBe("Room 101");
+    expect(meeting?.lateAfter).toBe(now + 10 * 60_000);
+    expect(meeting?.tags).toEqual(["important", "weekly"]);
+    expect(meeting?.geoFenceLatitude).toBe(40.0);
+    expect(meeting?.geoFenceLongitude).toBe(-74.0);
+    expect(meeting?.geoFenceRadiusM).toBe(500);
+    expect(meeting?.requireFingerprint).toBe(true);
   });
 
   it("defaults lateAfter to endTime (nobody marked late)", async () => {
@@ -147,7 +147,7 @@ describe("meetings:create", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.lateAfter).toBe(endTime);
+    expect(meeting?.lateAfter).toBe(endTime);
   });
 });
 
@@ -165,7 +165,7 @@ describe("meetings:activate and deactivate", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.isActive).toBe(true);
+    expect(meeting?.isActive).toBe(true);
   });
 
   it("deactivates a meeting (sets isActive to false)", async () => {
@@ -181,7 +181,7 @@ describe("meetings:activate and deactivate", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.isActive).toBe(false);
+    expect(meeting?.isActive).toBe(false);
   });
 
   it("regenerates check-in code on activate when requested", async () => {
@@ -201,9 +201,9 @@ describe("meetings:activate and deactivate", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.isActive).toBe(true);
-    expect(meeting!.checkInCode).not.toBe("OLDCOD");
-    expect(meeting!.checkInCode).toMatch(UUID_RE);
+    expect(meeting?.isActive).toBe(true);
+    expect(meeting?.checkInCode).not.toBe("OLDCOD");
+    expect(meeting?.checkInCode).toMatch(UUID_RE);
   });
 
   it("preserves check-in code when activate without regeneration", async () => {
@@ -220,7 +220,7 @@ describe("meetings:activate and deactivate", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.checkInCode).toBe("KEEP12");
+    expect(meeting?.checkInCode).toBe("KEEP12");
   });
 });
 
@@ -238,7 +238,7 @@ describe("meetings:update", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.name).toBe("Updated");
+    expect(meeting?.name).toBe("Updated");
   });
 
   it("updates meeting time window", async () => {
@@ -258,8 +258,8 @@ describe("meetings:update", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.startTime).toBe(newStart);
-    expect(meeting!.endTime).toBe(newEnd);
+    expect(meeting?.startTime).toBe(newStart);
+    expect(meeting?.endTime).toBe(newEnd);
   });
 });
 
@@ -361,7 +361,7 @@ describe("meetings:get", () => {
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
     expect(meeting).not.toBeNull();
-    expect(meeting!.name).toBe("Standup");
+    expect(meeting?.name).toBe("Standup");
   });
 
   it("returns null for a non-existent meeting ID", async () => {
@@ -369,7 +369,7 @@ describe("meetings:get", () => {
 
     const meeting = await t.run(async (ctx) => {
       const fakeId =
-        "meetings:fake00000000000000000000" as any as Id<"meetings">;
+        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -508,7 +508,7 @@ describe("meetings:update (error paths)", () => {
 
     const meeting = await t.run(async (ctx) => {
       const fakeId =
-        "meetings:fake00000000000000000000" as any as Id<"meetings">;
+        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -528,7 +528,7 @@ describe("meetings:update (error paths)", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.name).toBe("Original");
+    expect(meeting?.name).toBe("Original");
   });
 });
 
@@ -651,7 +651,7 @@ describe("meetings:activate (error paths)", () => {
 
     const meeting = await t.run(async (ctx) => {
       const fakeId =
-        "meetings:fake00000000000000000000" as any as Id<"meetings">;
+        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -675,8 +675,8 @@ describe("meetings:activate (error paths)", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.isActive).toBe(true);
-    expect(meeting!.checkInCode).toBe("KEEP12");
+    expect(meeting?.isActive).toBe(true);
+    expect(meeting?.checkInCode).toBe("KEEP12");
   });
 });
 
@@ -686,7 +686,7 @@ describe("meetings:deactivate (error paths)", () => {
 
     const meeting = await t.run(async (ctx) => {
       const fakeId =
-        "meetings:fake00000000000000000000" as any as Id<"meetings">;
+        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -706,7 +706,7 @@ describe("meetings:deactivate (error paths)", () => {
     });
 
     const meeting = await t.run(async (ctx) => ctx.db.get(meetingId));
-    expect(meeting!.isActive).toBe(false);
+    expect(meeting?.isActive).toBe(false);
   });
 });
 
@@ -716,7 +716,7 @@ describe("meetings:remove (error & edge cases)", () => {
 
     const meeting = await t.run(async (ctx) => {
       const fakeId =
-        "meetings:fake00000000000000000000" as any as Id<"meetings">;
+        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
