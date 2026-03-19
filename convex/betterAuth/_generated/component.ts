@@ -8,8 +8,6 @@
  * @module
  */
 
-import type { FunctionReference } from "convex/server";
-
 /**
  * A utility for referencing a Convex component's exposed API.
  *
@@ -21,5 +19,6 @@ import type { FunctionReference } from "convex/server";
  * }
  * ```
  */
-export type ComponentApi<Name extends string | undefined = string | undefined> =
-  {};
+export type ComponentApi<
+  _Name extends string | undefined = string | undefined,
+> = {};

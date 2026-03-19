@@ -3,7 +3,6 @@ import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { type BetterAuthOptions, betterAuth } from "better-auth/minimal";
 import { username } from "better-auth/plugins";
-import { emailHarmony } from "better-auth-harmony";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
@@ -66,6 +65,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     appName: "Open Attendance",
     baseURL: process.env.SITE_URL,
+    // biome-ignore lint/style/noNonNullAssertion: validated by Convex at deploy time
     trustedOrigins: [process.env.SITE_URL!],
     secret: process.env.BETTER_AUTH_SECRET,
     database: authComponent.adapter(ctx),
@@ -83,7 +83,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         maxAge: 5 * 60, // 5 min, avoids DB hit on every getSession
       },
     },
-    plugins: [username(), emailHarmony(), convex({ authConfig })],
+    plugins: [username(), convex({ authConfig })],
   } satisfies BetterAuthOptions);
 };
 

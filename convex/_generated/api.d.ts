@@ -12,7 +12,6 @@ import type * as attendance from "../attendance.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
-import type * as lib_checkInCode from "../lib/checkInCode.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as meetings from "../meetings.js";
 import type * as members from "../members.js";
@@ -29,7 +28,6 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   "lib/auth": typeof lib_auth;
-  "lib/checkInCode": typeof lib_checkInCode;
   "lib/rateLimits": typeof lib_rateLimits;
   meetings: typeof meetings;
   members: typeof members;
