@@ -14,10 +14,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_HOST: z.url(),
     NEXT_PUBLIC_POSTHOG_API_HOST: z
       .string()
-      .regex(
-        /^\/(?:.*[^/])?$/,
-        "Must be a root-relative path without trailing slash",
-      ),
+      .regex(/^\/(?:.*[^/])?$/, "Must be a root-relative path without trailing slash"),
   },
   extends: [vercel()],
   experimental__runtimeEnv: {

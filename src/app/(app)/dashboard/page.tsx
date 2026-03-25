@@ -1,157 +1,139 @@
-"use client";
-
-import { useQuery } from "convex/react";
-import { MapPin } from "lucide-react";
-import { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { DataTable } from "@/components/ui/data-table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Activity, CalendarRange, Fingerprint, ShieldCheck, Users2, Waves } from "lucide-react";
+import { requireAppContext } from "@/lib/app-context";
+import { fetchAuthQuery } from "@/lib/auth-server";
+import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
-import type { Doc } from "../../../../convex/_generated/dataModel";
-import { columns } from "./columns";
+import { AttentionList } from "./_components/attention-list";
+import { LiveStatus } from "./_components/live-status";
+import { RecentMeetings } from "./_components/recent-meetings";
 
-const EMPTY_MEETINGS: Doc<"meetings">[] = [];
+export default async function DashboardPage() {
+  await requireAppContext();
+  const s = await fetchAuthQuery(api.dashboard.summary);
 
-export default function DashboardPage() {
-  const meetings = useQuery(api.meetings.list);
-  const members = useQuery(api.members.list);
-  const allMembers = useQuery(api.members.listAll);
-  const recentMeetings = useMemo(
-    () => (meetings ? meetings.slice(0, 5) : EMPTY_MEETINGS),
-    [meetings],
-  );
+  const metrics = [
+    {
+      key: "roster",
+      icon: Users2,
+      label: "Active roster",
+      value: s.activeMembers,
+      sub: `${s.archivedMembers} archived`,
+      accent: "from-chart-2/16 to-chart-2/4",
+    },
+    {
+      key: "rate",
+      icon: Activity,
+      label: "Capture rate",
+      value: `${s.recentAttendanceRate}%`,
+      sub: `Last ${s.recentMeetings.length} meetings`,
+      accent: "from-chart-4/16 to-chart-4/4",
+    },
+    {
+      key: "meetings",
+      icon: CalendarRange,
+      label: "Meetings",
+      value: s.totalMeetings,
+      sub: `${s.activeMeetings} live, ${s.completedMeetings} closed`,
+      accent: "from-chart-1/16 to-chart-1/4",
+    },
+    {
+      key: "checkins",
+      icon: Waves,
+      label: "Check-ins",
+      value: s.totalCheckIns,
+      sub: "All-time recorded entries",
+      accent: "from-chart-5/16 to-chart-5/4",
+    },
+  ] as const;
 
-  if (
-    meetings === undefined ||
-    members === undefined ||
-    allMembers === undefined
-  ) {
-    return (
-      <div className="space-y-6 p-4 sm:p-6">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="pt-5 pb-4">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="mt-2 h-7 w-12" />
-                <Skeleton className="mt-1.5 h-3 w-20" />
-              </CardContent>
-            </Card>
+  const safeguards = [
+    {
+      key: "geo",
+      icon: ShieldCheck,
+      count: s.geoFenceMeetings,
+      label: "geo-fenced",
+    },
+    {
+      key: "fp",
+      icon: Fingerprint,
+      count: s.fingerprintMeetings,
+      label: "device-verified",
+    },
+  ] as const;
+
+  return (
+    <main className="space-y-8 p-4 pb-12 sm:p-6 sm:pb-16">
+      {/* ── KPI Strip ────────────────────────────────────── */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ key, icon: Icon, label, value, sub, accent }) => (
+          <div
+            key={key}
+            className={cn(
+              "relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br p-5",
+              accent,
+            )}
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                {label}
+              </span>
+              <Icon className="size-4 text-muted-foreground/60" />
+            </div>
+            <p className="mt-3 font-mono text-3xl font-semibold tracking-tight">{value}</p>
+            <p className="mt-1.5 text-[13px] text-muted-foreground">{sub}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* ── Live / Upcoming ──────────────────────────────── */}
+      <LiveStatus summary={s} />
+
+      {/* ── Two-column: meetings + attention ──────────────── */}
+      <section className="grid gap-6 xl:grid-cols-2">
+        {/* Recent meetings */}
+        <div className="space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold tracking-tight">Recent meetings</h2>
+            <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+              Last {s.recentMeetings.length}
+            </span>
+          </div>
+          <RecentMeetings meetings={s.recentMeetings} />
+        </div>
+
+        {/* Attention list */}
+        <div className="space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold tracking-tight">Needs attention</h2>
+            <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+              Lowest {s.membersNeedingAttention.length} rates
+            </span>
+          </div>
+          <AttentionList summary={s} />
+        </div>
+      </section>
+
+      {/* ── Safeguard strip ──────────────────────────────── */}
+      <section className="rounded-2xl border border-border/60 p-5">
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+          Safeguard coverage
+        </h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {safeguards.map(({ key, icon: Icon, count, label }) => (
+            <div key={key} className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-xl border border-border/60 bg-muted/40">
+                <Icon className="size-4 text-foreground" />
+              </div>
+              <div>
+                <p className="font-mono text-lg font-semibold tabular-nums leading-tight">
+                  {count}
+                </p>
+                <p className="text-[12px] text-muted-foreground">meetings {label}</p>
+              </div>
+            </div>
           ))}
         </div>
-        <Card className="border-emerald-500/20 bg-emerald-500/5">
-          <CardContent className="flex items-center gap-4 py-4">
-            <Skeleton className="size-2 rounded-full" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-3 w-28" />
-            </div>
-          </CardContent>
-        </Card>
-        <div className="rounded-lg border">
-          <div className="px-4 py-3">
-            <Skeleton className="h-4 w-28" />
-          </div>
-          <div className="px-4 py-2">
-            <div className="grid grid-cols-[1fr_120px] border-t py-2 text-left">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-12" />
-            </div>
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[1fr_120px] items-center border-t py-2"
-              >
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <Skeleton className="h-6 w-14 rounded-full" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const active = meetings.filter((m) => m.isActive);
-  const liveMeeting = active[0];
-
-  return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
-          label="Members"
-          value={members.length}
-          sub={
-            allMembers.length > members.length
-              ? `${allMembers.length} total`
-              : undefined
-          }
-        />
-        <Stat
-          label="Meetings"
-          value={meetings.length}
-          sub={`${active.length} active`}
-        />
-        <Stat label="Active" value={active.length} />
-        <Stat
-          label="Roster"
-          value={allMembers.length}
-          sub={`${allMembers.length - members.length} archived`}
-        />
-      </div>
-      {liveMeeting && (
-        <Card className="border-emerald-500/20 bg-emerald-500/5">
-          <CardContent className="flex items-center gap-4 py-4">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium">{liveMeeting.name}</p>
-              {liveMeeting.location && (
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <MapPin className="size-3" />
-                  {liveMeeting.location}
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      <div className="rounded-lg border">
-        <div className="px-4 py-3">
-          <h2 className="text-[13px] font-medium">Recent Meetings</h2>
-        </div>
-        <DataTable
-          columns={columns}
-          data={recentMeetings}
-          emptyTitle="No meetings yet"
-          emptyDescription="Create your first meeting to start recording attendance."
-        />
-      </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-5 pb-4">
-        <p className="text-[13px] text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-semibold">{value}</p>
-        {sub && <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>}
-      </CardContent>
-    </Card>
+      </section>
+    </main>
   );
 }

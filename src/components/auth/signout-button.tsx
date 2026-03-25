@@ -12,7 +12,7 @@ export default function SignOutButton() {
     <Button
       onClick={() => {
         posthog.capture("user_signed_out");
-        signOut({
+        void signOut({
           fetchOptions: {
             onSuccess: () => {
               posthog.reset();

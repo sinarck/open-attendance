@@ -4,20 +4,12 @@ import { Input as InputPrimitive } from "@base-ui/react/input";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-type InputProps = Omit<
-  InputPrimitive.Props & React.RefAttributes<HTMLInputElement>,
-  "size"
-> & {
+type InputProps = Omit<InputPrimitive.Props & React.RefAttributes<HTMLInputElement>, "size"> & {
   size?: "sm" | "default" | "lg" | number;
   unstyled?: boolean;
 };
 
-function Input({
-  className,
-  size = "default",
-  unstyled = false,
-  ...props
-}: InputProps) {
+function Input({ className, size = "default", unstyled = false, ...props }: InputProps) {
   return (
     <span
       className={

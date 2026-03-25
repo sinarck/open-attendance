@@ -20,7 +20,12 @@ export function Navbar() {
 }
 
 function NavbarFallback() {
-  return <div className="h-9 w-[172px] shrink-0 rounded-md" />;
+  return (
+    <div aria-hidden className="flex w-[172px] shrink-0 justify-end gap-1">
+      <div className="h-8 w-[62px] rounded-lg border border-transparent" />
+      <div className="h-8 w-[102px] rounded-lg border border-border/60 bg-muted/30" />
+    </div>
+  );
 }
 
 async function NavbarAuth() {

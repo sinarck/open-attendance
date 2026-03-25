@@ -1,7 +1,6 @@
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import schema from "./schema";
-import { seedMeeting, seedMember, seedOrg, seedRecord } from "./test.helpers";
+import { describe, expect, it } from "vite-plus/test";
+import { convexTest, schema } from "./harness";
+import { seedMeeting, seedMember, seedOrg, seedRecord } from "./test-helpers";
 
 describe("E2E: signup -> onboarding -> dashboard", () => {
   it("full new-user lifecycle", async () => {
@@ -37,9 +36,7 @@ describe("E2E: signup -> onboarding -> dashboard", () => {
     const members = await t.run(async (ctx) =>
       ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect(),
     );
     expect(meetings).toHaveLength(0);
@@ -75,9 +72,7 @@ describe("E2E: meeting + attendance", () => {
     const records = await t.run(async (ctx) =>
       ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) =>
-          q.eq("organizationId", orgId).eq("meetingId", mtg),
-        )
+        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgId).eq("meetingId", mtg))
         .collect(),
     );
     expect(records).toHaveLength(2);
@@ -86,9 +81,7 @@ describe("E2E: meeting + attendance", () => {
     const active = await t.run(async (ctx) =>
       ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect(),
     );
     expect(active).toHaveLength(3);
@@ -108,9 +101,7 @@ describe("E2E: member archive lifecycle", () => {
       t.run(async (ctx) =>
         ctx.db
           .query("members")
-          .withIndex("by_org_active", (q) =>
-            q.eq("organizationId", orgId).eq("isActive", true),
-          )
+          .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
           .collect(),
       );
 
@@ -143,9 +134,7 @@ describe("E2E: meeting deactivation", () => {
       t.run(async (ctx) =>
         ctx.db
           .query("meetings")
-          .withIndex("by_org_active", (q) =>
-            q.eq("organizationId", orgId).eq("isActive", true),
-          )
+          .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
           .collect(),
       );
 

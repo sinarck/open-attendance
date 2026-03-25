@@ -17,10 +17,7 @@ function Empty({ className, ...props }: React.ComponentProps<"div">) {
 function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn(
-        "flex max-w-sm flex-col items-center text-center",
-        className,
-      )}
+      className={cn("flex max-w-sm flex-col items-center text-center", className)}
       data-slot="empty-header"
       {...props}
     />
@@ -72,9 +69,7 @@ function EmptyMedia({
           />
         </>
       )}
-      <div className={cn(emptyMediaVariants({ className, variant }))}>
-        {props.children}
-      </div>
+      <div className={cn(emptyMediaVariants({ className, variant }))}>{props.children}</div>
     </div>
   );
 }
@@ -115,11 +110,4 @@ function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-export {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-  EmptyMedia,
-};
+export { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia };

@@ -1,21 +1,22 @@
 import { ConvexError, v } from "convex/values";
+import { zid } from "convex-helpers/server/zod4";
 import { isAfter, isBefore, isEqual } from "date-fns";
-import { authedMutation, authedQuery } from "./lib/auth";
+import { authedMutation, authedQuery, zAuthedMutation } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
+import { z } from "zod";
+import {
+  meetingNameSchema,
+  meetingOptionalTextSchema,
+  meetingTagsSchema,
+} from "../lib/validation/convex";
 
 /** Validates startTime < lateAfter <= endTime. */
-function validateTimeWindow(
-  startTime: number,
-  endTime: number,
-  lateAfter: number,
-) {
+function validateTimeWindow(startTime: number, endTime: number, lateAfter: number) {
   if (isBefore(endTime, startTime) || isEqual(endTime, startTime)) {
     throw new ConvexError("End time must be after start time");
   }
   if (isBefore(lateAfter, startTime) || isAfter(lateAfter, endTime)) {
-    throw new ConvexError(
-      "Late-after cutoff must be between start time and end time",
-    );
+    throw new ConvexError("Late-after cutoff must be between start time and end time");
   }
 }
 
@@ -28,9 +29,7 @@ function validateGeoFence(
   const geoFields = [latitude, longitude, radiusM];
   const geoProvided = geoFields.filter((f) => f !== undefined).length;
   if (geoProvided !== 0 && geoProvided !== 3) {
-    throw new ConvexError(
-      "Geo-fence requires all three fields: latitude, longitude, and radius",
-    );
+    throw new ConvexError("Geo-fence requires all three fields: latitude, longitude, and radius");
   }
   if (radiusM !== undefined && radiusM <= 0) {
     throw new ConvexError("Geo-fence radius must be a positive number");
@@ -63,24 +62,24 @@ export const listActive = authedQuery({
 export const get = authedQuery({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, { meetingId }) => {
-    return ctx.db.get(meetingId);
+    return ctx.db.get("meetings", meetingId);
   },
 });
 
 /** lateAfter defaults to endTime (no one marked late). */
-export const create = authedMutation({
+export const create = zAuthedMutation({
   args: {
-    name: v.string(),
-    description: v.optional(v.string()),
-    location: v.optional(v.string()),
-    startTime: v.number(),
-    endTime: v.number(),
-    tags: v.optional(v.array(v.string())),
-    lateAfter: v.optional(v.number()),
-    geoFenceLatitude: v.optional(v.number()),
-    geoFenceLongitude: v.optional(v.number()),
-    geoFenceRadiusM: v.optional(v.number()),
-    requireFingerprint: v.optional(v.boolean()),
+    name: meetingNameSchema,
+    description: meetingOptionalTextSchema,
+    location: meetingOptionalTextSchema,
+    startTime: z.number(),
+    endTime: z.number(),
+    tags: meetingTagsSchema,
+    lateAfter: z.number().optional(),
+    geoFenceLatitude: z.number().optional(),
+    geoFenceLongitude: z.number().optional(),
+    geoFenceRadiusM: z.number().optional(),
+    requireFingerprint: z.boolean().optional(),
   },
   handler: async (ctx, args) => {
     await rateLimit(ctx, {
@@ -88,15 +87,10 @@ export const create = authedMutation({
       key: ctx.organizationId,
       throws: true,
     });
-
     const lateAfter = args.lateAfter ?? args.endTime;
 
     validateTimeWindow(args.startTime, args.endTime, lateAfter);
-    validateGeoFence(
-      args.geoFenceLatitude,
-      args.geoFenceLongitude,
-      args.geoFenceRadiusM,
-    );
+    validateGeoFence(args.geoFenceLatitude, args.geoFenceLongitude, args.geoFenceRadiusM);
 
     return ctx.db.insert("meetings", {
       organizationId: ctx.organizationId,
@@ -118,55 +112,55 @@ export const create = authedMutation({
 });
 
 /** Cannot change checkInCode or organizationId. */
-export const update = authedMutation({
+export const update = zAuthedMutation({
   args: {
-    meetingId: v.id("meetings"),
-    name: v.optional(v.string()),
-    description: v.optional(v.string()),
-    location: v.optional(v.string()),
-    startTime: v.optional(v.number()),
-    endTime: v.optional(v.number()),
-    lateAfter: v.optional(v.number()),
-    tags: v.optional(v.array(v.string())),
-    geoFenceLatitude: v.optional(v.number()),
-    geoFenceLongitude: v.optional(v.number()),
-    geoFenceRadiusM: v.optional(v.number()),
-    requireFingerprint: v.optional(v.boolean()),
+    meetingId: zid("meetings"),
+    name: meetingNameSchema.optional(),
+    description: meetingOptionalTextSchema,
+    location: meetingOptionalTextSchema,
+    startTime: z.number().optional(),
+    endTime: z.number().optional(),
+    lateAfter: z.number().optional(),
+    tags: meetingTagsSchema,
+    geoFenceLatitude: z.number().optional(),
+    geoFenceLongitude: z.number().optional(),
+    geoFenceRadiusM: z.number().optional(),
+    requireFingerprint: z.boolean().optional(),
   },
-  handler: async (ctx, { meetingId, ...updates }) => {
+  handler: async (ctx, { meetingId, ...patch }) => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
       throws: true,
     });
 
-    const meeting = await ctx.db.get(meetingId);
+    const meeting = await ctx.db.get("meetings", meetingId);
     if (!meeting) throw new ConvexError("Meeting not found");
 
     // Merge with existing values so partial updates stay consistent.
-    const effectiveStart = updates.startTime ?? meeting.startTime;
-    const effectiveEnd = updates.endTime ?? meeting.endTime;
-    const effectiveLateAfter = updates.lateAfter ?? meeting.lateAfter;
+    const effectiveStart = patch.startTime ?? meeting.startTime;
+    const effectiveEnd = patch.endTime ?? meeting.endTime;
+    const effectiveLateAfter = patch.lateAfter ?? meeting.lateAfter;
     if (
-      updates.startTime !== undefined ||
-      updates.endTime !== undefined ||
-      updates.lateAfter !== undefined
+      patch.startTime !== undefined ||
+      patch.endTime !== undefined ||
+      patch.lateAfter !== undefined
     ) {
       validateTimeWindow(effectiveStart, effectiveEnd, effectiveLateAfter);
     }
 
-    const effectiveLat = updates.geoFenceLatitude ?? meeting.geoFenceLatitude;
-    const effectiveLng = updates.geoFenceLongitude ?? meeting.geoFenceLongitude;
-    const effectiveRad = updates.geoFenceRadiusM ?? meeting.geoFenceRadiusM;
+    const effectiveLat = patch.geoFenceLatitude ?? meeting.geoFenceLatitude;
+    const effectiveLng = patch.geoFenceLongitude ?? meeting.geoFenceLongitude;
+    const effectiveRad = patch.geoFenceRadiusM ?? meeting.geoFenceRadiusM;
     if (
-      updates.geoFenceLatitude !== undefined ||
-      updates.geoFenceLongitude !== undefined ||
-      updates.geoFenceRadiusM !== undefined
+      patch.geoFenceLatitude !== undefined ||
+      patch.geoFenceLongitude !== undefined ||
+      patch.geoFenceRadiusM !== undefined
     ) {
       validateGeoFence(effectiveLat, effectiveLng, effectiveRad);
     }
 
-    await ctx.db.patch(meetingId, updates);
+    await ctx.db.patch("meetings", meetingId, patch);
   },
 });
 
@@ -177,8 +171,11 @@ export const activate = authedMutation({
     regenerateCode: v.optional(v.boolean()),
   },
   handler: async (ctx, { meetingId, regenerateCode }) => {
-    const meeting = await ctx.db.get(meetingId);
+    const meeting = await ctx.db.get("meetings", meetingId);
     if (!meeting) throw new ConvexError("Meeting not found");
+    if (meeting.isActive && !regenerateCode) {
+      return meetingId;
+    }
 
     const patch: { isActive: boolean; checkInCode?: string } = {
       isActive: true,
@@ -187,16 +184,21 @@ export const activate = authedMutation({
       patch.checkInCode = crypto.randomUUID();
     }
 
-    await ctx.db.patch(meetingId, patch);
+    await ctx.db.patch("meetings", meetingId, patch);
+    return meetingId;
   },
 });
 
 export const deactivate = authedMutation({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, { meetingId }) => {
-    const meeting = await ctx.db.get(meetingId);
+    const meeting = await ctx.db.get("meetings", meetingId);
     if (!meeting) throw new ConvexError("Meeting not found");
-    await ctx.db.patch(meetingId, { isActive: false });
+    if (!meeting.isActive) {
+      return meetingId;
+    }
+    await ctx.db.patch("meetings", meetingId, { isActive: false });
+    return meetingId;
   },
 });
 
@@ -210,7 +212,7 @@ export const remove = authedMutation({
       throws: true,
     });
 
-    const meeting = await ctx.db.get(meetingId);
+    const meeting = await ctx.db.get("meetings", meetingId);
     if (!meeting) throw new ConvexError("Meeting not found");
 
     const records = await ctx.db
@@ -221,9 +223,9 @@ export const remove = authedMutation({
       .collect();
 
     for (const record of records) {
-      await ctx.db.delete(record._id);
+      await ctx.db.delete("attendanceRecords", record._id);
     }
 
-    await ctx.db.delete(meetingId);
+    await ctx.db.delete("meetings", meetingId);
   },
 });

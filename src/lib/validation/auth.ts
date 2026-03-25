@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-const email = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.email("Enter a valid email address"));
+const email = z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address"));
 
 const password = z.string().min(8, "Password must be at least 8 characters");
 
@@ -14,10 +10,7 @@ const username = z
   .toLowerCase()
   .min(3, "Username must be at least 3 characters")
   .max(30, "Username must be 30 characters or fewer")
-  .regex(
-    /^[a-z0-9_.]+$/,
-    "Username can only include letters, numbers, underscores, and dots",
-  );
+  .regex(/^[a-z0-9_.]+$/, "Username can only include letters, numbers, underscores, and dots");
 
 export const loginFormSchema = z.object({ email, password });
 
@@ -34,5 +27,4 @@ export const signupFormSchema = z
     path: ["confirmPassword"],
   });
 
-export const getFormValues = (formData: FormData) =>
-  Object.fromEntries(formData);
+export const getFormValues = (formData: FormData) => Object.fromEntries(formData);

@@ -2,23 +2,32 @@ import { redirect } from "next/navigation";
 import { type ReactNode, Suspense } from "react";
 import { AppProviders } from "@/components/providers";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchAuthQuery, getToken, isAuthenticated } from "@/lib/auth-server";
-import { api } from "../../../convex/_generated/api";
+import { getAppBootstrapState } from "@/lib/app-context";
 
 async function AuthenticatedContent({ children }: { children: ReactNode }) {
-  const [authed, token] = await Promise.all([isAuthenticated(), getToken()]);
-  if (!authed) redirect("/login");
-  const org = await fetchAuthQuery(api.organizations.getCurrent);
-  if (org === null) redirect("/login");
-  if (org.slug !== "") redirect("/dashboard");
-  return <AppProviders initialToken={token}>{children}</AppProviders>;
+  const { authed, token, org, viewer } = await getAppBootstrapState();
+  if (!authed || viewer === null) redirect("/login");
+  if (org === null)
+    return (
+      <AppProviders initialToken={token} viewer={viewer}>
+        {children}
+      </AppProviders>
+    );
+  if (org.slug !== "") {
+    console.warn("app.auth.onboarding.redirect_dashboard", {
+      viewerId: viewer.id,
+      organizationId: org._id,
+    });
+    redirect("/dashboard");
+  }
+  return (
+    <AppProviders initialToken={token} viewer={viewer}>
+      {children}
+    </AppProviders>
+  );
 }
 
-export default function OnboardingLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function OnboardingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center">
       <Suspense

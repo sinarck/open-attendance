@@ -1,16 +1,8 @@
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import schema from "./schema";
-import {
-  type Id,
-  seedMeeting,
-  seedMember,
-  seedOrg,
-  seedRecord,
-} from "./test.helpers";
+import { describe, expect, it } from "vite-plus/test";
+import { convexTest, schema } from "./harness";
+import { type Id, seedMeeting, seedMember, seedOrg, seedRecord } from "./test-helpers";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 describe("meetings:create", () => {
   it("creates a meeting with auto-generated UUID check-in code", async () => {
@@ -328,9 +320,7 @@ describe("meetings:remove (cascade delete)", () => {
     await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) =>
-          q.eq("organizationId", orgId).eq("meetingId", meeting1),
-        )
+        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgId).eq("meetingId", meeting1))
         .collect();
       for (const record of records) {
         await ctx.db.delete(record._id);
@@ -341,9 +331,7 @@ describe("meetings:remove (cascade delete)", () => {
     const remaining = await t.run(async (ctx) =>
       ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) =>
-          q.eq("organizationId", orgId).eq("meetingId", meeting2),
-        )
+        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgId).eq("meetingId", meeting2))
         .collect(),
     );
     expect(remaining).toHaveLength(1);
@@ -368,8 +356,7 @@ describe("meetings:get", () => {
     const t = convexTest(schema);
 
     const meeting = await t.run(async (ctx) => {
-      const fakeId =
-        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
+      const fakeId = "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -471,9 +458,7 @@ describe("meetings:list queries", () => {
     const active = await t.run(async (ctx) =>
       ctx.db
         .query("meetings")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect(),
     );
 
@@ -492,9 +477,7 @@ describe("meetings:list queries", () => {
     const active = await t.run(async (ctx) =>
       ctx.db
         .query("meetings")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect(),
     );
 
@@ -507,8 +490,7 @@ describe("meetings:update (error paths)", () => {
     const t = convexTest(schema);
 
     const meeting = await t.run(async (ctx) => {
-      const fakeId =
-        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
+      const fakeId = "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -650,8 +632,7 @@ describe("meetings:activate (error paths)", () => {
     const t = convexTest(schema);
 
     const meeting = await t.run(async (ctx) => {
-      const fakeId =
-        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
+      const fakeId = "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -685,8 +666,7 @@ describe("meetings:deactivate (error paths)", () => {
     const t = convexTest(schema);
 
     const meeting = await t.run(async (ctx) => {
-      const fakeId =
-        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
+      const fakeId = "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 
@@ -715,8 +695,7 @@ describe("meetings:remove (error & edge cases)", () => {
     const t = convexTest(schema);
 
     const meeting = await t.run(async (ctx) => {
-      const fakeId =
-        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
+      const fakeId = "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       return ctx.db.get(fakeId);
     });
 

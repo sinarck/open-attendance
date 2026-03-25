@@ -1,11 +1,16 @@
 /** Shared test factories for seeding the Convex DB, bypassing auth/RLS. */
 
 import type { TestConvex } from "convex-test";
-import type { Id } from "./_generated/dataModel";
-import type schema from "./schema";
+import { components } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import type schema from "../schema";
 
 export type { Id };
 export type T = TestConvex<typeof schema>;
+
+function randomSuffix() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 export interface SeedOrgOpts {
   authId?: string;
@@ -14,18 +19,66 @@ export interface SeedOrgOpts {
   timezone?: string;
 }
 
-export async function seedOrg(
-  t: T,
-  opts: SeedOrgOpts = {},
-): Promise<Id<"organizations">> {
+export async function seedOrg(t: T, opts: SeedOrgOpts = {}): Promise<Id<"organizations">> {
   return t.run(async (ctx) => {
     return ctx.db.insert("organizations", {
-      authId: opts.authId ?? `auth_${Math.random().toString(36).slice(2, 10)}`,
+      authId: opts.authId ?? `auth_${randomSuffix()}`,
       name: opts.name ?? "Test Org",
-      slug: opts.slug ?? `test-${Math.random().toString(36).slice(2, 10)}`,
+      slug: opts.slug ?? `test-${randomSuffix()}`,
       timezone: opts.timezone ?? "UTC",
     });
   });
+}
+
+export interface SeedAuthedOrgOpts extends SeedOrgOpts {
+  email?: string;
+  userName?: string;
+}
+
+export async function seedAuthedOrg(t: T, opts: SeedAuthedOrgOpts = {}) {
+  const now = Date.now();
+  const suffix = randomSuffix();
+
+  const user = await t.mutation(components.betterAuth.adapter.create, {
+    input: {
+      model: "user",
+      data: {
+        name: opts.userName ?? opts.name ?? "Test User",
+        email: opts.email ?? `user-${suffix}@example.com`,
+        emailVerified: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+  });
+
+  const session = await t.mutation(components.betterAuth.adapter.create, {
+    input: {
+      model: "session",
+      data: {
+        expiresAt: now + 24 * 60 * 60_000,
+        token: `session-${suffix}`,
+        createdAt: now,
+        updatedAt: now,
+        userId: user._id,
+      },
+    },
+  });
+
+  const orgId = await seedOrg(t, {
+    ...opts,
+    authId: user._id,
+  });
+
+  return {
+    asUser: t.withIdentity({
+      subject: user._id,
+      sessionId: session._id,
+    }),
+    orgId,
+    sessionId: session._id,
+    userId: user._id,
+  };
 }
 
 export interface SeedMemberOpts {
@@ -35,16 +88,12 @@ export interface SeedMemberOpts {
   isActive?: boolean;
 }
 
-export async function seedMember(
-  t: T,
-  opts: SeedMemberOpts,
-): Promise<Id<"members">> {
+export async function seedMember(t: T, opts: SeedMemberOpts): Promise<Id<"members">> {
   return t.run(async (ctx) => {
     return ctx.db.insert("members", {
       organizationId: opts.organizationId,
       name: opts.name ?? "Test Member",
-      identifier:
-        opts.identifier ?? `ID-${Math.random().toString(36).slice(2, 10)}`,
+      identifier: opts.identifier ?? `ID-${Math.random().toString(36).slice(2, 10)}`,
       isActive: opts.isActive ?? true,
     });
   });
@@ -67,10 +116,7 @@ export interface SeedMeetingOpts {
   tags?: string[];
 }
 
-export async function seedMeeting(
-  t: T,
-  opts: SeedMeetingOpts,
-): Promise<Id<"meetings">> {
+export async function seedMeeting(t: T, opts: SeedMeetingOpts): Promise<Id<"meetings">> {
   const now = Date.now();
   return t.run(async (ctx) => {
     return ctx.db.insert("meetings", {
@@ -98,13 +144,10 @@ export interface SeedRecordOpts {
   memberId: Id<"members">;
   status?: "present" | "late" | "excused";
   method?: "self" | "manual";
-  deviceFingerprint?: string;
+  deviceFingerprintHash?: string;
 }
 
-export async function seedRecord(
-  t: T,
-  opts: SeedRecordOpts,
-): Promise<Id<"attendanceRecords">> {
+export async function seedRecord(t: T, opts: SeedRecordOpts): Promise<Id<"attendanceRecords">> {
   return t.run(async (ctx) => {
     return ctx.db.insert("attendanceRecords", {
       organizationId: opts.organizationId,
@@ -112,7 +155,7 @@ export async function seedRecord(
       memberId: opts.memberId,
       status: opts.status ?? "present",
       method: opts.method ?? "self",
-      deviceFingerprint: opts.deviceFingerprint,
+      deviceFingerprintHash: opts.deviceFingerprintHash,
     });
   });
 }

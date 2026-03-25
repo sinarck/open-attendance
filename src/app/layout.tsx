@@ -17,11 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(figtree.variable, geistMono.variable)}
-    >
+    <html lang="en" suppressHydrationWarning className={cn(figtree.variable, geistMono.variable)}>
       <head>
         {process.env.NODE_ENV === "development" && (
           <Script
@@ -31,10 +27,7 @@ export default function RootLayout({
           />
         )}
         {process.env.NODE_ENV === "development" && (
-          <Script
-            src="//unpkg.com/@react-grab/mcp/dist/client.global.js"
-            strategy="lazyOnload"
-          />
+          <Script src="//unpkg.com/@react-grab/mcp/dist/client.global.js" strategy="lazyOnload" />
         )}
       </head>
       <body className="antialiased">

@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -25,16 +19,14 @@ export default function SignUpForm() {
 
   function handleSocialSignIn(provider: "google" | "apple") {
     posthog.capture("user_signed_up_social", { provider });
-    signIn.social({ provider, callbackURL: "/dashboard" });
+    void signIn.social({ provider, callbackURL: "/dashboard" });
   }
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
-    const result = signupFormSchema.safeParse(
-      getFormValues(new FormData(e.currentTarget)),
-    );
+    const result = signupFormSchema.safeParse(getFormValues(new FormData(e.currentTarget)));
 
     if (!result.success) {
       setLoading(false);
@@ -54,10 +46,7 @@ export default function SignUpForm() {
 
     if (error) {
       setLoading(false);
-      toast.error(
-        "Sign up failed",
-        error.message ?? "Failed to create account",
-      );
+      toast.error("Sign up failed", error.message ?? "Failed to create account");
       return;
     }
 
@@ -98,9 +87,7 @@ export default function SignUpForm() {
               pattern="^[a-zA-Z0-9_.]+$"
               disabled={loading}
             />
-            <FieldDescription>
-              Letters, numbers, underscores, and dots only.
-            </FieldDescription>
+            <FieldDescription>Letters, numbers, underscores, and dots only.</FieldDescription>
           </Field>
 
           <Field>
@@ -147,9 +134,7 @@ export default function SignUpForm() {
 
           <div className="flex items-center gap-4">
             <Separator className="flex-1" />
-            <span className="text-xs uppercase text-muted-foreground">
-              Or continue with
-            </span>
+            <span className="text-xs uppercase text-muted-foreground">Or continue with</span>
             <Separator className="flex-1" />
           </div>
 
@@ -174,10 +159,7 @@ export default function SignUpForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link
-              href="/login"
-              className="text-foreground underline-offset-4 hover:underline"
-            >
+            <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
               Sign in
             </Link>
           </p>

@@ -1,15 +1,12 @@
 import { ConvexError } from "convex/values";
-import {
-  customCtx,
-  customMutation,
-  customQuery,
-} from "convex-helpers/server/customFunctions";
+import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
 import {
   type RLSConfig,
   type Rules,
   wrapDatabaseReader,
   wrapDatabaseWriter,
 } from "convex-helpers/server/rowLevelSecurity";
+import { zCustomMutation, zCustomQuery } from "convex-helpers/server/zod4";
 import type { DataModel } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { mutation, query } from "../_generated/server";
@@ -41,6 +38,12 @@ function rlsRules({ organizationId }: AuthCtx): Rules<AuthCtx, DataModel> {
       modify: async (_, doc) => doc.organizationId === organizationId,
       insert: async (_, doc) => doc.organizationId === organizationId,
     },
+    // Rate-limit bookkeeping is internal middleware state, not tenant data.
+    rateLimits: {
+      read: async () => true,
+      modify: async () => true,
+      insert: async () => true,
+    },
   };
 }
 
@@ -66,28 +69,28 @@ async function resolveAuthCtx(ctx: QueryCtx | MutationCtx) {
   return { organizationId: org._id, authId: user._id };
 }
 
+const authedQueryCtx = customCtx(async (ctx) => {
+  const { organizationId } = await resolveAuthCtx(ctx as QueryCtx);
+  const rls = rlsRules({ organizationId });
+  return {
+    organizationId,
+    db: wrapDatabaseReader({ organizationId }, ctx.db, rls, rlsConfig),
+  };
+});
+
+const authedMutationCtx = customCtx(async (ctx) => {
+  const { organizationId } = await resolveAuthCtx(ctx as MutationCtx);
+  const rls = rlsRules({ organizationId });
+  return {
+    organizationId,
+    db: wrapDatabaseWriter({ organizationId }, ctx.db, rls, rlsConfig),
+  };
+});
+
 /** Authenticated query. ctx.db is scoped to the caller's org via RLS. */
-export const authedQuery = customQuery(
-  query,
-  customCtx(async (ctx) => {
-    const { organizationId } = await resolveAuthCtx(ctx);
-    const rls = rlsRules({ organizationId });
-    return {
-      organizationId,
-      db: wrapDatabaseReader({ organizationId }, ctx.db, rls, rlsConfig),
-    };
-  }),
-);
+export const authedQuery = customQuery(query, authedQueryCtx);
+export const zAuthedQuery = zCustomQuery(query, authedQueryCtx);
 
 /** Authenticated mutation. ctx.db also gates inserts, patches, and deletes. */
-export const authedMutation = customMutation(
-  mutation,
-  customCtx(async (ctx) => {
-    const { organizationId } = await resolveAuthCtx(ctx);
-    const rls = rlsRules({ organizationId });
-    return {
-      organizationId,
-      db: wrapDatabaseWriter({ organizationId }, ctx.db, rls, rlsConfig),
-    };
-  }),
-);
+export const authedMutation = customMutation(mutation, authedMutationCtx);
+export const zAuthedMutation = zCustomMutation(mutation, authedMutationCtx);

@@ -1,7 +1,7 @@
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import schema from "./schema";
-import { seedMeeting, seedMember, seedOrg, seedRecord } from "./test.helpers";
+import { describe, expect, it } from "vite-plus/test";
+import { convexTest, schema } from "./harness";
+import { upsertOnboardingOrg } from "../organizations";
+import { seedMeeting, seedMember, seedOrg, seedRecord } from "./test-helpers";
 
 describe("organizations:getCurrent (authId lookup)", () => {
   it("finds an org by authId", async () => {
@@ -56,6 +56,24 @@ describe("organizations:completeOnboarding", () => {
     expect(org?.name).toBe("My Classroom");
     expect(org?.slug).toBe("my-classroom");
     expect(org?.timezone).toBe("America/New_York");
+  });
+
+  it("creates the org if the placeholder row is missing", async () => {
+    const t = convexTest(schema);
+
+    const orgId = await t.run(async (ctx) =>
+      upsertOnboardingOrg(ctx, "user_missing_org", {
+        name: "Recovered Org",
+        slug: "recovered-org",
+        timezone: "America/Chicago",
+      }),
+    );
+
+    const org = await t.run(async (ctx) => ctx.db.get(orgId));
+    expect(org?.authId).toBe("user_missing_org");
+    expect(org?.name).toBe("Recovered Org");
+    expect(org?.slug).toBe("recovered-org");
+    expect(org?.timezone).toBe("America/Chicago");
   });
 
   it("rejects onboarding if slug is already set (already onboarded)", async () => {
@@ -344,12 +362,15 @@ describe("organizations:completeOnboarding (returns org._id)", () => {
     const returnedId = await t.run(async (ctx) => {
       const org = await ctx.db.get(orgId);
       expect(org?.slug).toBe("");
-      await ctx.db.patch(org?._id, {
+      if (!org) {
+        throw new Error("Organization should exist");
+      }
+      await ctx.db.patch(org._id, {
         name: "My Org",
         slug: "my-org",
         timezone: "America/Chicago",
       });
-      return org?._id;
+      return org._id;
     });
 
     expect(returnedId).toBe(orgId);

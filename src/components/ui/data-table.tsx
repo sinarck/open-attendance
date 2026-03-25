@@ -1,21 +1,9 @@
 "use client";
 
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./empty";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -48,10 +36,7 @@ export function DataTable<TData, TValue>({
                 <TableHead key={header.id} className="px-4">
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -60,10 +45,7 @@ export function DataTable<TData, TValue>({
         <TableBody>
           {table.getRowModel().rows.length > 0 ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={cn(rowClassName?.(row.original))}
-              >
+              <TableRow key={row.id} className={cn(rowClassName?.(row.original))}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="px-4 py-2">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -77,9 +59,7 @@ export function DataTable<TData, TValue>({
                 <Empty className="rounded-none border-0 p-8 md:p-10">
                   <EmptyHeader>
                     <EmptyTitle>{emptyTitle}</EmptyTitle>
-                    {emptyDescription && (
-                      <EmptyDescription>{emptyDescription}</EmptyDescription>
-                    )}
+                    {emptyDescription && <EmptyDescription>{emptyDescription}</EmptyDescription>}
                   </EmptyHeader>
                 </Empty>
               </TableCell>

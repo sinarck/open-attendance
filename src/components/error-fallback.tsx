@@ -29,8 +29,8 @@ export function ErrorFallback({ className, reset }: ErrorFallbackProps) {
               Something went wrong
             </EmptyTitle>
             <EmptyDescription className="max-w-md text-sm/7 sm:text-base/7">
-              We hit a problem loading this page. Please try again, or go back
-              home and start from there.
+              We hit a problem loading this page. Please try again, or go back home and start from
+              there.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent className="max-w-md">

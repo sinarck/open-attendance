@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { AuthObservability } from "@/components/providers/auth-observability";
 import { ToastProvider } from "@/components/ui/toast";
+import type { AppViewer } from "@/lib/app-viewer";
 import { authClient } from "@/lib/auth-client";
 import { env } from "@/lib/env";
 
@@ -30,17 +31,15 @@ export function RootProviders({ children }: { children: ReactNode }) {
 export function AppProviders({
   children,
   initialToken,
+  viewer,
 }: {
   children: ReactNode;
   initialToken?: string | null;
+  viewer: AppViewer | null;
 }) {
   return (
-    <ConvexBetterAuthProvider
-      client={convex}
-      authClient={authClient}
-      initialToken={initialToken}
-    >
-      <AuthObservability />
+    <ConvexBetterAuthProvider client={convex} authClient={authClient} initialToken={initialToken}>
+      <AuthObservability viewer={viewer} />
       {children}
     </ConvexBetterAuthProvider>
   );

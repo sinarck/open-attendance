@@ -19,9 +19,7 @@ type IntlWithSupportedValuesOf = typeof Intl & {
   supportedValuesOf(key: "timeZone"): string[];
 };
 
-const TIMEZONES = (Intl as IntlWithSupportedValuesOf).supportedValuesOf(
-  "timeZone",
-);
+const TIMEZONES = (Intl as IntlWithSupportedValuesOf).supportedValuesOf("timeZone");
 const INPUT =
   "flex h-9 w-full rounded-md border bg-transparent px-3 text-sm placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -54,18 +52,13 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto w-full max-w-md px-4">
-      <h1 className="text-xl font-semibold tracking-tight">
-        Set up your organization
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        You can change this later.
-      </p>
+      <h1 className="text-xl font-semibold tracking-tight">Set up your organization</h1>
+      <p className="mt-1 text-sm text-muted-foreground">You can change this later.</p>
 
       <form
         className="mt-8 space-y-5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          form.handleSubmit();
+        action={() => {
+          void form.handleSubmit();
         }}
       >
         <form.Field
@@ -90,16 +83,13 @@ export default function OnboardingPage() {
                   if (!slugEdited) setSlug(toSlug(e.target.value));
                 }}
                 placeholder="Robotics Society"
-                // biome-ignore lint/a11y/noAutofocus: first input on onboarding page
-                autoFocus
                 className={INPUT}
               />
-              {field.state.meta.isTouched &&
-                field.state.meta.errors.length > 0 && (
-                  <p className="text-xs text-destructive-foreground">
-                    {field.state.meta.errors.join(", ")}
-                  </p>
-                )}
+              {field.state.meta.isTouched && field.state.meta.errors.length > 0 && (
+                <p className="text-xs text-destructive-foreground">
+                  {field.state.meta.errors.join(", ")}
+                </p>
+              )}
             </div>
           )}
         </form.Field>
@@ -167,10 +157,7 @@ export default function OnboardingPage() {
 
         <form.Subscribe
           selector={(s) =>
-            [
-              s.canSubmit && available === true && !checking,
-              s.isSubmitting,
-            ] as const
+            [s.canSubmit && available === true && !checking, s.isSubmitting] as const
           }
         >
           {([canSubmit, isSubmitting]) => (
@@ -179,11 +166,7 @@ export default function OnboardingPage() {
               disabled={!canSubmit}
               className="flex h-9 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
             >
-              {isSubmitting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                "Continue"
-              )}
+              {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Continue"}
             </button>
           )}
         </form.Subscribe>

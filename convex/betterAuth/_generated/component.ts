@@ -19,6 +19,4 @@
  * }
  * ```
  */
-export type ComponentApi<
-  _Name extends string | undefined = string | undefined,
-> = {};
+export type ComponentApi<_Name extends string | undefined = string | undefined> = {};

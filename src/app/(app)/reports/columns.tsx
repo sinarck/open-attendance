@@ -11,17 +11,13 @@ export const meetingColumns: ColumnDef<Meeting>[] = [
   {
     accessorKey: "name",
     header: "Meeting",
-    cell: ({ row }) => (
-      <span className="text-[13px] font-medium">{row.original.name}</span>
-    ),
+    cell: ({ row }) => <span className="text-[13px] font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "location",
     header: "Location",
     cell: ({ row }) => (
-      <span className="text-[13px] text-muted-foreground">
-        {row.original.location || "—"}
-      </span>
+      <span className="text-[13px] text-muted-foreground">{row.original.location || "—"}</span>
     ),
   },
   {
@@ -52,10 +48,7 @@ export const meetingColumns: ColumnDef<Meeting>[] = [
     accessorKey: "isActive",
     header: "Status",
     cell: ({ row }) => (
-      <Badge
-        variant={row.original.isActive ? "default" : "secondary"}
-        className="text-[11px]"
-      >
+      <Badge variant={row.original.isActive ? "default" : "secondary"} className="text-[11px]">
         {row.original.isActive ? "Live" : "Closed"}
       </Badge>
     ),
@@ -66,9 +59,7 @@ export const memberColumns: ColumnDef<Member>[] = [
   {
     accessorKey: "name",
     header: "Member",
-    cell: ({ row }) => (
-      <span className="text-[13px] font-medium">{row.original.name}</span>
-    ),
+    cell: ({ row }) => <span className="text-[13px] font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "identifier",
@@ -83,10 +74,7 @@ export const memberColumns: ColumnDef<Member>[] = [
     accessorKey: "isActive",
     header: "Status",
     cell: ({ row }) => (
-      <Badge
-        variant={row.original.isActive ? "outline" : "secondary"}
-        className="text-[11px]"
-      >
+      <Badge variant={row.original.isActive ? "outline" : "secondary"} className="text-[11px]">
         {row.original.isActive ? "Active" : "Archived"}
       </Badge>
     ),

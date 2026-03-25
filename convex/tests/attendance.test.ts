@@ -1,15 +1,9 @@
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import { api } from "./_generated/api";
-import schema from "./schema";
-import {
-  type Id,
-  seedMeeting,
-  seedMember,
-  seedOrg,
-  seedRecord,
-  type T,
-} from "./test.helpers";
+import { beforeAll, describe, expect, it } from "vite-plus/test";
+import { api } from "../_generated/api";
+import { convexTest, schema } from "./harness";
+import { type Id, seedMeeting, seedMember, seedOrg, seedRecord, type T } from "./test-helpers";
+
+const DEVICE_FINGERPRINT_HASH = "5e990b25fec084647d0b0227cb0cebbbce8868c8a90b65837b7cc67fe88ecc8b";
 
 /** Create a standard org + member + active meeting for check-in tests. */
 async function setupCheckIn(
@@ -48,6 +42,19 @@ async function setupCheckIn(
   });
   return { orgId, memberId, meetingId };
 }
+
+beforeAll(async () => {
+  const t = convexTest(schema);
+  const now = Date.now();
+  await setupCheckIn(t, {
+    meetingStartTime: now - 120_000,
+    meetingEndTime: now + 60 * 60_000,
+  });
+  await t.mutation(api.attendance.checkIn, {
+    code: "ABC123",
+    identifier: "STU001",
+  });
+});
 
 describe("attendance:checkIn", () => {
   it("records 'present' when lateAfter defaults to endTime (no late tracking)", async () => {
@@ -205,6 +212,18 @@ describe("attendance:checkIn", () => {
         identifier: "NONEXISTENT",
       }),
     ).rejects.toThrow("Member not found");
+  });
+
+  it("normalizes member identifiers before lookup", async () => {
+    const t = convexTest(schema);
+    await setupCheckIn(t);
+
+    const recordId = await t.mutation(api.attendance.checkIn, {
+      code: "ABC123",
+      identifier: "  STU001  ",
+    });
+
+    expect(recordId).toBeTruthy();
   });
 
   it("rejects inactive (archived) member", async () => {
@@ -380,7 +399,7 @@ describe("attendance:checkIn", () => {
     expect(r2).toBeTruthy();
   });
 
-  it("stores deviceFingerprint when meeting requires it", async () => {
+  it("stores a hashed device fingerprint when meeting requires it", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: true });
 
@@ -391,10 +410,10 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record?.deviceFingerprint).toBe("device-xyz");
+    expect(record?.deviceFingerprintHash).toBe(DEVICE_FINGERPRINT_HASH);
   });
 
-  it("does not store deviceFingerprint when meeting does not require it", async () => {
+  it("does not store a device fingerprint hash when meeting does not require it", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: false });
 
@@ -405,7 +424,7 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record?.deviceFingerprint).toBeUndefined();
+    expect(record?.deviceFingerprintHash).toBeUndefined();
   });
 
   it("allows same fingerprint across different meetings", async () => {
@@ -625,9 +644,7 @@ describe("attendance:listByMeeting", () => {
     const meeting2Records = await t.run(async (ctx) =>
       ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) =>
-          q.eq("organizationId", orgId).eq("meetingId", meeting2),
-        )
+        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgId).eq("meetingId", meeting2))
         .collect(),
     );
 
@@ -665,9 +682,7 @@ describe("attendance:listByMember", () => {
     const records = await t.run(async (ctx) =>
       ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", memberId),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", memberId))
         .collect(),
     );
 
@@ -682,9 +697,7 @@ describe("attendance:listByMember", () => {
     const records = await t.run(async (ctx) =>
       ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", memberId),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", memberId))
         .collect(),
     );
 
@@ -707,9 +720,7 @@ describe("attendance:listByMember", () => {
     const m2Records = await t.run(async (ctx) =>
       ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", m2),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", m2))
         .collect(),
     );
 
@@ -756,9 +767,7 @@ describe("attendance:meetingSummary", () => {
         .collect();
       const totalMembers = await ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect();
       const counts = { present: 0, late: 0, excused: 0 };
       for (const r of records) {
@@ -792,9 +801,7 @@ describe("attendance:meetingSummary", () => {
         .collect();
       const totalMembers = await ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect();
       const counts = { present: 0, late: 0, excused: 0 };
       for (const r of records) {
@@ -843,9 +850,7 @@ describe("attendance:meetingSummary", () => {
         .collect();
       const totalMembers = await ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect();
       return {
         absent: totalMembers.length - records.length,
@@ -874,9 +879,7 @@ describe("attendance:meetingSummary", () => {
     const summary = await t.run(async (ctx) => {
       const totalMembers = await ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect();
       return { total: totalMembers.length };
     });
@@ -923,27 +926,20 @@ describe("attendance:memberStats", () => {
     const stats = await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", memberId),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", memberId))
         .collect();
       const totalMeetings = await ctx.db
         .query("meetings")
         .withIndex("by_org", (q) => q.eq("organizationId", orgId))
         .collect();
-      const present = records.filter(
-        (r) => r.status === "present" || r.status === "late",
-      ).length;
+      const present = records.filter((r) => r.status === "present" || r.status === "late").length;
       const excused = records.filter((r) => r.status === "excused").length;
       return {
         present,
         excused,
         absent: totalMeetings.length - records.length,
         totalMeetings: totalMeetings.length,
-        rate:
-          totalMeetings.length > 0
-            ? Math.round((present / totalMeetings.length) * 100)
-            : 0,
+        rate: totalMeetings.length > 0 ? Math.round((present / totalMeetings.length) * 100) : 0,
       };
     });
 
@@ -1002,22 +998,15 @@ describe("attendance:memberStats", () => {
     const stats = await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", memberId),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", memberId))
         .collect();
       const totalMeetings = await ctx.db
         .query("meetings")
         .withIndex("by_org", (q) => q.eq("organizationId", orgId))
         .collect();
-      const present = records.filter(
-        (r) => r.status === "present" || r.status === "late",
-      ).length;
+      const present = records.filter((r) => r.status === "present" || r.status === "late").length;
       return {
-        rate:
-          totalMeetings.length > 0
-            ? Math.round((present / totalMeetings.length) * 100)
-            : 0,
+        rate: totalMeetings.length > 0 ? Math.round((present / totalMeetings.length) * 100) : 0,
       };
     });
 
@@ -1055,27 +1044,20 @@ describe("attendance:memberStats (edge cases)", () => {
     const stats = await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", memberId),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", memberId))
         .collect();
       const totalMeetings = await ctx.db
         .query("meetings")
         .withIndex("by_org", (q) => q.eq("organizationId", orgId))
         .collect();
-      const present = records.filter(
-        (r) => r.status === "present" || r.status === "late",
-      ).length;
+      const present = records.filter((r) => r.status === "present" || r.status === "late").length;
       const excused = records.filter((r) => r.status === "excused").length;
       return {
         present,
         excused,
         absent: totalMeetings.length - records.length,
         totalMeetings: totalMeetings.length,
-        rate:
-          totalMeetings.length > 0
-            ? Math.round((present / totalMeetings.length) * 100)
-            : 0,
+        rate: totalMeetings.length > 0 ? Math.round((present / totalMeetings.length) * 100) : 0,
       };
     });
 
@@ -1095,25 +1077,18 @@ describe("attendance:memberStats (edge cases)", () => {
     const stats = await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
-        .withIndex("by_org_member", (q) =>
-          q.eq("organizationId", orgId).eq("memberId", memberId),
-        )
+        .withIndex("by_org_member", (q) => q.eq("organizationId", orgId).eq("memberId", memberId))
         .collect();
       const totalMeetings = await ctx.db
         .query("meetings")
         .withIndex("by_org", (q) => q.eq("organizationId", orgId))
         .collect();
-      const present = records.filter(
-        (r) => r.status === "present" || r.status === "late",
-      ).length;
+      const present = records.filter((r) => r.status === "present" || r.status === "late").length;
       return {
         present,
         absent: totalMeetings.length - records.length,
         totalMeetings: totalMeetings.length,
-        rate:
-          totalMeetings.length > 0
-            ? Math.round((present / totalMeetings.length) * 100)
-            : 0,
+        rate: totalMeetings.length > 0 ? Math.round((present / totalMeetings.length) * 100) : 0,
       };
     });
 
@@ -1193,8 +1168,7 @@ describe("attendance:markManual (error paths)", () => {
     const t = convexTest(schema);
 
     await t.run(async (ctx) => {
-      const fakeMeetingId =
-        "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
+      const fakeMeetingId = "meetings:fake00000000000000000000" as unknown as Id<"meetings">;
       const meeting = await ctx.db.get(fakeMeetingId);
       expect(meeting).toBeNull();
     });
@@ -1206,8 +1180,7 @@ describe("attendance:markManual (error paths)", () => {
     await seedMeeting(t, { organizationId: orgId });
 
     await t.run(async (ctx) => {
-      const fakeMemberId =
-        "members:fake00000000000000000000" as unknown as Id<"members">;
+      const fakeMemberId = "members:fake00000000000000000000" as unknown as Id<"members">;
       const member = await ctx.db.get(fakeMemberId);
       expect(member).toBeNull();
     });

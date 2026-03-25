@@ -23,8 +23,8 @@ export default function NotFound() {
               Page not found
             </EmptyTitle>
             <EmptyDescription className="max-w-md text-sm/7 sm:text-base/7">
-              We couldn&apos;t find the page you were looking for. It may have
-              been moved, or the link may be incorrect.
+              We couldn&apos;t find the page you were looking for. It may have been moved, or the
+              link may be incorrect.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent className="max-w-md">

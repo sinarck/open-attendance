@@ -48,9 +48,7 @@ export const archivedColumns: ColumnDef<Member>[] = [
   {
     accessorKey: "name",
     header: "Member",
-    cell: ({ row }) => (
-      <span className="text-[13px] font-medium">{row.original.name}</span>
-    ),
+    cell: ({ row }) => <span className="text-[13px] font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "identifier",

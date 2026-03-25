@@ -19,11 +19,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(figtree.variable, geistMono.variable)}
-    >
+    <html lang="en" suppressHydrationWarning className={cn(figtree.variable, geistMono.variable)}>
       <body className="antialiased">
         <ErrorFallback reset={reset} />
       </body>

@@ -10,9 +10,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   const totalMembers = homePreviewSession.rows.length;
-  const checkedInMembers = homePreviewSession.rows.filter(
-    (row) => row.status !== "absent",
-  ).length;
+  const checkedInMembers = homePreviewSession.rows.filter((row) => row.status !== "absent").length;
   const attendanceRate = Math.round((checkedInMembers / totalMembers) * 100);
 
   return (
@@ -26,8 +24,8 @@ export default function Home() {
         </h1>
 
         <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-          A clean system for clubs, classes, and teams. Create sessions, check
-          people in, review patterns. No setup fees, no vendor lock-in.
+          A clean system for clubs, classes, and teams. Create sessions, check people in, review
+          patterns. No setup fees, no vendor lock-in.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-4">
@@ -65,10 +63,7 @@ export default function Home() {
           </div>
           <div className="divide-y divide-border">
             {homePreviewSession.rows.map((row) => (
-              <div
-                key={row.name}
-                className="flex items-center justify-between px-4 py-2.5"
-              >
+              <div key={row.name} className="flex items-center justify-between px-4 py-2.5">
                 <span className="text-foreground">{row.name}</span>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>{row.time}</span>

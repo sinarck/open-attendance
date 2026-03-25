@@ -26,10 +26,7 @@ function FieldLabel({ className, ...props }: FieldPrimitive.Label.Props) {
   );
 }
 
-function FieldDescription({
-  className,
-  ...props
-}: FieldPrimitive.Description.Props) {
+function FieldDescription({ className, ...props }: FieldPrimitive.Description.Props) {
   return (
     <FieldPrimitive.Description
       className={cn("text-muted-foreground text-xs", className)}
@@ -52,11 +49,4 @@ function FieldError({ className, ...props }: FieldPrimitive.Error.Props) {
 const FieldControl = FieldPrimitive.Control;
 const FieldValidity = FieldPrimitive.Validity;
 
-export {
-  Field,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-  FieldControl,
-  FieldValidity,
-};
+export { Field, FieldLabel, FieldDescription, FieldError, FieldControl, FieldValidity };

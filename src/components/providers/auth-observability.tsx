@@ -2,27 +2,28 @@
 
 import posthog from "posthog-js";
 import { useEffect } from "react";
-import { useSession } from "@/lib/auth-client";
+import type { AppViewer } from "@/lib/app-viewer";
 
-export function AuthObservability() {
-  const { data: session, isPending } = useSession();
-  const userId = session?.user?.id;
+interface AuthObservabilityProps {
+  viewer: AppViewer | null;
+}
+
+export function AuthObservability({ viewer }: AuthObservabilityProps) {
+  const userId = viewer?.id ?? null;
+  const email = viewer?.email ?? null;
+  const name = viewer?.name ?? null;
 
   useEffect(() => {
-    if (isPending) {
-      return;
-    }
-
     if (!userId) {
       posthog.reset();
       return;
     }
 
     posthog.identify(userId, {
-      email: session.user.email,
-      name: session.user.name,
+      email,
+      name,
     });
-  }, [isPending, session, userId]);
+  }, [email, name, userId]);
 
   return null;
 }

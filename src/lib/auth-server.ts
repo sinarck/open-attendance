@@ -1,3 +1,5 @@
+import "server-only";
+
 import { convexBetterAuthNextJs } from "@convex-dev/better-auth/nextjs";
 import { ConvexError } from "convex/values";
 import { env } from "@/lib/env";

@@ -29,8 +29,7 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-const hasPostHogSourceMaps =
-  Boolean(env.POSTHOG_API_KEY) && Boolean(env.POSTHOG_PROJECT_ID);
+const hasPostHogSourceMaps = Boolean(env.POSTHOG_API_KEY) && Boolean(env.POSTHOG_PROJECT_ID);
 
 export default withPostHogConfig(nextConfig, {
   host: env.NEXT_PUBLIC_POSTHOG_HOST,

@@ -1,11 +1,10 @@
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import schema from "./schema";
-import { type Id, seedMember, seedOrg } from "./test.helpers";
+import { describe, expect, it } from "vite-plus/test";
+import { convexTest, schema } from "./harness";
+import { type Id, seedMember, seedOrg } from "./test-helpers";
 
 describe("members:create", () => {
   it("creates a new active member with given name and identifier", async () => {
-    const t = convexTest(schema);
+    const t = convexTest();
     const orgId = await seedOrg(t);
 
     const memberId = await t.run(async (ctx) => {
@@ -26,7 +25,7 @@ describe("members:create", () => {
   });
 
   it("rejects duplicate identifier within the same org", async () => {
-    const t = convexTest(schema);
+    const t = convexTest();
     const orgId = await seedOrg(t);
     await seedMember(t, { organizationId: orgId, identifier: "STU001" });
 
@@ -176,9 +175,7 @@ describe("members:archive and restore", () => {
     const activeMembers = await t.run(async (ctx) => {
       return ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect();
     });
 
@@ -357,8 +354,7 @@ describe("members:get", () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId =
-        "members:fake00000000000000000000" as unknown as Id<"members">;
+      const fakeId = "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -374,9 +370,7 @@ describe("members:list (empty)", () => {
     const active = await t.run(async (ctx) =>
       ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect(),
     );
 
@@ -395,9 +389,7 @@ describe("members:list (empty)", () => {
     const active = await t.run(async (ctx) =>
       ctx.db
         .query("members")
-        .withIndex("by_org_active", (q) =>
-          q.eq("organizationId", orgId).eq("isActive", true),
-        )
+        .withIndex("by_org_active", (q) => q.eq("organizationId", orgId).eq("isActive", true))
         .collect(),
     );
 
@@ -487,8 +479,7 @@ describe("members:update (edge cases)", () => {
     await t.run(async (ctx) => {
       const member = await ctx.db.get(memberId);
       const newIdentifier = "STU001";
-      const shouldCheck =
-        newIdentifier !== undefined && newIdentifier !== member?.identifier;
+      const shouldCheck = newIdentifier !== undefined && newIdentifier !== member?.identifier;
       expect(shouldCheck).toBe(false);
     });
   });
@@ -541,8 +532,7 @@ describe("members:update (edge cases)", () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId =
-        "members:fake00000000000000000000" as unknown as Id<"members">;
+      const fakeId = "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -555,8 +545,7 @@ describe("members:archive and restore (error & idempotency)", () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId =
-        "members:fake00000000000000000000" as unknown as Id<"members">;
+      const fakeId = "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 
@@ -583,8 +572,7 @@ describe("members:archive and restore (error & idempotency)", () => {
     const t = convexTest(schema);
 
     const member = await t.run(async (ctx) => {
-      const fakeId =
-        "members:fake00000000000000000000" as unknown as Id<"members">;
+      const fakeId = "members:fake00000000000000000000" as unknown as Id<"members">;
       return ctx.db.get(fakeId);
     });
 

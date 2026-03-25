@@ -76,10 +76,10 @@ export default defineSchema({
     memberId: v.id("members"),
     status: attendanceStatus,
     method: attendanceMethod,
-    deviceFingerprint: v.optional(v.string()),
+    deviceFingerprintHash: v.optional(v.string()),
   })
     .index("by_org_meeting", ["organizationId", "meetingId"])
     .index("by_org_member", ["organizationId", "memberId"])
     .index("by_meeting_member", ["meetingId", "memberId"])
-    .index("by_meeting_fingerprint", ["meetingId", "deviceFingerprint"]),
+    .index("by_meeting_fingerprint_hash", ["meetingId", "deviceFingerprintHash"]),
 });

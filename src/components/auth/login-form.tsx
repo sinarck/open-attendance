@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -28,16 +22,14 @@ export default function LoginForm() {
 
   function handleSocialSignIn(provider: "google" | "apple") {
     posthog.capture("user_logged_in_social", { provider });
-    signIn.social({ provider, callbackURL: "/dashboard" });
+    void signIn.social({ provider, callbackURL: "/dashboard" });
   }
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
-    const result = loginFormSchema.safeParse(
-      getFormValues(new FormData(e.currentTarget)),
-    );
+    const result = loginFormSchema.safeParse(getFormValues(new FormData(e.currentTarget)));
 
     if (!result.success) {
       setLoading(false);
@@ -116,9 +108,7 @@ export default function LoginForm() {
 
           <div className="flex items-center gap-4">
             <Separator className="flex-1" />
-            <span className="text-xs uppercase text-muted-foreground">
-              Or continue with
-            </span>
+            <span className="text-xs uppercase text-muted-foreground">Or continue with</span>
             <Separator className="flex-1" />
           </div>
 
@@ -143,10 +133,7 @@ export default function LoginForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link
-              href="/signup"
-              className="text-foreground underline-offset-4 hover:underline"
-            >
+            <Link href="/signup" className="text-foreground underline-offset-4 hover:underline">
               Sign up
             </Link>
           </p>

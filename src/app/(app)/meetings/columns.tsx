@@ -17,15 +17,11 @@ export const columns: ColumnDef<Meeting>[] = [
         <span
           className={cn(
             "size-1.5 shrink-0 rounded-full",
-            row.original.isActive
-              ? "bg-emerald-500 animate-pulse"
-              : "bg-muted-foreground/30",
+            row.original.isActive ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30",
           )}
         />
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-medium">
-            {row.original.name}
-          </p>
+          <p className="truncate text-[13px] font-medium">{row.original.name}</p>
           {row.original.location && (
             <p className="flex items-center gap-0.5 text-xs text-muted-foreground">
               <MapPin className="size-3" />
@@ -50,10 +46,7 @@ export const columns: ColumnDef<Meeting>[] = [
     header: "Status",
     cell: ({ row }) => (
       <div className="flex items-center gap-1.5">
-        <Badge
-          variant={row.original.isActive ? "default" : "secondary"}
-          className="text-[11px]"
-        >
+        <Badge variant={row.original.isActive ? "default" : "secondary"} className="text-[11px]">
           {row.original.isActive ? "Live" : "Closed"}
         </Badge>
         {row.original.geoFenceLatitude != null && (
