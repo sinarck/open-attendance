@@ -14,7 +14,7 @@ export const {
   fetchAuthAction,
 } = convexBetterAuthNextJs({
   convexUrl: env.NEXT_PUBLIC_CONVEX_URL,
-  convexSiteUrl: env.NEXT_PUBLIC_CONVEX_SITE_URL,
+  convexSiteUrl: env.CONVEX_SITE_URL,
   jwtCache: {
     enabled: true,
     isAuthError(error: unknown) {

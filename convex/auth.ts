@@ -14,14 +14,9 @@ export const authComponent = createClient<DataModel>(components.betterAuth as ne
   authFunctions,
   triggers: {
     user: {
-      // Create a placeholder org; the user completes onboarding separately.
-      onCreate: async (ctx, authUser) => {
-        await ctx.db.insert("organizations", {
-          authId: authUser._id,
-          name: "",
-          slug: "",
-          timezone: "UTC",
-        });
+      // Organizations are created explicitly during the organization setup flow.
+      onCreate: async () => {
+        return;
       },
       // Cascade-delete all org data when a user is deleted.
       onDelete: async (ctx, authUser) => {
@@ -36,21 +31,27 @@ export const authComponent = createClient<DataModel>(components.betterAuth as ne
           .query("attendanceRecords")
           .withIndex("by_org_meeting", (q) => q.eq("organizationId", org._id))
           .collect();
-        for (const r of records) await ctx.db.delete(r._id);
+        for (const record of records) {
+          await ctx.db.delete("attendanceRecords", record._id);
+        }
 
         const members = await ctx.db
           .query("members")
           .withIndex("by_org", (q) => q.eq("organizationId", org._id))
           .collect();
-        for (const m of members) await ctx.db.delete(m._id);
+        for (const member of members) {
+          await ctx.db.delete("members", member._id);
+        }
 
         const meetings = await ctx.db
           .query("meetings")
           .withIndex("by_org", (q) => q.eq("organizationId", org._id))
           .collect();
-        for (const mt of meetings) await ctx.db.delete(mt._id);
+        for (const meeting of meetings) {
+          await ctx.db.delete("meetings", meeting._id);
+        }
 
-        await ctx.db.delete(org._id);
+        await ctx.db.delete("organizations", org._id);
       },
     },
   },
@@ -62,7 +63,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     appName: "Open Attendance",
     baseURL: process.env.SITE_URL,
-    // biome-ignore lint/style/noNonNullAssertion: validated by Convex at deploy time
+    // biome-ignore lint/style/noNonNullAssertion: Convex env is configured outside the app bundle
     trustedOrigins: [process.env.SITE_URL!],
     secret: process.env.BETTER_AUTH_SECRET,
     database: authComponent.adapter(ctx),

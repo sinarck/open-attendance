@@ -1,6 +1,6 @@
 import { withPostHogConfig } from "@posthog/nextjs-config";
 import type { NextConfig } from "next";
-import { env } from "@/lib/env"; // Never remove (validate at build time)
+import { env } from "./src/lib/env";
 
 const nextConfig: NextConfig = {
   compiler: {
