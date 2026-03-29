@@ -1,20 +1,6 @@
 import { type ReactNode, Suspense } from "react";
-import { AppNavbar } from "@/components/navigation/app-navbar";
-import { AppProviders } from "@/components/providers";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requireAppContext } from "@/lib/app-context";
-
-async function AuthenticatedContent({ children }: { children: ReactNode }) {
-  const { viewer, token } = await requireAppContext();
-  return (
-    <AppProviders initialToken={token} viewer={viewer}>
-      <div className="flex min-h-svh flex-col">
-        <AppNavbar viewer={viewer} />
-        {children}
-      </div>
-    </AppProviders>
-  );
-}
+import { AppLayoutContent } from "./app-layout-content";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -24,14 +10,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="border-b border-border/60 px-4 py-3 sm:px-6">
             <Skeleton className="h-5 w-32" />
           </div>
-          <div className="p-6">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="mt-2 h-5 w-72" />
+          <div className="space-y-4 p-4 sm:p-6">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-72 max-w-full" />
           </div>
         </div>
       }
     >
-      <AuthenticatedContent>{children}</AuthenticatedContent>
+      <AppLayoutContent>{children}</AppLayoutContent>
     </Suspense>
   );
 }

@@ -1,19 +1,9 @@
-import { Suspense } from "react";
-import { preloadAuthQuery } from "@/lib/auth-server";
+import { preloadAuthQuery } from "@/lib/auth/server";
 import { api } from "../../../../convex/_generated/api";
-import { ReportsLive } from "./_components/reports-live";
-import ReportsLoading from "./loading";
+import { ReportsLive } from "./reports-live";
 
-async function ReportsRealtimeContent() {
+export default async function ReportsPage() {
   const preloadedOverview = await preloadAuthQuery(api.reports.overview);
 
   return <ReportsLive preloadedOverview={preloadedOverview} />;
-}
-
-export default function ReportsPage() {
-  return (
-    <Suspense fallback={<ReportsLoading />}>
-      <ReportsRealtimeContent />
-    </Suspense>
-  );
 }

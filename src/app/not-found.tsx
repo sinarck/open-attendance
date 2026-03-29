@@ -12,14 +12,14 @@ import {
 
 export default function NotFound() {
   return (
-    <Empty className="min-h-[calc(100svh-var(--header-height))] justify-center px-6 py-10">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-2">
-        <Empty className="min-h-96 rounded-[calc(var(--radius-2xl)-2px)] border border-dashed border-border/70 bg-background p-8 md:p-10">
+    <Empty className="ui-app-shell justify-center px-6 py-10">
+      <div className="ui-message-shell">
+        <Empty className="ui-message-panel">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <Route />
             </EmptyMedia>
-            <EmptyTitle className="text-2xl tracking-[-0.04em] sm:text-3xl">
+            <EmptyTitle className="text-2xl tracking-tighter sm:text-3xl">
               Page not found
             </EmptyTitle>
             <EmptyDescription className="max-w-md text-sm/7 sm:text-base/7">

@@ -1,5 +1,13 @@
 import { formatDistanceToNowStrict } from "date-fns";
+import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { DashboardSummary } from "../../../../../convex/dashboard";
@@ -11,13 +19,31 @@ interface AttentionListProps {
 export function AttentionList({ summary }: AttentionListProps) {
   if (summary.completedMeetings === 0) {
     return (
-      <EmptyState message="Close a few meetings first. Attendance risk surfaces once there is history to compare." />
+      <Empty className="rounded-xl border border-border/60 p-8 md:p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Users />
+          </EmptyMedia>
+          <EmptyTitle>No attendance history yet</EmptyTitle>
+          <EmptyDescription>
+            Close a few meetings first. Attendance risk surfaces once there is history to compare.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   if (summary.membersNeedingAttention.length === 0) {
     return (
-      <EmptyState message="Everyone is on track. No attendance gaps detected across closed meetings." />
+      <Empty className="rounded-xl border border-border/60 p-8 md:p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Users />
+          </EmptyMedia>
+          <EmptyTitle>Everyone is on track</EmptyTitle>
+          <EmptyDescription>No attendance gaps detected across closed meetings.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
@@ -49,7 +75,7 @@ export function AttentionList({ summary }: AttentionListProps) {
               />
             </ProgressTrack>
           </Progress>
-          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="ui-meta-compact mt-3 flex flex-wrap gap-x-3 gap-y-1">
             <span>{member.attended} present</span>
             <span>{member.excused} excused</span>
             <span>{member.missed} missed</span>
@@ -61,14 +87,6 @@ export function AttentionList({ summary }: AttentionListProps) {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex items-center justify-center rounded-xl border border-dashed border-border/60 p-8">
-      <p className="max-w-xs text-center text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

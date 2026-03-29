@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
-import { RootProviders } from "@/components/providers";
-import { siteConfig } from "@/config";
+import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
+import { RootProviders } from "@/providers/root-providers";
 import { figtree, geistMono } from "./ui/fonts";
 
 export const metadata: Metadata = {

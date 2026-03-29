@@ -1,20 +1,13 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
-const AUTH_ROUTES = new Set(["/login", "/signup"]);
-
 export async function proxy(request: NextRequest) {
   const session = getSessionCookie(request);
-  const { pathname } = request.nextUrl;
-  const isAuthRoute = AUTH_ROUTES.has(pathname);
 
-  // Authenticated users shouldn't see login/signup pages
-  if (session && isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // Unauthenticated users can't access protected routes
-  if (!session && !isAuthRoute) {
+  // Proxy is an optimistic fast-path only. It checks for a session cookie so
+  // anonymous users get bounced before the app renders, but real authorization
+  // still happens in server guards and Convex RLS.
+  if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -22,13 +15,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/meetings/:path*",
-    "/members/:path*",
-    "/onboarding/:path*",
-    "/reports/:path*",
-    "/login",
-    "/signup",
-  ],
+  matcher: ["/dashboard/:path*", "/meetings/:path*", "/members/:path*", "/reports/:path*"],
 };

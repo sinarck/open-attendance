@@ -8,7 +8,7 @@ import type { Doc } from "../../../../convex/_generated/dataModel";
 
 type Meeting = Doc<"meetings">;
 
-export const columns: ColumnDef<Meeting>[] = [
+export const meetingColumns: ColumnDef<Meeting>[] = [
   {
     accessorKey: "name",
     header: "Meeting",
@@ -21,7 +21,7 @@ export const columns: ColumnDef<Meeting>[] = [
           )}
         />
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-medium">{row.original.name}</p>
+          <p className="truncate text-sm font-medium">{row.original.name}</p>
           {row.original.location && (
             <p className="flex items-center gap-0.5 text-xs text-muted-foreground">
               <MapPin className="size-3" />
@@ -46,12 +46,10 @@ export const columns: ColumnDef<Meeting>[] = [
     header: "Status",
     cell: ({ row }) => (
       <div className="flex items-center gap-1.5">
-        <Badge variant={row.original.isActive ? "default" : "secondary"} className="text-[11px]">
+        <Badge size="sm" variant={row.original.isActive ? "default" : "secondary"}>
           {row.original.isActive ? "Live" : "Closed"}
         </Badge>
-        {row.original.geoFenceLatitude != null && (
-          <MapPin className="size-3 text-muted-foreground/50" />
-        )}
+        {row.original.geofence != null && <MapPin className="size-3 text-muted-foreground/50" />}
         {row.original.requireFingerprint && (
           <Fingerprint className="size-3 text-muted-foreground/50" />
         )}

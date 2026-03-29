@@ -15,10 +15,14 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // This boundary replaces the entire root tree, so it owns the last-resort
+    // error report for failures that happen before the normal app shell mounts.
     posthog.captureException(error);
   }, [error]);
 
   return (
+    // Next.js requires the global error boundary to render a full document shell
+    // because it runs in place of the root layout after fatal render failures.
     <html lang="en" suppressHydrationWarning className={cn(figtree.variable, geistMono.variable)}>
       <body className="antialiased">
         <ErrorFallback reset={reset} />

@@ -1,14 +1,23 @@
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import { Calendar, Clock3, Fingerprint, MapPin, Radio, ShieldCheck, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
+import { formatInTimeZone } from "@/lib/date";
 import type { DashboardSummary } from "../../../../../convex/dashboard";
 
 interface LiveStatusProps {
   summary: DashboardSummary;
+  timeZone: string;
 }
 
-export function LiveStatus({ summary }: LiveStatusProps) {
+export function LiveStatus({ summary, timeZone }: LiveStatusProps) {
   const { liveMeeting, upcomingMeeting } = summary;
 
   if (liveMeeting) {
@@ -25,9 +34,7 @@ export function LiveStatus({ summary }: LiveStatusProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400">
                 <Radio className="size-4 animate-pulse" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.28em]">
-                  Live session
-                </span>
+                <span className="ui-eyebrow">Live session</span>
               </div>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                 {liveMeeting.name}
@@ -39,20 +46,20 @@ export function LiveStatus({ summary }: LiveStatusProps) {
           </div>
 
           {/* Meta row */}
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
+          <div className="ui-meta flex flex-wrap gap-x-5 gap-y-2">
             <span className="flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
-              {format(liveMeeting.startTime, "h:mm a")} &ndash;{" "}
-              {format(liveMeeting.endTime, "h:mm a")}
+              {formatInTimeZone(liveMeeting.startTime, "h:mm a", timeZone)} &ndash;{" "}
+              {formatInTimeZone(liveMeeting.endTime, "h:mm a", timeZone)}
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="size-3.5" />
               {liveMeeting.location ?? "No location"}
             </span>
-            {liveMeeting.geoFenceEnabled ? (
+            {liveMeeting.geofenceEnabled ? (
               <span className="flex items-center gap-1.5 text-info-foreground">
                 <ShieldCheck className="size-3.5" />
-                Geo-fence
+                Geofence
               </span>
             ) : null}
             {liveMeeting.fingerprintEnabled ? (
@@ -66,7 +73,7 @@ export function LiveStatus({ summary }: LiveStatusProps) {
           {/* Progress bar */}
           <Progress className="gap-2.5" value={liveMeeting.attendanceRate}>
             <div className="flex items-baseline justify-between">
-              <span className="text-[13px] font-medium text-foreground">Roster coverage</span>
+              <span className="text-sm font-medium text-foreground">Roster coverage</span>
               <span className="font-mono text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                 {liveMeeting.attendanceRate}%
               </span>
@@ -91,17 +98,17 @@ export function LiveStatus({ summary }: LiveStatusProps) {
     return (
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-chart-2/8 via-transparent to-transparent p-6 sm:p-7">
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">
+          <div className="ui-eyebrow flex items-center gap-2 text-muted-foreground">
             <Sparkles className="size-3.5" />
             Up next
           </div>
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
             {upcomingMeeting.name}
           </h2>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
+          <div className="ui-meta flex flex-wrap gap-x-5 gap-y-2">
             <span className="flex items-center gap-1.5">
               <Calendar className="size-3.5" />
-              {format(upcomingMeeting.startTime, "EEE, MMM d")}
+              {formatInTimeZone(upcomingMeeting.startTime, "EEE, MMM d", timeZone)}
             </span>
             <span className="flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
@@ -121,14 +128,14 @@ export function LiveStatus({ summary }: LiveStatusProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-dashed border-border/60 p-6 sm:p-7">
-      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">
-        <Calendar className="size-3.5" />
-        Scheduling
-      </div>
-      <p className="mt-3 text-sm text-muted-foreground">
-        No meetings on deck. Create one to see real-time check-in progress here.
-      </p>
-    </section>
+    <Empty className="rounded-2xl border border-border/60 p-8 md:p-10">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Calendar />
+        </EmptyMedia>
+        <EmptyTitle>No meetings on deck</EmptyTitle>
+        <EmptyDescription>Create one to see real-time check-in progress here.</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }

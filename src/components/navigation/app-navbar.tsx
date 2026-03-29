@@ -15,8 +15,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useMediaQuery } from "@/hooks/use-media-query";
-import type { AppViewer } from "@/lib/app-viewer";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -30,9 +28,8 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppNavbar({ viewer }: { viewer: AppViewer }) {
+export function AppNavbar() {
   const pathname = usePathname();
-  const isDesktop = useMediaQuery("md");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -41,7 +38,7 @@ export function AppNavbar({ viewer }: { viewer: AppViewer }) {
         {/* Brand */}
         <Link
           href="/dashboard"
-          className="shrink-0 font-mono text-[13px] font-semibold tracking-tight hover:opacity-80"
+          className="shrink-0 font-mono text-sm font-semibold tracking-tight hover:opacity-80"
         >
           open/attendance
         </Link>
@@ -55,14 +52,14 @@ export function AppNavbar({ viewer }: { viewer: AppViewer }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "relative flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors duration-100",
+                  "relative flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-100",
                   active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Icon className="size-4" />
                 {label}
                 {active ? (
-                  <span className="absolute -bottom-[13px] left-2 right-2 h-[2px] rounded-full bg-foreground" />
+                  <span className="absolute -bottom-3 left-2 right-2 h-0.5 rounded-full bg-foreground" />
                 ) : null}
               </Link>
             );
@@ -72,47 +69,49 @@ export function AppNavbar({ viewer }: { viewer: AppViewer }) {
         <div className="flex-1" />
 
         {/* Auth menu (both viewport sizes) */}
-        <AuthMenu viewer={viewer} />
+        <AuthMenu />
 
         {/* Mobile sheet trigger */}
-        {isDesktop ? null : (
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger aria-label="Open menu" render={<Button size="icon-sm" variant="ghost" />}>
-              <Menu className="size-4" />
-            </SheetTrigger>
-            <SheetContent side="right" className="border-border/60 sm:max-w-xs">
-              <SheetHeader className="border-b border-border/60 pb-4">
-                <SheetTitle className="text-base">Navigation</SheetTitle>
-                <SheetDescription>
-                  Jump between dashboard, roster, meetings, and reports.
-                </SheetDescription>
-              </SheetHeader>
-              <SheetPanel>
-                <nav className="flex flex-col gap-1">
-                  {NAV.map(({ href, label, icon: Icon }) => {
-                    const active = isActive(pathname, href);
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setMobileOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
-                          active
-                            ? "bg-accent text-foreground"
-                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                        )}
-                      >
-                        <Icon className="size-4" />
-                        {label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </SheetPanel>
-            </SheetContent>
-          </Sheet>
-        )}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger
+            aria-label="Open menu"
+            className="md:hidden"
+            render={<Button size="icon-sm" variant="ghost" />}
+          >
+            <Menu className="size-4" />
+          </SheetTrigger>
+          <SheetContent side="right" className="border-border/60 sm:max-w-xs">
+            <SheetHeader className="border-b border-border/60 pb-4">
+              <SheetTitle className="text-base">Navigation</SheetTitle>
+              <SheetDescription>
+                Jump between dashboard, roster, meetings, and reports.
+              </SheetDescription>
+            </SheetHeader>
+            <SheetPanel>
+              <nav className="flex flex-col gap-1">
+                {NAV.map(({ href, label, icon: Icon }) => {
+                  const active = isActive(pathname, href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </SheetPanel>
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   );

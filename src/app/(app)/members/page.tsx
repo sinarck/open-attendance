@@ -1,19 +1,13 @@
-import { Suspense } from "react";
-import { preloadAuthQuery } from "@/lib/auth-server";
+import { requireOrganizationAccess } from "@/lib/auth/guards";
+import { preloadAuthQuery } from "@/lib/auth/server";
 import { api } from "../../../../convex/_generated/api";
-import { MembersLive } from "./_components/members-live";
-import MembersLoading from "./loading";
+import { MembersLive } from "./members-live";
 
-async function MembersRealtimeContent() {
-  const preloadedRoster = await preloadAuthQuery(api.members.listRoster);
+export default async function MembersPage() {
+  const [{ organization }, preloadedRoster] = await Promise.all([
+    requireOrganizationAccess(),
+    preloadAuthQuery(api.members.listRoster),
+  ]);
 
-  return <MembersLive preloadedRoster={preloadedRoster} />;
-}
-
-export default function MembersPage() {
-  return (
-    <Suspense fallback={<MembersLoading />}>
-      <MembersRealtimeContent />
-    </Suspense>
-  );
+  return <MembersLive preloadedRoster={preloadedRoster} timeZone={organization.timezone} />;
 }

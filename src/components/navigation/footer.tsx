@@ -1,12 +1,20 @@
+import { getYear } from "date-fns";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
-import ThemeToggle from "@/components/ui/theme-toggle";
-import { footerSections, siteConfig } from "@/config";
+import { footerSections } from "@/config/navigation";
+import { siteConfig } from "@/config/site";
 import { StatusIndicator } from "./status-indicator";
 
-/** Hardcoded at build time — avoids `new Date()` which is a PPR violation. */
-const CURRENT_YEAR = 2026;
+async function getFooterYear() {
+  "use cache";
 
-export function Footer() {
+  cacheLife("days");
+  return getYear(new Date());
+}
+
+export async function Footer() {
+  const currentYear = await getFooterYear();
+
   return (
     <footer className="border-t bg-card">
       <div className="mx-auto max-w-5xl px-page py-12 sm:py-16">
@@ -48,22 +56,19 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t pt-8 text-sm text-muted-foreground sm:flex-row sm:items-center">
           <p>
-            &copy; {CURRENT_YEAR} {siteConfig.name}. MIT License.
+            &copy; {currentYear} {siteConfig.name}. MIT License.
           </p>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <p>
-              Designed and built by{" "}
-              <Link
-                href={siteConfig.author.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground underline underline-offset-4"
-              >
-                {siteConfig.author.name}
-              </Link>
-            </p>
-          </div>
+          <p>
+            Designed and built by{" "}
+            <Link
+              href={siteConfig.author.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline underline-offset-4"
+            >
+              {siteConfig.author.name}
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

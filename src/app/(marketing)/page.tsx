@@ -1,7 +1,8 @@
 import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
-import { homePreviewSession, siteConfig } from "@/config";
+import { homePreviewSession } from "@/config/data";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: siteConfig.name,
@@ -16,7 +17,7 @@ export default function Home() {
   return (
     <main className="bg-background">
       {/* Hero */}
-      <section className="mx-auto flex min-h-[calc(100svh-var(--header-height))] max-w-5xl flex-col justify-center px-page">
+      <section className="ui-app-shell mx-auto flex max-w-5xl flex-col justify-center px-page">
         <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl">
           Attendance tracking
           <br />
