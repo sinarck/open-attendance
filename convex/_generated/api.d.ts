@@ -14,10 +14,13 @@ import type * as dashboard from "../dashboard.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
+import type * as lib_seed from "../lib/seed.js";
+import type * as lib_validation from "../lib/validation.js";
 import type * as meetings from "../meetings.js";
 import type * as members from "../members.js";
 import type * as organizations from "../organizations.js";
 import type * as reports from "../reports.js";
+import type * as tests_harness from "../tests/harness.js";
 
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
@@ -28,10 +31,13 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/rateLimits": typeof lib_rateLimits;
+  "lib/seed": typeof lib_seed;
+  "lib/validation": typeof lib_validation;
   meetings: typeof meetings;
   members: typeof members;
   organizations: typeof organizations;
   reports: typeof reports;
+  "tests/harness": typeof tests_harness;
 }>;
 
 /**

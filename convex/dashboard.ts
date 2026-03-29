@@ -1,3 +1,4 @@
+import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { authedQuery } from "./lib/auth";
 
@@ -13,7 +14,7 @@ interface DashboardMeetingSummary {
   late: number;
   excused: number;
   attendanceRate: number;
-  geoFenceEnabled: boolean;
+  geofenceEnabled: boolean;
   fingerprintEnabled: boolean;
   stage: "live" | "upcoming" | "closed";
 }
@@ -38,7 +39,7 @@ export interface DashboardSummary {
   completedMeetings: number;
   totalCheckIns: number;
   recentAttendanceRate: number;
-  geoFenceMeetings: number;
+  geofenceMeetings: number;
   fingerprintMeetings: number;
   liveMeeting: DashboardMeetingSummary | null;
   upcomingMeeting: Pick<
@@ -70,9 +71,8 @@ function getAttendanceRate(recorded: number, totalMembers: number) {
 }
 
 export const summary = authedQuery({
-  args: {},
-  handler: async (ctx): Promise<DashboardSummary> => {
-    const now = Date.now();
+  args: { now: v.number() },
+  handler: async (ctx, { now }): Promise<DashboardSummary> => {
     const [members, meetings, records] = await Promise.all([
       ctx.db
         .query("members")
@@ -143,7 +143,7 @@ export const summary = authedQuery({
         late,
         excused,
         attendanceRate: getAttendanceRate(recorded, activeMembers.length),
-        geoFenceEnabled: meeting.geoFenceRadiusM !== undefined,
+        geofenceEnabled: meeting.geofence !== undefined,
         fingerprintEnabled: meeting.requireFingerprint,
         stage: getMeetingStage(meeting, now),
       } satisfies DashboardMeetingSummary;
@@ -198,8 +198,7 @@ export const summary = authedQuery({
         recentAttendanceDenominator === 0
           ? 0
           : Math.round((recentRecordedCount / recentAttendanceDenominator) * 100),
-      geoFenceMeetings: sortedMeetings.filter((meeting) => meeting.geoFenceRadiusM !== undefined)
-        .length,
+      geofenceMeetings: sortedMeetings.filter((meeting) => meeting.geofence !== undefined).length,
       fingerprintMeetings: sortedMeetings.filter((meeting) => meeting.requireFingerprint).length,
       liveMeeting,
       upcomingMeeting: upcomingMeeting

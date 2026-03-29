@@ -17,13 +17,13 @@ export const attendanceMethod = v.union(v.literal("self"), v.literal("manual"));
 export default defineSchema({
   ...rateLimitTables,
 
-  // One org per authenticated user, created by a Better Auth user.onCreate trigger.
+  // One org per authenticated user, created during the initial organization setup flow.
   // This is the tenant boundary; all other tables reference organizationId for isolation.
   organizations: defineTable({
     authId: v.string(), // Better Auth user._id
-    name: v.string(), // set during onboarding
-    slug: v.string(), // globally unique, set during onboarding
-    timezone: v.string(), // IANA tz string, defaults to "UTC"
+    name: v.string(),
+    slug: v.string(), // globally unique
+    timezone: v.string(), // timezone identifier used for date-fns rendering
   })
     .index("by_authId", ["authId"])
     .index("by_slug", ["slug"]),
@@ -41,7 +41,7 @@ export default defineSchema({
     .index("by_org_active", ["organizationId", "isActive"]),
 
   // A scheduled event with a check-in window.
-  // Geo-fence and device fingerprinting are opt-in per meeting.
+  // Geofence and device fingerprinting are opt-in per meeting.
   meetings: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
@@ -56,10 +56,13 @@ export default defineSchema({
     // Check-ins after this timestamp are "late". Defaults to endTime (nobody late).
     lateAfter: v.number(),
 
-    // Geo-fence: all three present = enabled, all absent = disabled.
-    geoFenceLatitude: v.optional(v.number()),
-    geoFenceLongitude: v.optional(v.number()),
-    geoFenceRadiusM: v.optional(v.number()),
+    geofence: v.optional(
+      v.object({
+        latitude: v.number(),
+        longitude: v.number(),
+        radiusM: v.number(),
+      }),
+    ),
 
     // When true, check-in requires a device fingerprint (one per meeting).
     requireFingerprint: v.boolean(),
@@ -76,10 +79,10 @@ export default defineSchema({
     memberId: v.id("members"),
     status: attendanceStatus,
     method: attendanceMethod,
-    deviceFingerprintHash: v.optional(v.string()),
+    deviceFingerprint: v.optional(v.string()),
   })
     .index("by_org_meeting", ["organizationId", "meetingId"])
     .index("by_org_member", ["organizationId", "memberId"])
     .index("by_meeting_member", ["meetingId", "memberId"])
-    .index("by_meeting_fingerprint_hash", ["meetingId", "deviceFingerprintHash"]),
+    .index("by_meeting_fingerprint", ["meetingId", "deviceFingerprint"]),
 });

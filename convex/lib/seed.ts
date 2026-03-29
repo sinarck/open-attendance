@@ -1,5 +1,3 @@
-/** Shared test factories for seeding the Convex DB, bypassing auth/RLS. */
-
 import type { TestConvex } from "convex-test";
 import { components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -35,7 +33,7 @@ export interface SeedAuthedOrgOpts extends SeedOrgOpts {
   userName?: string;
 }
 
-export async function seedAuthedOrg(t: T, opts: SeedAuthedOrgOpts = {}) {
+export async function seedAuthedUser(t: T, opts: SeedAuthedOrgOpts = {}) {
   const now = Date.now();
   const suffix = randomSuffix();
 
@@ -65,19 +63,26 @@ export async function seedAuthedOrg(t: T, opts: SeedAuthedOrgOpts = {}) {
     },
   });
 
-  const orgId = await seedOrg(t, {
-    ...opts,
-    authId: user._id,
-  });
-
   return {
     asUser: t.withIdentity({
       subject: user._id,
       sessionId: session._id,
     }),
-    orgId,
     sessionId: session._id,
     userId: user._id,
+  };
+}
+
+export async function seedAuthedOrg(t: T, opts: SeedAuthedOrgOpts = {}) {
+  const seededUser = await seedAuthedUser(t, opts);
+  const orgId = await seedOrg(t, {
+    ...opts,
+    authId: seededUser.userId,
+  });
+
+  return {
+    ...seededUser,
+    orgId,
   };
 }
 
@@ -108,9 +113,11 @@ export interface SeedMeetingOpts {
   isActive?: boolean;
   lateAfter?: number;
   requireFingerprint?: boolean;
-  geoFenceLatitude?: number;
-  geoFenceLongitude?: number;
-  geoFenceRadiusM?: number;
+  geofence?: {
+    latitude: number;
+    longitude: number;
+    radiusM: number;
+  };
   description?: string;
   location?: string;
   tags?: string[];
@@ -118,6 +125,7 @@ export interface SeedMeetingOpts {
 
 export async function seedMeeting(t: T, opts: SeedMeetingOpts): Promise<Id<"meetings">> {
   const now = Date.now();
+
   return t.run(async (ctx) => {
     return ctx.db.insert("meetings", {
       organizationId: opts.organizationId,
@@ -130,9 +138,7 @@ export async function seedMeeting(t: T, opts: SeedMeetingOpts): Promise<Id<"meet
       checkInCode: opts.checkInCode ?? "ABC123",
       isActive: opts.isActive ?? true,
       tags: opts.tags,
-      geoFenceLatitude: opts.geoFenceLatitude,
-      geoFenceLongitude: opts.geoFenceLongitude,
-      geoFenceRadiusM: opts.geoFenceRadiusM,
+      geofence: opts.geofence,
       requireFingerprint: opts.requireFingerprint ?? false,
     });
   });
@@ -144,7 +150,7 @@ export interface SeedRecordOpts {
   memberId: Id<"members">;
   status?: "present" | "late" | "excused";
   method?: "self" | "manual";
-  deviceFingerprintHash?: string;
+  deviceFingerprint?: string;
 }
 
 export async function seedRecord(t: T, opts: SeedRecordOpts): Promise<Id<"attendanceRecords">> {
@@ -155,7 +161,7 @@ export async function seedRecord(t: T, opts: SeedRecordOpts): Promise<Id<"attend
       memberId: opts.memberId,
       status: opts.status ?? "present",
       method: opts.method ?? "self",
-      deviceFingerprintHash: opts.deviceFingerprintHash,
+      deviceFingerprint: opts.deviceFingerprint,
     });
   });
 }

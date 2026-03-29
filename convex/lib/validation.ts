@@ -1,6 +1,8 @@
+import { tzOffset } from "@date-fns/tz";
 import { z } from "zod";
 
 const compactWhitespace = (value: string) => value.replace(/\s+/g, " ");
+const timeZoneReferenceDate = new Date(0);
 
 const compactRequiredText = (field: string) =>
   z.string().trim().min(1, `${field} cannot be empty`).transform(compactWhitespace);
@@ -24,9 +26,21 @@ export const meetingTagsSchema = z
     return normalized.length > 0 ? Array.from(new Set(normalized)) : undefined;
   })
   .optional();
+export const geofenceSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  radiusM: z.number().positive("Geofence radius must be a positive number"),
+});
+export const meetingGeofenceSchema = geofenceSchema.optional();
+export const meetingGeofenceUpdateSchema = z.union([geofenceSchema, z.null()]).optional();
 
 export const organizationNameSchema = compactRequiredText("Organization name");
-export const organizationTimezoneSchema = compactRequiredText("Timezone");
+export const organizationTimezoneSchema = z
+  .string()
+  .trim()
+  .refine((value) => !Number.isNaN(tzOffset(value, timeZoneReferenceDate)), {
+    message: "Timezone must be valid",
+  });
 export const organizationSlugCandidateSchema = z
   .string()
   .trim()

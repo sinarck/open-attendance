@@ -4,16 +4,16 @@ import { zCustomMutation } from "convex-helpers/server/zod4";
 import { isAfter, isBefore } from "date-fns";
 import haversine from "haversine-distance";
 import { z } from "zod";
+import type { Doc } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
 import { authedMutation, authedQuery } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
-import { attendanceStatus } from "./schema";
-import { hashString } from "../lib/hash";
 import {
   checkInCodeSchema,
   deviceFingerprintSchema,
   memberIdentifierSchema,
-} from "../lib/validation/convex";
+} from "./lib/validation";
+import { attendanceStatus } from "./schema";
 
 const zMutation = zCustomMutation(mutation, NoOp);
 
@@ -27,38 +27,39 @@ export const checkIn = zMutation({
     deviceFingerprint: deviceFingerprintSchema.optional(),
   },
   handler: async (ctx, { code, identifier, latitude, longitude, deviceFingerprint }) => {
-    await rateLimit(ctx, { name: "checkIn", key: code, throws: true });
-
     const meeting = await ctx.db
       .query("meetings")
       .withIndex("by_checkInCode", (q) => q.eq("checkInCode", code))
       .unique();
 
     if (!meeting) throw new ConvexError("Invalid check-in code");
+
+    await rateLimit(ctx, {
+      name: "checkIn",
+      key: `${meeting._id}`,
+      throws: true,
+    });
+
     if (!meeting.isActive) throw new ConvexError("Check-ins are closed for this meeting");
 
     const now = Date.now();
     if (isBefore(now, meeting.startTime)) throw new ConvexError("Check-in has not started yet");
     if (isAfter(now, meeting.endTime)) throw new ConvexError("Check-in has ended");
 
-    if (
-      meeting.geoFenceLatitude !== undefined &&
-      meeting.geoFenceLongitude !== undefined &&
-      meeting.geoFenceRadiusM !== undefined
-    ) {
+    if (meeting.geofence) {
       if (latitude === undefined || longitude === undefined) {
         throw new ConvexError("This meeting requires location verification");
       }
 
       const distance = haversine(
         {
-          latitude: meeting.geoFenceLatitude,
-          longitude: meeting.geoFenceLongitude,
+          latitude: meeting.geofence.latitude,
+          longitude: meeting.geofence.longitude,
         },
         { latitude, longitude },
       );
 
-      if (distance > meeting.geoFenceRadiusM) {
+      if (distance > meeting.geofence.radiusM) {
         throw new ConvexError("You are outside the allowed check-in area");
       }
     }
@@ -82,27 +83,35 @@ export const checkIn = zMutation({
 
     if (existingRecord) throw new ConvexError("Already checked in for this meeting");
 
-    let deviceFingerprintHash: string | undefined;
-    if (meeting.requireFingerprint) {
-      if (!deviceFingerprint) {
-        throw new ConvexError("This meeting requires device verification");
-      }
-      deviceFingerprintHash = await hashString(deviceFingerprint);
+    // When lateAfter === endTime (the default), nobody can be late.
+    const status: Doc<"attendanceRecords">["status"] = isAfter(now, meeting.lateAfter)
+      ? "late"
+      : "present";
 
-      const existingFingerprint = await ctx.db
-        .query("attendanceRecords")
-        .withIndex("by_meeting_fingerprint_hash", (q) =>
-          q.eq("meetingId", meeting._id).eq("deviceFingerprintHash", deviceFingerprintHash),
-        )
-        .unique();
-
-      if (existingFingerprint) {
-        throw new ConvexError("This device has already been used to check in");
-      }
+    if (!meeting.requireFingerprint) {
+      return ctx.db.insert("attendanceRecords", {
+        organizationId: meeting.organizationId,
+        meetingId: meeting._id,
+        memberId: member._id,
+        status,
+        method: "self",
+      });
     }
 
-    // When lateAfter === endTime (the default), nobody can be late.
-    const status: "present" | "late" = isAfter(now, meeting.lateAfter) ? "late" : "present";
+    if (!deviceFingerprint) {
+      throw new ConvexError("This meeting requires device verification");
+    }
+
+    const existingFingerprint = await ctx.db
+      .query("attendanceRecords")
+      .withIndex("by_meeting_fingerprint", (q) =>
+        q.eq("meetingId", meeting._id).eq("deviceFingerprint", deviceFingerprint),
+      )
+      .unique();
+
+    if (existingFingerprint) {
+      throw new ConvexError("This device has already been used to check in");
+    }
 
     return ctx.db.insert("attendanceRecords", {
       organizationId: meeting.organizationId,
@@ -110,7 +119,7 @@ export const checkIn = zMutation({
       memberId: member._id,
       status,
       method: "self",
-      deviceFingerprintHash,
+      deviceFingerprint,
     });
   },
 });
@@ -172,29 +181,39 @@ export const markManual = authedMutation({
       .withIndex("by_meeting_member", (q) => q.eq("meetingId", meetingId).eq("memberId", memberId))
       .unique();
 
-    if (existing) {
-      if (existing.status === status && existing.method === "manual") {
-        return existing._id;
-      }
+    if (!existing) {
+      return ctx.db.insert("attendanceRecords", {
+        organizationId: ctx.organizationId,
+        meetingId,
+        memberId,
+        status,
+        method: "manual",
+      });
+    }
 
-      await ctx.db.patch("attendanceRecords", existing._id, { status, method: "manual" });
+    if (existing.status === status && existing.method === "manual") {
       return existing._id;
     }
 
-    return ctx.db.insert("attendanceRecords", {
-      organizationId: ctx.organizationId,
-      meetingId,
-      memberId,
+    await ctx.db.patch("attendanceRecords", existing._id, {
       status,
       method: "manual",
     });
+    return existing._id;
   },
 });
 
 export const removeRecord = authedMutation({
   args: { recordId: v.id("attendanceRecords") },
   handler: async (ctx, { recordId }) => {
+    await rateLimit(ctx, {
+      name: "orgWrite",
+      key: ctx.organizationId,
+      throws: true,
+    });
+
     const record = await ctx.db.get("attendanceRecords", recordId);
+
     if (!record) throw new ConvexError("Attendance record not found");
     await ctx.db.delete("attendanceRecords", recordId);
   },

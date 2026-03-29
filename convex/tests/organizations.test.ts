@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vite-plus/test";
+import { api } from "../_generated/api";
+import {
+  seedAuthedOrg,
+  seedAuthedUser,
+  seedMeeting,
+  seedMember,
+  seedOrg,
+  seedRecord,
+} from "../lib/seed";
+import { createOrganizationForAuthUser } from "../organizations";
 import { convexTest, schema } from "./harness";
-import { upsertOnboardingOrg } from "../organizations";
-import { seedMeeting, seedMember, seedOrg, seedRecord } from "./test-helpers";
 
 describe("organizations:getCurrent (authId lookup)", () => {
   it("finds an org by authId", async () => {
@@ -34,35 +42,64 @@ describe("organizations:getCurrent (authId lookup)", () => {
   });
 });
 
-describe("organizations:completeOnboarding", () => {
-  it("updates placeholder org with name, slug, and timezone", async () => {
+describe("organizations:create", () => {
+  it("creates an organization for an authenticated user with no existing org", async () => {
     const t = convexTest(schema);
-    const orgId = await seedOrg(t, {
-      authId: "user_abc",
-      name: "",
-      slug: "",
-      timezone: "UTC",
-    });
+    const { asUser, userId } = await seedAuthedUser(t);
 
-    await t.run(async (ctx) => {
-      await ctx.db.patch(orgId, {
-        name: "My Classroom",
-        slug: "my-classroom",
-        timezone: "America/New_York",
-      });
+    const orgId = await asUser.mutation(api.organizations.create, {
+      name: "My Classroom",
+      slug: "my-classroom",
+      timezone: "America/New_York",
     });
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
+    expect(org?.authId).toBe(userId);
     expect(org?.name).toBe("My Classroom");
     expect(org?.slug).toBe("my-classroom");
     expect(org?.timezone).toBe("America/New_York");
   });
 
-  it("creates the org if the placeholder row is missing", async () => {
+  it("repairs a legacy incomplete organization row", async () => {
+    const t = convexTest(schema);
+    const { asUser, orgId } = await seedAuthedOrg(t, {
+      name: "",
+      slug: "",
+      timezone: "UTC",
+    });
+
+    const returnedId = await asUser.mutation(api.organizations.create, {
+      name: "Recovered Org",
+      slug: "recovered-org",
+      timezone: "America/Chicago",
+    });
+
+    expect(returnedId).toBe(orgId);
+
+    const org = await t.run(async (ctx) => ctx.db.get(orgId));
+    expect(org?.name).toBe("Recovered Org");
+    expect(org?.slug).toBe("recovered-org");
+    expect(org?.timezone).toBe("America/Chicago");
+  });
+
+  it("rejects an invalid timezone", async () => {
+    const t = convexTest(schema);
+    const { asUser } = await seedAuthedUser(t);
+
+    await expect(
+      asUser.mutation(api.organizations.create, {
+        name: "My Classroom",
+        slug: "my-classroom",
+        timezone: "Mars/Olympus",
+      }),
+    ).rejects.toThrowError("Timezone must be valid");
+  });
+
+  it("creates the org when called through the helper without a pre-existing row", async () => {
     const t = convexTest(schema);
 
     const orgId = await t.run(async (ctx) =>
-      upsertOnboardingOrg(ctx, "user_missing_org", {
+      createOrganizationForAuthUser(ctx, "user_missing_org", {
         name: "Recovered Org",
         slug: "recovered-org",
         timezone: "America/Chicago",
@@ -76,17 +113,35 @@ describe("organizations:completeOnboarding", () => {
     expect(org?.timezone).toBe("America/Chicago");
   });
 
-  it("rejects onboarding if slug is already set (already onboarded)", async () => {
+  it("rejects creation if a complete organization already exists", async () => {
     const t = convexTest(schema);
-    const orgId = await seedOrg(t, {
-      authId: "user_abc",
-      name: "Existing",
-      slug: "existing-slug",
+    const { asUser } = await seedAuthedOrg(t, {
+      name: "Existing Org",
+      slug: "existing-org",
+    });
+
+    await expect(
+      asUser.mutation(api.organizations.create, {
+        name: "Another Org",
+        slug: "another-org",
+        timezone: "America/Chicago",
+      }),
+    ).rejects.toThrowError("Organization already exists for this account");
+  });
+
+  it("returns the org ID after successful creation", async () => {
+    const t = convexTest(schema);
+    const { asUser } = await seedAuthedUser(t);
+
+    const orgId = await asUser.mutation(api.organizations.create, {
+      name: "My Org",
+      slug: "my-org",
+      timezone: "America/Chicago",
     });
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    // The production code checks `org.slug !== ""`.
-    expect(org?.slug).not.toBe("");
+    expect(org?.name).toBe("My Org");
+    expect(org?.slug).toBe("my-org");
   });
 });
 
@@ -118,13 +173,10 @@ describe("organizations:slug uniqueness", () => {
     expect(existing).toBeNull();
   });
 
-  it("two orgs cannot have the same slug", async () => {
+  it("two orgs cannot have the same slug at the application layer", async () => {
     const t = convexTest(schema);
     await seedOrg(t, { slug: "unique-slug" });
 
-    // Attempting to insert a second org with the same slug is valid at the DB
-    // level (Convex indexes are not unique constraints), but the application
-    // validates uniqueness before insertion.
     const existing = await t.run(async (ctx) =>
       ctx.db
         .query("organizations")
@@ -133,8 +185,6 @@ describe("organizations:slug uniqueness", () => {
     );
 
     expect(existing).not.toBeNull();
-    // In production, the code would throw ConvexError("Slug already taken")
-    // before inserting.
   });
 });
 
@@ -142,12 +192,8 @@ describe("organizations:isSlugAvailable", () => {
   it("returns true for an available slug", async () => {
     const t = convexTest(schema);
 
-    const isAvailable = await t.run(async (ctx) => {
-      const existing = await ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", "available"))
-        .unique();
-      return existing === null;
+    const isAvailable = await t.query(api.organizations.isSlugAvailable, {
+      slug: "available",
     });
 
     expect(isAvailable).toBe(true);
@@ -157,12 +203,18 @@ describe("organizations:isSlugAvailable", () => {
     const t = convexTest(schema);
     await seedOrg(t, { slug: "taken" });
 
-    const isAvailable = await t.run(async (ctx) => {
-      const existing = await ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", "taken"))
-        .unique();
-      return existing === null;
+    const isAvailable = await t.query(api.organizations.isSlugAvailable, {
+      slug: "taken",
+    });
+
+    expect(isAvailable).toBe(false);
+  });
+
+  it("returns false for slugs shorter than 2 characters", async () => {
+    const t = convexTest(schema);
+
+    const isAvailable = await t.query(api.organizations.isSlugAvailable, {
+      slug: "a",
     });
 
     expect(isAvailable).toBe(false);
@@ -187,7 +239,6 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
       memberId: m2,
     });
 
-    // Simulate the user.onDelete cascade.
     await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
@@ -210,7 +261,6 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
       await ctx.db.delete(orgId);
     });
 
-    // Verify everything is gone.
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org).toBeNull();
 
@@ -271,7 +321,6 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
       memberId: memberB,
     });
 
-    // Delete orgA's data.
     await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
@@ -291,7 +340,6 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
       await ctx.db.delete(orgA);
     });
 
-    // OrgB's data should be intact.
     const bMembers = await t.run(async (ctx) =>
       ctx.db
         .query("members")
@@ -318,75 +366,11 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
   });
 });
 
-describe("organizations:isSlugAvailable (edge cases)", () => {
-  it("returns true for an empty string slug", async () => {
-    const t = convexTest(schema);
-
-    const isAvailable = await t.run(async (ctx) => {
-      const existing = await ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", ""))
-        .unique();
-      return existing === null;
-    });
-
-    expect(isAvailable).toBe(true);
-  });
-
-  it("returns false for empty string when a placeholder org exists with empty slug", async () => {
-    const t = convexTest(schema);
-    await seedOrg(t, { slug: "" }); // placeholder org with empty slug
-
-    const isAvailable = await t.run(async (ctx) => {
-      const existing = await ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", ""))
-        .unique();
-      return existing === null;
-    });
-
-    expect(isAvailable).toBe(false);
-  });
-});
-
-describe("organizations:completeOnboarding (returns org._id)", () => {
-  it("returns the org ID after successful onboarding", async () => {
-    const t = convexTest(schema);
-    const orgId = await seedOrg(t, {
-      authId: "user_onboard",
-      name: "",
-      slug: "",
-    });
-
-    // Simulate completeOnboarding: patch and return org._id.
-    const returnedId = await t.run(async (ctx) => {
-      const org = await ctx.db.get(orgId);
-      expect(org?.slug).toBe("");
-      if (!org) {
-        throw new Error("Organization should exist");
-      }
-      await ctx.db.patch(org._id, {
-        name: "My Org",
-        slug: "my-org",
-        timezone: "America/Chicago",
-      });
-      return org._id;
-    });
-
-    expect(returnedId).toBe(orgId);
-
-    const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org?.name).toBe("My Org");
-    expect(org?.slug).toBe("my-org");
-  });
-});
-
 describe("organizations:cascade delete (empty org)", () => {
   it("deletes an org with no members, meetings, or records", async () => {
     const t = convexTest(schema);
     const orgId = await seedOrg(t, { authId: "user_empty" });
 
-    // Simulate cascade on an empty org — no child data to delete.
     await t.run(async (ctx) => {
       const records = await ctx.db
         .query("attendanceRecords")
@@ -413,10 +397,9 @@ describe("organizations:cascade delete (empty org)", () => {
     expect(deleted).toBeNull();
   });
 
-  it("org not found early return (user.onDelete with no matching org)", async () => {
+  it("returns early when no org exists for the deleted user", async () => {
     const t = convexTest(schema);
 
-    // Simulate: lookup org by authId that doesn't exist.
     const org = await t.run(async (ctx) =>
       ctx.db
         .query("organizations")
@@ -424,28 +407,22 @@ describe("organizations:cascade delete (empty org)", () => {
         .unique(),
     );
 
-    // In production, the trigger does an early return if org is null.
     expect(org).toBeNull();
   });
 });
 
-describe("organizations:user.onCreate trigger", () => {
-  it("creates a placeholder org with empty name and slug", async () => {
+describe("organizations:user creation", () => {
+  it("does not create an organization before setup is completed", async () => {
     const t = convexTest(schema);
-    // Simulate what the trigger does.
-    const orgId = await t.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        authId: "new_user_123",
-        name: "",
-        slug: "",
-        timezone: "UTC",
-      });
-    });
+    const { userId } = await seedAuthedUser(t);
 
-    const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org?.authId).toBe("new_user_123");
-    expect(org?.name).toBe("");
-    expect(org?.slug).toBe("");
-    expect(org?.timezone).toBe("UTC");
+    const org = await t.run(async (ctx) =>
+      ctx.db
+        .query("organizations")
+        .withIndex("by_authId", (q) => q.eq("authId", userId))
+        .unique(),
+    );
+
+    expect(org).toBeNull();
   });
 });

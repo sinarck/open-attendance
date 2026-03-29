@@ -63,7 +63,7 @@ async function resolveAuthCtx(ctx: QueryCtx | MutationCtx) {
     .unique();
 
   if (!org) {
-    throw new ConvexError("No organization found. Complete onboarding first.");
+    throw new ConvexError("No organization found. Complete organization setup first.");
   }
 
   return { organizationId: org._id, authId: user._id };

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { api } from "../_generated/api";
+import { seedAuthedOrg, seedMeeting, seedMember, seedRecord } from "../lib/seed";
 import { convexTest, schema } from "./harness";
-import { seedAuthedOrg, seedMeeting, seedMember, seedRecord } from "./test-helpers";
 
 async function setupTenants() {
   const t = convexTest(schema);
@@ -100,19 +100,11 @@ beforeAll(async () => {
     isActive: true,
   });
 
-  await org.asUser.query(api.members.list, {});
+  await org.asUser.query(api.members.listRoster, {});
   await org.asUser.query(api.meetings.list, {});
 });
 
 describe("RLS: members", () => {
-  it("lists only the caller's active members", async () => {
-    const { orgA, memberA } = await setupTenants();
-
-    const members = await orgA.asUser.query(api.members.list, {});
-
-    expect(members.map((member) => member._id)).toEqual([memberA]);
-  });
-
   it("lists only the caller's full roster", async () => {
     const { orgA, archivedMemberA, memberA } = await setupTenants();
 
@@ -120,14 +112,6 @@ describe("RLS: members", () => {
 
     expect(roster.active.map((member) => member._id)).toEqual([memberA]);
     expect(roster.archived.map((member) => member._id)).toEqual([archivedMemberA]);
-  });
-
-  it("returns null when reading another org's member by id", async () => {
-    const { memberB, orgA } = await setupTenants();
-
-    const member = await orgA.asUser.query(api.members.get, { memberId: memberB });
-
-    expect(member).toBeNull();
   });
 
   it("rejects updates against another org's member", async () => {
@@ -166,31 +150,22 @@ describe("RLS: members", () => {
       identifier: "NEW-001",
     });
 
-    const members = await orgA.asUser.query(api.members.listAll, {});
-    expect(members.some((member) => member._id === memberId)).toBe(true);
-    expect(members.every((member) => member.organizationId === orgA.orgId)).toBe(true);
+    const roster = await orgA.asUser.query(api.members.listRoster, {});
+    const allMembers = [...roster.active, ...roster.archived];
+    expect(allMembers.some((member) => member._id === memberId)).toBe(true);
+    expect(allMembers.every((member) => member.organizationId === orgA.orgId)).toBe(true);
   });
 });
 
 describe("RLS: meetings", () => {
-  it("lists only the caller's meetings and active meetings", async () => {
+  it("lists only the caller's meetings", async () => {
     const { activeMeetingA, closedMeetingA, orgA } = await setupTenants();
 
     const meetings = await orgA.asUser.query(api.meetings.list, {});
-    const activeMeetings = await orgA.asUser.query(api.meetings.listActive, {});
 
     expect(meetings.map((meeting) => meeting._id).sort()).toEqual(
       [activeMeetingA, closedMeetingA].sort(),
     );
-    expect(activeMeetings.map((meeting) => meeting._id)).toEqual([activeMeetingA]);
-  });
-
-  it("returns null when reading another org's meeting by id", async () => {
-    const { meetingB, orgA } = await setupTenants();
-
-    const meeting = await orgA.asUser.query(api.meetings.get, { meetingId: meetingB });
-
-    expect(meeting).toBeNull();
   });
 
   it("rejects updates and state changes against another org's meeting", async () => {
@@ -336,11 +311,11 @@ describe("RLS: attendance", () => {
 });
 
 describe("RLS: organizations", () => {
-  it("returns only the caller's organization document", async () => {
+  it("returns only the caller's current organization document", async () => {
     const { orgA, orgB } = await setupTenants();
 
-    const organization = await orgA.asUser.query(api.organizations.get, {});
-    const otherOrganization = await orgB.asUser.query(api.organizations.get, {});
+    const organization = await orgA.asUser.query(api.organizations.getCurrent, {});
+    const otherOrganization = await orgB.asUser.query(api.organizations.getCurrent, {});
 
     expect(organization?._id).toBe(orgA.orgId);
     expect(otherOrganization?._id).toBe(orgB.orgId);

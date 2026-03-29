@@ -1,9 +1,7 @@
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { api } from "../_generated/api";
+import { type Id, seedMeeting, seedMember, seedOrg, seedRecord, type T } from "../lib/seed";
 import { convexTest, schema } from "./harness";
-import { type Id, seedMeeting, seedMember, seedOrg, seedRecord, type T } from "./test-helpers";
-
-const DEVICE_FINGERPRINT_HASH = "5e990b25fec084647d0b0227cb0cebbbce8868c8a90b65837b7cc67fe88ecc8b";
 
 /** Create a standard org + member + active meeting for check-in tests. */
 async function setupCheckIn(
@@ -15,19 +13,23 @@ async function setupCheckIn(
     isActive?: boolean;
     checkInCode?: string;
     requireFingerprint?: boolean;
-    geoFenceLatitude?: number;
-    geoFenceLongitude?: number;
-    geoFenceRadiusM?: number;
+    geofence?: {
+      latitude: number;
+      longitude: number;
+      radiusM: number;
+    };
     memberIdentifier?: string;
     memberIsActive?: boolean;
   } = {},
 ) {
   const orgId = await seedOrg(t);
+
   const memberId = await seedMember(t, {
     organizationId: orgId,
     identifier: overrides.memberIdentifier ?? "STU001",
     isActive: overrides.memberIsActive ?? true,
   });
+
   const meetingId = await seedMeeting(t, {
     organizationId: orgId,
     checkInCode: overrides.checkInCode ?? "ABC123",
@@ -36,10 +38,9 @@ async function setupCheckIn(
     endTime: overrides.meetingEndTime,
     lateAfter: overrides.lateAfter,
     requireFingerprint: overrides.requireFingerprint,
-    geoFenceLatitude: overrides.geoFenceLatitude,
-    geoFenceLongitude: overrides.geoFenceLongitude,
-    geoFenceRadiusM: overrides.geoFenceRadiusM,
+    geofence: overrides.geofence,
   });
+
   return { orgId, memberId, meetingId };
 }
 
@@ -111,6 +112,55 @@ describe("attendance:checkIn", () => {
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
     expect(record?.status).toBe("late");
     expect(record?.method).toBe("self");
+  });
+
+  it("uses absolute meeting timestamps regardless of organization timezone", async () => {
+    const t = convexTest(schema);
+    const now = Date.now();
+
+    const chicagoOrgId = await seedOrg(t, { timezone: "America/Chicago" });
+    const tokyoOrgId = await seedOrg(t, { timezone: "Asia/Tokyo" });
+
+    await seedMember(t, {
+      organizationId: chicagoOrgId,
+      identifier: "CHI001",
+    });
+    await seedMember(t, {
+      organizationId: tokyoOrgId,
+      identifier: "TYO001",
+    });
+
+    await seedMeeting(t, {
+      organizationId: chicagoOrgId,
+      checkInCode: "CHI123",
+      isActive: true,
+      startTime: now - 120_000,
+      endTime: now + 60 * 60_000,
+      lateAfter: now - 60_000,
+    });
+    await seedMeeting(t, {
+      organizationId: tokyoOrgId,
+      checkInCode: "TYO123",
+      isActive: true,
+      startTime: now - 120_000,
+      endTime: now + 60 * 60_000,
+      lateAfter: now - 60_000,
+    });
+
+    const chicagoRecordId = await t.mutation(api.attendance.checkIn, {
+      code: "CHI123",
+      identifier: "CHI001",
+    });
+    const tokyoRecordId = await t.mutation(api.attendance.checkIn, {
+      code: "TYO123",
+      identifier: "TYO001",
+    });
+
+    const chicagoRecord = await t.run(async (ctx) => ctx.db.get(chicagoRecordId));
+    const tokyoRecord = await t.run(async (ctx) => ctx.db.get(tokyoRecordId));
+
+    expect(chicagoRecord?.status).toBe("late");
+    expect(tokyoRecord?.status).toBe("late");
   });
 
   it("records 'present' when checking in exactly at lateAfter (via direct DB)", async () => {
@@ -258,9 +308,11 @@ describe("attendance:checkIn", () => {
   it("allows check-in within geo-fence radius", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 500,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 500,
+      },
     });
 
     const recordId = await t.mutation(api.attendance.checkIn, {
@@ -276,9 +328,11 @@ describe("attendance:checkIn", () => {
   it("rejects check-in outside geo-fence radius", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 100,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 100,
+      },
     });
 
     await expect(
@@ -294,9 +348,11 @@ describe("attendance:checkIn", () => {
   it("rejects check-in when geo-fence is set but no location is provided", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 500,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 500,
+      },
     });
 
     await expect(
@@ -322,9 +378,11 @@ describe("attendance:checkIn", () => {
   it("allows check-in exactly at geo-fence boundary", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 1000,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 1000,
+      },
     });
 
     const recordId = await t.mutation(api.attendance.checkIn, {
@@ -399,7 +457,7 @@ describe("attendance:checkIn", () => {
     expect(r2).toBeTruthy();
   });
 
-  it("stores a hashed device fingerprint when meeting requires it", async () => {
+  it("stores the device fingerprint when meeting requires it", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: true });
 
@@ -410,10 +468,10 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record?.deviceFingerprintHash).toBe(DEVICE_FINGERPRINT_HASH);
+    expect(record?.deviceFingerprint).toBe("device-xyz");
   });
 
-  it("does not store a device fingerprint hash when meeting does not require it", async () => {
+  it("does not store a device fingerprint when meeting does not require it", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: false });
 
@@ -424,7 +482,7 @@ describe("attendance:checkIn", () => {
     });
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
-    expect(record?.deviceFingerprintHash).toBeUndefined();
+    expect(record?.deviceFingerprint).toBeUndefined();
   });
 
   it("allows same fingerprint across different meetings", async () => {
@@ -498,9 +556,11 @@ describe("attendance:checkIn", () => {
   it("rejects check-in with latitude but no longitude when geo-fence is set", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 500,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 500,
+      },
     });
 
     await expect(
@@ -515,9 +575,11 @@ describe("attendance:checkIn", () => {
   it("rejects check-in with longitude but no latitude when geo-fence is set", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 500,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 500,
+      },
     });
 
     await expect(
@@ -533,9 +595,11 @@ describe("attendance:checkIn", () => {
     const t = convexTest(schema);
     await setupCheckIn(t, {
       requireFingerprint: true,
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 100,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 100,
+      },
     });
 
     await expect(
@@ -555,9 +619,11 @@ describe("attendance:checkIn", () => {
     await setupCheckIn(t, {
       meetingStartTime: now + 60 * 60_000,
       meetingEndTime: now + 2 * 60 * 60_000,
-      geoFenceLatitude: 40.0,
-      geoFenceLongitude: -74.0,
-      geoFenceRadiusM: 500,
+      geofence: {
+        latitude: 40.0,
+        longitude: -74.0,
+        radiusM: 500,
+      },
     });
 
     await expect(

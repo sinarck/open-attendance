@@ -5,7 +5,6 @@ import { type BetterAuthOptions, betterAuth } from "better-auth/minimal";
 import { username } from "better-auth/plugins";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
-import { query } from "./_generated/server";
 import authConfig from "./auth.config";
 
 const authFunctions: AuthFunctions = internal.auth as AuthFunctions;
@@ -84,10 +83,3 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
     plugins: [username(), convex({ authConfig })],
   } satisfies BetterAuthOptions);
 };
-
-export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    return authComponent.safeGetAuthUser(ctx);
-  },
-});

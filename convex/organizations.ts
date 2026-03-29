@@ -4,18 +4,17 @@ import { zCustomMutation, zCustomQuery } from "convex-helpers/server/zod4";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
-import { authedQuery } from "./lib/auth";
 import {
   organizationNameSchema,
   organizationSlugCandidateSchema,
   organizationSlugSchema,
   organizationTimezoneSchema,
-} from "../lib/validation/convex";
+} from "./lib/validation";
 
 const zMutation = zCustomMutation(mutation, NoOp);
 const zQuery = zCustomQuery(query, NoOp);
 
-export async function upsertOnboardingOrg(
+export async function createOrganizationForAuthUser(
   ctx: Pick<MutationCtx, "db">,
   authId: string,
   { name, slug, timezone }: { name: string; slug: string; timezone: string },
@@ -26,7 +25,7 @@ export async function upsertOnboardingOrg(
     .unique();
 
   if (org && org.slug !== "") {
-    throw new ConvexError("Organization already onboarded");
+    throw new ConvexError("Organization already exists for this account");
   }
 
   const existing = await ctx.db
@@ -39,6 +38,7 @@ export async function upsertOnboardingOrg(
   }
 
   if (org) {
+    // Repair legacy empty-slug rows left behind by the old setup flow.
     await ctx.db.patch("organizations", org._id, {
       name,
       slug,
@@ -47,7 +47,6 @@ export async function upsertOnboardingOrg(
     return org._id;
   }
 
-  // Repair accounts whose placeholder org was never created by the auth trigger.
   return ctx.db.insert("organizations", {
     authId,
     name,
@@ -56,7 +55,7 @@ export async function upsertOnboardingOrg(
   });
 }
 
-/** Returns the caller's org, or null before onboarding. */
+/** Returns the caller's organization, or null if setup has not been completed yet. */
 export const getCurrent = query({
   args: {},
   handler: async (ctx) => {
@@ -70,11 +69,8 @@ export const getCurrent = query({
   },
 });
 
-/**
- * Completes onboarding by setting name, slug, and timezone.
- * The org row was created by the user.onCreate trigger with placeholder values.
- */
-export const completeOnboarding = zMutation({
+/** Creates the caller's organization, or repairs a legacy incomplete organization row. */
+export const create = zMutation({
   args: {
     name: organizationNameSchema,
     slug: organizationSlugSchema,
@@ -84,7 +80,7 @@ export const completeOnboarding = zMutation({
     const user = await authComponent.safeGetAuthUser(ctx);
     if (!user) throw new ConvexError("Not authenticated");
 
-    return upsertOnboardingOrg(ctx, user._id, {
+    return createOrganizationForAuthUser(ctx, user._id, {
       name,
       slug,
       timezone,
@@ -92,7 +88,7 @@ export const completeOnboarding = zMutation({
   },
 });
 
-/** Real-time slug availability check for the onboarding form. */
+/** Real-time slug availability check for the signup and organization setup forms. */
 export const isSlugAvailable = zQuery({
   args: { slug: organizationSlugCandidateSchema },
   handler: async (ctx, { slug }) => {
@@ -106,12 +102,5 @@ export const isSlugAvailable = zQuery({
       .unique();
 
     return existing === null;
-  },
-});
-
-export const get = authedQuery({
-  args: {},
-  handler: async (ctx) => {
-    return ctx.db.get("organizations", ctx.organizationId);
   },
 });
