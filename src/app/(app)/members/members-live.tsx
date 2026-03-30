@@ -69,15 +69,13 @@ export function MembersLive({ preloadedRoster, timeZone }: MembersLiveProps) {
               {roster.archived.length}
             </Badge>
           </div>
-          <div className="rounded-lg border">
-            <DataTable
-              columns={archivedMemberColumns}
-              data={roster.archived}
-              emptyTitle="No archived members"
-              emptyDescription="Archived members will appear here when you remove them from the active roster."
-              rowClassName={() => "opacity-50"}
-            />
-          </div>
+          <DataTable
+            columns={archivedMemberColumns}
+            data={roster.archived}
+            emptyTitle="No archived members"
+            emptyDescription="Archived members will appear here when you remove them from the active roster."
+            rowClassName={() => "opacity-50"}
+          />
         </section>
       )}
     </div>

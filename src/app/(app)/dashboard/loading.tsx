@@ -6,8 +6,14 @@ export default function DashboardLoading() {
       {/* KPI strip */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {["kpi-1", "kpi-2", "kpi-3", "kpi-4"].map((key) => (
-          <div key={key} className="rounded-2xl border border-border/60 p-5">
-            <Skeleton className="h-3 w-20" />
+          <div
+            key={key}
+            className="relative overflow-hidden rounded-2xl border border-border/60 p-5"
+          >
+            <div className="flex items-start justify-between">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="size-4 rounded-sm" />
+            </div>
             <Skeleton className="mt-4 h-8 w-16" />
             <Skeleton className="mt-2 h-3.5 w-28" />
           </div>
@@ -16,10 +22,19 @@ export default function DashboardLoading() {
 
       {/* Live status */}
       <div className="rounded-2xl border border-border/60 p-6 sm:p-7">
-        <Skeleton className="h-3 w-20" />
-        <Skeleton className="mt-4 h-7 w-48" />
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-4">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-48" />
+          </div>
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
         <Skeleton className="mt-4 h-3 w-64" />
         <Skeleton className="mt-5 h-2.5 w-full rounded-full" />
+        <div className="mt-4 flex gap-2">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
       </div>
 
       {/* Two-column */}

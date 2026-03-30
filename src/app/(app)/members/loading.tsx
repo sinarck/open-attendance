@@ -1,4 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function MembersLoading() {
   return (
@@ -8,25 +16,40 @@ export default function MembersLoading() {
           <Skeleton className="h-4 w-12" />
           <Skeleton className="h-5 w-8 rounded-full" />
         </div>
-        <div className="rounded-lg border px-4 py-2">
-          <div className="grid grid-cols-[1fr_160px_100px] border-b py-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-12" />
-          </div>
-          {["m-1", "m-2", "m-3", "m-4"].map((key) => (
-            <div
-              key={key}
-              className="grid grid-cols-[1fr_160px_100px] items-center border-b py-2 last:border-0"
-            >
-              <div className="flex items-center gap-2.5">
-                <Skeleton className="size-7 rounded-full" />
-                <Skeleton className="h-4 w-28" />
-              </div>
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-4 w-12" />
-            </div>
-          ))}
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4">
+                  <Skeleton className="h-4 w-16" />
+                </TableHead>
+                <TableHead className="px-4">
+                  <Skeleton className="h-4 w-20" />
+                </TableHead>
+                <TableHead className="px-4">
+                  <Skeleton className="h-4 w-12" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {["m-1", "m-2", "m-3", "m-4"].map((key) => (
+                <TableRow key={key}>
+                  <TableCell className="px-4 py-2">
+                    <div className="flex items-center gap-2.5">
+                      <Skeleton className="size-7 rounded-full" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
+                    <Skeleton className="h-5 w-20 rounded-sm" />
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
+                    <Skeleton className="h-4 w-12" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </section>
       <section>
@@ -34,20 +57,31 @@ export default function MembersLoading() {
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-5 w-8 rounded-full" />
         </div>
-        <div className="rounded-lg border px-4 py-2">
-          <div className="grid grid-cols-[1fr_160px] border-b py-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-20" />
-          </div>
-          {["a-1", "a-2"].map((key) => (
-            <div
-              key={key}
-              className="grid grid-cols-[1fr_160px] items-center border-b py-2 last:border-0 opacity-50"
-            >
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-5 w-20" />
-            </div>
-          ))}
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4">
+                  <Skeleton className="h-4 w-16" />
+                </TableHead>
+                <TableHead className="px-4">
+                  <Skeleton className="h-4 w-20" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {["a-1", "a-2"].map((key) => (
+                <TableRow key={key} className="opacity-50">
+                  <TableCell className="px-4 py-2">
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
+                    <Skeleton className="h-5 w-20 rounded-sm" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </section>
     </main>
