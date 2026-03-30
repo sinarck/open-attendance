@@ -2,25 +2,11 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 const escapeRegex = (value: string) => value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const trimmedString = (label: string) =>
-  z.string().refine((value) => value.trim() === value, {
-    message: `${label} must not include leading or trailing whitespace`,
-  });
-
-const originUrl = (
-  label: string,
-  options: {
-    httpsOnly?: boolean;
-    hostnameSuffix?: string;
-  },
-) =>
+const origin = (label: string, httpsOnly = false, hostnameSuffix?: string) =>
   z
     .url({
-      protocol: options.httpsOnly ? /^https$/ : /^https?$/,
-      hostname: options.hostnameSuffix
-        ? new RegExp(`${escapeRegex(options.hostnameSuffix)}$`)
-        : undefined,
+      protocol: httpsOnly ? /^https$/ : /^https?$/,
+      hostname: hostnameSuffix ? new RegExp(`${escapeRegex(hostnameSuffix)}$`) : undefined,
     })
     .refine((value) => {
       const url = new URL(value);
@@ -29,34 +15,24 @@ const originUrl = (
 
 export const env = createEnv({
   server: {
-    SITE_URL: originUrl("SITE_URL", {}),
-    BETTER_AUTH_SECRET: trimmedString("BETTER_AUTH_SECRET").min(
-      32,
-      "BETTER_AUTH_SECRET must be at least 32 characters",
-    ),
-    CONVEX_SITE_URL: originUrl("CONVEX_SITE_URL", {
-      httpsOnly: true,
-      hostnameSuffix: ".convex.site",
-    }),
-    POSTHOG_API_KEY: trimmedString("POSTHOG_API_KEY")
+    SITE_URL: origin("SITE_URL"),
+    BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
+    CONVEX_SITE_URL: origin("CONVEX_SITE_URL", true, ".convex.site"),
+    POSTHOG_API_KEY: z
+      .string()
       .regex(/^phx_[A-Za-z0-9]+$/, "POSTHOG_API_KEY must look like phx_...")
       .optional(),
-    POSTHOG_PROJECT_ID: trimmedString("POSTHOG_PROJECT_ID")
+    POSTHOG_PROJECT_ID: z
+      .string()
       .regex(/^\d+$/, "POSTHOG_PROJECT_ID must be a numeric string")
       .optional(),
   },
   client: {
-    NEXT_PUBLIC_CONVEX_URL: originUrl("NEXT_PUBLIC_CONVEX_URL", {
-      httpsOnly: true,
-      hostnameSuffix: ".convex.cloud",
-    }),
-    NEXT_PUBLIC_POSTHOG_KEY: trimmedString("NEXT_PUBLIC_POSTHOG_KEY").regex(
-      /^phc_[A-Za-z0-9]+$/,
-      "NEXT_PUBLIC_POSTHOG_KEY must look like phc_...",
-    ),
-    NEXT_PUBLIC_POSTHOG_HOST: originUrl("NEXT_PUBLIC_POSTHOG_HOST", {
-      httpsOnly: true,
-    }),
+    NEXT_PUBLIC_CONVEX_URL: origin("NEXT_PUBLIC_CONVEX_URL", true, ".convex.cloud"),
+    NEXT_PUBLIC_POSTHOG_KEY: z
+      .string()
+      .regex(/^phc_[A-Za-z0-9]+$/, "NEXT_PUBLIC_POSTHOG_KEY must look like phc_..."),
+    NEXT_PUBLIC_POSTHOG_HOST: origin("NEXT_PUBLIC_POSTHOG_HOST", true),
     NEXT_PUBLIC_POSTHOG_API_HOST: z
       .string()
       .regex(
