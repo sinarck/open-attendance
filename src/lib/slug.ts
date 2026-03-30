@@ -1,4 +1,4 @@
-export function slugifyOrganizationName(value: string): string {
+export function slugify(value: string): string {
   return value
     .trim()
     .toLowerCase()

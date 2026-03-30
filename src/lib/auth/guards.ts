@@ -14,7 +14,7 @@ interface RequestAuthState {
 // App Router redirects should agree on a single request-scoped auth lookup.
 // We only ask Convex for organization state after Better Auth confirms there is
 // a session, which keeps anonymous requests cheap and avoids duplicate queries.
-const getRequestAuthState = cache(async (): Promise<RequestAuthState> => {
+export const getRequestAuthState = cache(async (): Promise<RequestAuthState> => {
   const authenticated = await isAuthenticated();
 
   if (!authenticated) {
@@ -41,7 +41,7 @@ export async function getMarketingAppHref() {
     return null;
   }
 
-  return organization === null || organization.slug === "" ? "/signup/complete" : "/dashboard";
+  return organization === null || organization.slug === "" ? "/signup" : "/dashboard";
 }
 
 export async function redirectAuthenticatedUser() {
@@ -52,28 +52,10 @@ export async function redirectAuthenticatedUser() {
   }
 
   if (organization === null || organization.slug === "") {
-    redirect("/signup/complete");
-  }
-
-  redirect("/dashboard");
-}
-
-export async function requirePendingOrganizationSetup() {
-  // Signup completion is only valid for authenticated users who still need an
-  // organization slug. Everyone else is redirected to their settled destination.
-  const { isAuthenticated, organization } = await getRequestAuthState();
-
-  if (!isAuthenticated) {
     redirect("/signup");
   }
 
-  if (organization !== null && organization.slug !== "") {
-    redirect("/dashboard");
-  }
-
-  return {
-    token: await getToken(),
-  };
+  redirect("/dashboard");
 }
 
 export async function requireOrganizationAccess() {
@@ -87,7 +69,7 @@ export async function requireOrganizationAccess() {
   }
 
   if (organization === null || organization.slug === "") {
-    redirect("/signup/complete");
+    redirect("/signup");
   }
 
   return {

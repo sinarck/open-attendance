@@ -47,12 +47,18 @@ describe("organizations:create", () => {
     const t = convexTest(schema);
     const { asUser, userId } = await seedAuthedUser(t);
 
-    const orgId = await asUser.mutation(api.organizations.create, {
+    const result = await asUser.mutation(api.organizations.create, {
       name: "My Classroom",
       slug: "my-classroom",
       timezone: "America/New_York",
     });
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected organization id");
+    }
+
+    const orgId = result.id;
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org?.authId).toBe(userId);
     expect(org?.name).toBe("My Classroom");
@@ -68,12 +74,18 @@ describe("organizations:create", () => {
       timezone: "UTC",
     });
 
-    const returnedId = await asUser.mutation(api.organizations.create, {
+    const result = await asUser.mutation(api.organizations.create, {
       name: "Recovered Org",
       slug: "recovered-org",
       timezone: "America/Chicago",
     });
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected organization id");
+    }
+
+    const returnedId = result.id;
     expect(returnedId).toBe(orgId);
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
@@ -98,7 +110,7 @@ describe("organizations:create", () => {
   it("creates the org when called through the helper without a pre-existing row", async () => {
     const t = convexTest(schema);
 
-    const orgId = await t.run(async (ctx) =>
+    const result = await t.run(async (ctx) =>
       createOrganizationForAuthUser(ctx, "user_missing_org", {
         name: "Recovered Org",
         slug: "recovered-org",
@@ -106,6 +118,12 @@ describe("organizations:create", () => {
       }),
     );
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected organization id");
+    }
+
+    const orgId = result.id;
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org?.authId).toBe("user_missing_org");
     expect(org?.name).toBe("Recovered Org");
@@ -120,25 +138,51 @@ describe("organizations:create", () => {
       slug: "existing-org",
     });
 
-    await expect(
-      asUser.mutation(api.organizations.create, {
-        name: "Another Org",
-        slug: "another-org",
-        timezone: "America/Chicago",
-      }),
-    ).rejects.toThrowError("Organization already exists for this account");
+    const result = await asUser.mutation(api.organizations.create, {
+      name: "Another Org",
+      slug: "another-org",
+      timezone: "America/Chicago",
+    });
+
+    expect(result).toEqual({
+      code: "exists",
+      message: "Organization already exists for this account",
+      ok: false,
+    });
+  });
+
+  it("rejects unauthenticated organization creation with a stable code", async () => {
+    const t = convexTest(schema);
+
+    const result = await t.mutation(api.organizations.create, {
+      name: "My Classroom",
+      slug: "my-classroom",
+      timezone: "America/New_York",
+    });
+
+    expect(result).toEqual({
+      code: "auth",
+      message: "Not authenticated",
+      ok: false,
+    });
   });
 
   it("returns the org ID after successful creation", async () => {
     const t = convexTest(schema);
     const { asUser } = await seedAuthedUser(t);
 
-    const orgId = await asUser.mutation(api.organizations.create, {
+    const result = await asUser.mutation(api.organizations.create, {
       name: "My Org",
       slug: "my-org",
       timezone: "America/Chicago",
     });
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected organization id");
+    }
+
+    const orgId = result.id;
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org?.name).toBe("My Org");
     expect(org?.slug).toBe("my-org");
@@ -175,16 +219,26 @@ describe("organizations:slug uniqueness", () => {
 
   it("two orgs cannot have the same slug at the application layer", async () => {
     const t = convexTest(schema);
-    await seedOrg(t, { slug: "unique-slug" });
+    const orgId = await seedOrg(t, {
+      authId: "existing-user",
+      slug: "unique-slug",
+    });
+    const { asUser } = await seedAuthedUser(t);
 
-    const existing = await t.run(async (ctx) =>
-      ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", "unique-slug"))
-        .unique(),
-    );
+    const result = await asUser.mutation(api.organizations.create, {
+      name: "Different Org",
+      slug: "unique-slug",
+      timezone: "America/Chicago",
+    });
 
-    expect(existing).not.toBeNull();
+    expect(result).toEqual({
+      code: "slug",
+      message: "Slug already taken",
+      ok: false,
+    });
+
+    const existing = await t.run(async (ctx) => ctx.db.get(orgId));
+    expect(existing?.slug).toBe("unique-slug");
   });
 });
 

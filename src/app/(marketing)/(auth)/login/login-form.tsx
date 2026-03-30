@@ -1,33 +1,36 @@
 "use client";
 
+import { BetterFetchError } from "better-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/auth/client";
 import { toast } from "@/lib/toast";
-import { getFormValues, loginFormSchema } from "@/lib/validation/auth";
+import { loginFormSchema } from "@/lib/validation/auth";
 
 export default function LoginForm() {
   const router = useRouter();
+  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSubmit(formValues: Record<string, any>) {
+    setErrors({});
     setLoading(true);
 
-    const result = loginFormSchema.safeParse(getFormValues(new FormData(e.currentTarget)));
+    const result = loginFormSchema.safeParse(formValues);
 
     if (!result.success) {
       setLoading(false);
-      toast.error("Sign in failed", result.error.issues[0]?.message);
+      setErrors(z.flattenError(result.error).fieldErrors);
       return;
     }
 
@@ -36,11 +39,20 @@ export default function LoginForm() {
     const { error } = await signIn.email({
       email,
       password,
-      rememberMe,
+      rememberMe: formValues.rememberMe === true,
     });
 
     if (error) {
       setLoading(false);
+
+      if (error instanceof BetterFetchError && error.status === 401) {
+        setErrors({
+          email: "Invalid email or password.",
+          password: "Invalid email or password.",
+        });
+        return;
+      }
+
       toast.error("Sign in failed", error.message);
       return;
     }
@@ -56,23 +68,22 @@ export default function LoginForm() {
         <CardDescription>Enter your credentials to continue</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-          <Field>
+        <Form onFormSubmit={handleSubmit} errors={errors}>
+          <Field name="email">
             <FieldLabel>Email</FieldLabel>
             <Input
-              name="email"
               type="email"
               placeholder="you@example.com"
               autoComplete="email"
               required
               disabled={loading}
             />
+            <FieldError />
           </Field>
 
-          <Field>
+          <Field name="password">
             <FieldLabel>Password</FieldLabel>
             <Input
-              name="password"
               type="password"
               placeholder="Enter your password"
               autoComplete="current-password"
@@ -80,19 +91,14 @@ export default function LoginForm() {
               minLength={8}
               disabled={loading}
             />
+            <FieldError />
           </Field>
 
           <Label
             htmlFor="rememberMe"
             className="flex cursor-pointer items-center gap-2 font-normal"
           >
-            <Checkbox
-              id="rememberMe"
-              name="rememberMe"
-              checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(checked === true)}
-              disabled={loading}
-            />
+            <Checkbox id="rememberMe" name="rememberMe" disabled={loading} />
             Remember me
           </Label>
 
@@ -106,7 +112,7 @@ export default function LoginForm() {
               Sign up
             </Link>
           </p>
-        </form>
+        </Form>
       </CardContent>
     </Card>
   );

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isValidTimeZone } from "@/lib/date";
-import { slugifyOrganizationName } from "@/lib/organization-slug";
+import { slugify } from "@/lib/slug";
 
 const email = z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address"));
 
@@ -23,7 +23,7 @@ const organizationName = z
 const organizationSlug = z
   .string()
   .trim()
-  .transform(slugifyOrganizationName)
+  .transform(slugify)
   .refine((value) => value.length >= 2, {
     message: "Organization URL must be at least 2 characters",
   });
@@ -49,5 +49,3 @@ export const signupFormSchema = z
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
-
-export const getFormValues = (formData: FormData) => Object.fromEntries(formData);
