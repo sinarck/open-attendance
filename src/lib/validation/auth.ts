@@ -14,7 +14,7 @@ const username = z
   .max(30, "Username must be 30 characters or fewer")
   .regex(/^[a-z0-9_.]+$/, "Username can only include letters, numbers, underscores, and dots");
 
-const organizationName = z
+export const organizationName = z
   .string()
   .trim()
   .min(2, "Organization name must be at least 2 characters")

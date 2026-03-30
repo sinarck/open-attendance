@@ -3,7 +3,9 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
+import type { ComponentPropsWithoutRef } from "react";
 import { useRef, useState } from "react";
+import { z } from "zod";
 import { SlugStatusIndicator } from "@/components/auth/slug-status-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,12 +23,17 @@ import { normalizeTimeZone } from "@/lib/date";
 import { slugify } from "@/lib/slug";
 import { toast } from "@/lib/toast";
 import { api } from "../../../../../../convex/_generated/api";
+import { organizationName } from "@/lib/validation/auth";
 
 interface FinishSetupFormProps {
   initialOrganizationName?: string;
   initialOrganizationSlug?: string;
   initialTimezone?: string;
 }
+
+const finishSetupFormSchema = z.object({
+  organizationName,
+});
 
 export function FinishSetupForm({
   initialOrganizationName = "",
@@ -44,7 +51,21 @@ export function FinishSetupForm({
   const slugStatus = useSlugAvailability(organizationSlug);
   const timezone = normalizeTimeZone(initialTimezone);
 
-  async function handleSubmit(formValues: Record<string, any>) {
+  const renderOrganizationSlugInput = (props: ComponentPropsWithoutRef<"input">) => (
+    <input
+      className="h-9 w-full min-w-0 bg-transparent pl-3 pr-12 font-mono text-sm outline-none placeholder:text-muted-foreground/72 sm:h-8"
+      placeholder="robotics-society"
+      autoCapitalize="none"
+      autoComplete="off"
+      autoCorrect="off"
+      spellCheck={false}
+      required
+      disabled={loading}
+      {...mergeProps(props, { name: "organizationSlug" })}
+    />
+  );
+
+  async function handleSubmit(formValues: Record<string, unknown>) {
     setErrors({});
 
     if (slugStatus !== "available") {
@@ -52,22 +73,22 @@ export function FinishSetupForm({
       return;
     }
 
-    const organizationName = String(formValues.organizationName ?? "").trim();
+    const parsedResult = finishSetupFormSchema.safeParse(formValues);
 
-    if (organizationName.length < 2) {
-      setErrors({ organizationName: "Enter your organization name to continue." });
+    if (!parsedResult.success) {
+      setErrors(z.flattenError(parsedResult.error).fieldErrors);
       return;
     }
 
     setLoading(true);
 
-    const result = await createOrganization({
-      name: organizationName,
+    const mutationResult = await createOrganization({
+      name: parsedResult.data.organizationName,
       slug: organizationSlug,
       timezone,
     });
 
-    if (result.ok) {
+    if (mutationResult.ok) {
       toast.success("Workspace ready", "Your organization is set up.");
       router.replace("/dashboard");
       return;
@@ -75,7 +96,7 @@ export function FinishSetupForm({
 
     setLoading(false);
 
-    switch (result.code) {
+    switch (mutationResult.code) {
       case "auth":
         router.replace("/signup");
         return;
@@ -84,10 +105,8 @@ export function FinishSetupForm({
         router.replace("/dashboard");
         return;
       case "slug":
-        setErrors({ organizationSlug: result.message });
+        setErrors({ organizationSlug: mutationResult.message });
         return;
-      default:
-        throw new Error("Unknown organization result");
     }
   }
 
@@ -132,19 +151,7 @@ export function FinishSetupForm({
                 onValueChange={(value) => {
                   setOrganizationSlug(slugify(value));
                 }}
-                render={(props) => (
-                  <input
-                    className="h-9 w-full min-w-0 bg-transparent pl-3 pr-12 font-mono text-sm outline-none placeholder:text-muted-foreground/72 sm:h-8"
-                    placeholder="robotics-society"
-                    autoCapitalize="none"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    required
-                    disabled={loading}
-                    {...mergeProps(props, { name: "organizationSlug" })}
-                  />
-                )}
+                render={renderOrganizationSlugInput}
               />
               <SlugStatusIndicator status={slugStatus} />
             </div>

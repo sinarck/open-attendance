@@ -5,6 +5,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
+import type { ComponentPropsWithoutRef } from "react";
 import { useRef, useState } from "react";
 import { z } from "zod";
 import { SlugStatusIndicator } from "@/components/auth/slug-status-indicator";
@@ -36,7 +37,21 @@ export function CreateAccountForm() {
   const slugStatus = useSlugAvailability(organizationSlug);
   const timezone = normalizeTimeZone(undefined, getPreferredTimeZone());
 
-  async function handleSubmit(formValues: Record<string, any>) {
+  const renderOrganizationSlugInput = (props: ComponentPropsWithoutRef<"input">) => (
+    <input
+      className="h-9 w-full min-w-0 bg-transparent pl-3 pr-12 font-mono text-sm outline-none placeholder:text-muted-foreground/72 sm:h-8"
+      placeholder="robotics-society"
+      autoCapitalize="none"
+      autoComplete="off"
+      autoCorrect="off"
+      spellCheck={false}
+      required
+      disabled={loading}
+      {...mergeProps(props, { name: "organizationSlug" })}
+    />
+  );
+
+  async function handleSubmit(formValues: Record<string, unknown>) {
     setErrors({});
 
     if (slugStatus !== "available") {
@@ -44,7 +59,10 @@ export function CreateAccountForm() {
       return;
     }
 
-    const result = signupFormSchema.safeParse(formValues);
+    const result = signupFormSchema.safeParse({
+      ...formValues,
+      timezone,
+    });
 
     if (!result.success) {
       setErrors(z.flattenError(result.error).fieldErrors);
@@ -79,8 +97,6 @@ export function CreateAccountForm() {
         case "unexpected":
           toast.error(signupError.title, signupError.description);
           return;
-        default:
-          throw new Error("Unknown signup error");
       }
     }
 
@@ -156,19 +172,7 @@ export function CreateAccountForm() {
                 onValueChange={(value) => {
                   setOrganizationSlug(slugify(value));
                 }}
-                render={(props) => (
-                  <input
-                    className="h-9 w-full min-w-0 bg-transparent pl-3 pr-12 font-mono text-sm outline-none placeholder:text-muted-foreground/72 sm:h-8"
-                    placeholder="robotics-society"
-                    autoCapitalize="none"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    required
-                    disabled={loading}
-                    {...mergeProps(props, { name: "organizationSlug" })}
-                  />
-                )}
+                render={renderOrganizationSlugInput}
               />
               <SlugStatusIndicator status={slugStatus} />
             </div>

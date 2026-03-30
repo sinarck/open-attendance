@@ -7,18 +7,13 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { signIn, useSession } from "@/lib/auth/client";
+import { isAuthClientError } from "@/lib/auth/client-errors";
 import { toast } from "@/lib/toast";
 import { loginFormSchema } from "@/lib/validation/auth";
-
-type AuthClientError = Error & {
-  status: number;
-};
 
 export default function LoginForm() {
   const router = useRouter();
@@ -38,35 +33,30 @@ export default function LoginForm() {
     return null;
   }
 
-  async function handleSubmit(formValues: Record<string, any>) {
+  async function handleSubmit(formValues: Record<string, unknown>) {
     setErrors({});
-    setLoading(true);
 
     const result = loginFormSchema.safeParse(formValues);
 
     if (!result.success) {
-      setLoading(false);
       setErrors(z.flattenError(result.error).fieldErrors);
       return;
     }
+
+    setLoading(true);
 
     const { email, password } = result.data;
 
     const { error } = await signIn.email({
       email,
       password,
-      rememberMe: formValues.rememberMe === true,
+      rememberMe: true,
     });
 
     if (error) {
       setLoading(false);
 
-      if (
-        error instanceof Error &&
-        "status" in error &&
-        typeof error.status === "number" &&
-        (error as AuthClientError).status === 401
-      ) {
+      if (isAuthClientError(error) && error.status === 401) {
         setErrors({
           email: "Invalid email or password.",
           password: "Invalid email or password.",
@@ -114,14 +104,6 @@ export default function LoginForm() {
             />
             <FieldError />
           </Field>
-
-          <Label
-            htmlFor="rememberMe"
-            className="flex cursor-pointer items-center gap-2 font-normal"
-          >
-            <Checkbox id="rememberMe" name="rememberMe" disabled={loading} />
-            Remember me
-          </Label>
 
           <Button type="submit" className="w-full" loading={loading}>
             Sign in

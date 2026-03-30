@@ -15,11 +15,9 @@ function SignUpContent() {
   const organization = useQuery(api.organizations.getCurrent, session ? {} : "skip");
 
   useEffect(() => {
-    if (!organization || organization.slug === "") {
-      return;
+    if (organization?.slug) {
+      router.replace("/dashboard");
     }
-
-    router.replace("/dashboard");
   }, [organization, router]);
 
   if (isPending) {
@@ -34,11 +32,15 @@ function SignUpContent() {
     return null;
   }
 
+  if (organization === null) {
+    return <FinishSetupForm />;
+  }
+
   return (
     <FinishSetupForm
-      initialOrganizationName={organization?.name}
-      initialOrganizationSlug={organization?.slug}
-      initialTimezone={organization?.timezone}
+      initialOrganizationName={organization.name}
+      initialOrganizationSlug={organization.slug}
+      initialTimezone={organization.timezone}
     />
   );
 }

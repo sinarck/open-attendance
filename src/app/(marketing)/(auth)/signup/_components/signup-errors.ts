@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth/client";
+import { isAuthClientError } from "@/lib/auth/client-errors";
 
 export type SignUpError =
   | { code: "email"; field: "email"; title: "Email already in use"; description: string }
@@ -6,13 +7,8 @@ export type SignUpError =
   | { code: "slug"; field: "organizationSlug"; title: "Choose another URL"; description: string }
   | { code: "unexpected"; title: "Sign up failed"; description: string };
 
-type AuthClientError = Error & {
-  status: number;
-  error?: { code?: string };
-};
-
 export function normalizeSignUpError(error: unknown): SignUpError {
-  if (!(error instanceof Error) || !("status" in error) || typeof error.status !== "number") {
+  if (!isAuthClientError(error)) {
     return {
       code: "unexpected",
       description: "Unable to finish signup.",
@@ -20,9 +16,7 @@ export function normalizeSignUpError(error: unknown): SignUpError {
     };
   }
 
-  const authError = error as AuthClientError;
-
-  if (authError.error?.code === authClient.$ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL) {
+  if (error.error?.code === authClient.$ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL) {
     return {
       code: "email",
       field: "email",
@@ -31,15 +25,15 @@ export function normalizeSignUpError(error: unknown): SignUpError {
     };
   }
 
-  if (authError.status === 400) {
+  if (error.status === 400) {
     return {
       code: "input",
-      description: authError.message,
+      description: error.message,
       title: "Check your details",
     };
   }
 
-  if (authError.status === 422) {
+  if (error.status === 422) {
     return {
       code: "slug",
       field: "organizationSlug",
@@ -50,7 +44,7 @@ export function normalizeSignUpError(error: unknown): SignUpError {
 
   return {
     code: "unexpected",
-    description: authError.message,
+    description: error.message,
     title: "Sign up failed",
   };
 }
