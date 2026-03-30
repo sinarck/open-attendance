@@ -8,17 +8,18 @@ Open-source attendance tracking system with geofencing support. Built with
 
 ## Commands
 
-| Task                | Command                                        | Notes                             |
-| ------------------- | ---------------------------------------------- | --------------------------------- |
-| Dev server          | `vp run dev`                                   | Runs the repo's custom dev script |
-| Build               | `vp run build`                                 | Production build                  |
-| Lint                | `vp run lint`                                  | Runs `biome check`                |
-| Format              | `vp run format`                                | Runs `biome format --write`       |
-| Type-check          | `vp run type-check`                            | Runs `tsgo --noEmit`              |
-| All tests           | `vp run test`                                  | Runs Vitest through Vite+         |
-| Single test file    | `vp test run convex/members.test.ts`           | Runs one file without watch       |
-| Single test by name | `vp test run -t "creates a new active member"` | Match by test description         |
-| Coverage            | `vp run coverage`                              | `vp test run --coverage`          |
+| Task                | Command                                        | Notes                                    |
+| ------------------- | ---------------------------------------------- | ---------------------------------------- |
+| Dev server          | `vp run dev`                                   | Runs the repo's custom dev script        |
+| Build               | `vp run build`                                 | Production build                         |
+| Lint                | `vp lint`                                      | Runs Oxlint through Vite+                |
+| Format              | `vp fmt . --write`                             | Runs Oxfmt through Vite+                 |
+| Check               | `vp check`                                     | Runs format, lint, and type-aware checks |
+| Type-check          | `vp run type-check`                            | Runs `tsgo --noEmit`                     |
+| All tests           | `vp test`                                      | Runs Vitest through Vite+                |
+| Single test file    | `vp test run convex/members.test.ts`           | Runs one file without watch              |
+| Single test by name | `vp test run -t "creates a new active member"` | Match by test description                |
+| Coverage            | `vp test run --coverage`                       | Runs coverage directly through Vite+     |
 
 **Package manager and task runner:** Use `vp`. It wraps dependency management and tool execution for this repo. Do not use `bun`, `pnpm`, `npm`, or `yarn` directly.
 
@@ -55,19 +56,19 @@ src/
 
 ### Formatter & Linter
 
-**Biome** (not ESLint/Prettier). Config in `biome.json`.
+**Oxlint + Oxfmt via Vite+**. Keep lint and formatter config in `vite.config.ts`.
 
 - 2-space indentation
-- Recommended rules + Next.js/React domains
-- Auto import organizing enabled
-- Run `vp run lint` before committing; run `vp run format` to auto-fix
+- Run `vp lint` for lint-only checks
+- Run `vp fmt . --write` to format
+- Run `vp check` for the normal combined static-check pass
 
 ### Imports
 
 - **Absolute imports** via `@/` alias (maps to `src/`): `import { Button } from "@/components/ui/button"`
 - **Relative imports** only within the same module (e.g., Convex files: `import { auth } from "./lib/auth"`)
 - **Type-only imports** use `import type`: `import type { NextConfig } from "next"`
-- Biome auto-organizes import order — do not manually sort
+- Let the configured tooling handle import cleanup; do not churn imports by hand
 - Prefer direct imports over barrels.
 
 ### File Naming
@@ -268,7 +269,6 @@ These commands map to their corresponding tools. For example, `vp dev --port 300
 ## Common Pitfalls
 
 - **Using the package manager directly:** Do not use pnpm, npm, or Yarn directly. Vite+ can handle all package manager operations.
-- **Using `bun` directly:** This repo may still contain historical Bun files or commands, but day-to-day work should go through `vp`.
 - **Always use Vite commands to run tools:** Don't attempt to run `vp vitest` or `vp oxlint`. They do not exist. Use `vp test` and `vp lint` instead.
 - **Running scripts:** Vite+ built-in commands (`vp dev`, `vp build`, `vp test`, etc.) always run the Vite+ built-in tool, not any `package.json` script of the same name. To run a custom script that shares a name with a built-in command, use `vp run <script>`. For example, if you have a custom `dev` script that runs multiple services concurrently, run it with `vp run dev`, not `vp dev` (which always starts Vite's dev server).
 - **Do not install Vitest, Oxlint, Oxfmt, or tsdown directly:** Vite+ wraps these tools. They must not be installed directly. You cannot upgrade these tools by installing their latest versions. Always use Vite+ commands.
@@ -291,7 +291,7 @@ For GitHub Actions, consider using [`voidzero-dev/setup-vp`](https://github.com/
 ## Review Checklist for Agents
 
 - [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run the narrowest useful validation first (`vp run type-check`, targeted `vp test run ...`, targeted `vp exec biome check ...`), then broader checks as needed.
+- [ ] Run `vp check` and `vp test` to validate changes.
 <!--VITE PLUS END-->
 
 <!-- convex-ai-start -->

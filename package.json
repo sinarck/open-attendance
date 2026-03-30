@@ -8,10 +8,6 @@
     "dev:next": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "biome check",
-    "format": "biome format --write",
-    "test": "vp test",
-    "coverage": "vp test run --coverage",
     "type-check": "tsgo --noEmit",
     "prepare": "vp config"
   },
@@ -44,7 +40,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
     "@edge-runtime/vm": "^5.0.0",
     "@posthog/nextjs-config": "^1.8.25",
     "@react-grab/mcp": "^0.1.29",
