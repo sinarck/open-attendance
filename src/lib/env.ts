@@ -1,7 +1,9 @@
 import { createEnv } from "@t3-oss/env-nextjs";
+import { vercel } from "@t3-oss/env-nextjs/presets-zod";
 import { z } from "zod";
 
 const escapeRegex = (value: string) => value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const origin = (label: string, httpsOnly = false, hostnameSuffix?: string) =>
   z
     .url({
@@ -13,11 +15,18 @@ const origin = (label: string, httpsOnly = false, hostnameSuffix?: string) =>
       return url.pathname === "/" && !url.search && !url.hash && !url.username && !url.password;
     }, `${label} must be an origin only, without a path, query, hash, or credentials`);
 
+const localhostUrl = "http://localhost:3000";
+const toAppUrl = (host?: string) => (host ? `https://${host}` : localhostUrl);
+const toConvexSiteUrl = (convexUrl: string) => {
+  const url = new URL(convexUrl);
+  url.hostname = url.hostname.replace(/\.convex\.cloud$/, ".convex.site");
+  return url.origin;
+};
+
 export const env = createEnv({
   server: {
-    SITE_URL: origin("SITE_URL"),
     BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
-    CONVEX_SITE_URL: origin("CONVEX_SITE_URL", true, ".convex.site"),
+    CONVEX_SITE_URL: origin("CONVEX_SITE_URL", true, ".convex.site").optional(),
     POSTHOG_API_KEY: z
       .string()
       .regex(/^phx_[A-Za-z0-9]+$/, "POSTHOG_API_KEY must look like phx_...")
@@ -40,16 +49,17 @@ export const env = createEnv({
         "NEXT_PUBLIC_POSTHOG_API_HOST must be a root-relative path without a trailing slash, query, or hash",
       ),
   },
-  runtimeEnv: {
-    SITE_URL: process.env.SITE_URL,
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
-    POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
-    POSTHOG_PROJECT_ID: process.env.POSTHOG_PROJECT_ID,
+  experimental__runtimeEnv: {
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_API_HOST: process.env.NEXT_PUBLIC_POSTHOG_API_HOST,
   },
   emptyStringAsUndefined: true,
+  extends: [vercel()],
 });
+
+export const getAppUrl = () => toAppUrl(env.VERCEL_URL);
+export const getCanonicalUrl = () => toAppUrl(env.VERCEL_PROJECT_PRODUCTION_URL ?? env.VERCEL_URL);
+export const getConvexSiteUrl = () =>
+  env.CONVEX_SITE_URL ?? toConvexSiteUrl(env.NEXT_PUBLIC_CONVEX_URL);

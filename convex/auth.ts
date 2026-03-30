@@ -15,6 +15,12 @@ import {
 } from "./lib/validation";
 
 const authFunctions: AuthFunctions = internal.auth as AuthFunctions;
+const trustedOrigins = [
+  "http://localhost:3000",
+  "https://openattendance.com",
+  "https://*.vercel.app",
+];
+
 type SignupOrganization = {
   name: string;
   slug: string;
@@ -101,9 +107,8 @@ export const { onCreate, onDelete } = authComponent.triggersApi();
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     appName: "Open Attendance",
-    baseURL: process.env.SITE_URL,
-    trustedOrigins: [process.env.SITE_URL!],
     secret: process.env.BETTER_AUTH_SECRET,
+    trustedOrigins,
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

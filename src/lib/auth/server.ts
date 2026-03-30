@@ -2,7 +2,7 @@ import "server-only";
 
 import { convexBetterAuthNextJs } from "@convex-dev/better-auth/nextjs";
 import { ConvexError } from "convex/values";
-import { env } from "@/lib/env";
+import { env, getConvexSiteUrl } from "@/lib/env";
 
 export const {
   handler,
@@ -14,7 +14,7 @@ export const {
   fetchAuthAction,
 } = convexBetterAuthNextJs({
   convexUrl: env.NEXT_PUBLIC_CONVEX_URL,
-  convexSiteUrl: env.CONVEX_SITE_URL,
+  convexSiteUrl: getConvexSiteUrl(),
   jwtCache: {
     enabled: true,
     // Better Auth reuses Convex JWTs between requests. Treat auth-shaped
