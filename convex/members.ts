@@ -1,8 +1,29 @@
-import { ConvexError, v } from "convex/values";
-import { zid } from "convex-helpers/server/zod4";
-import { authedMutation, authedQuery, zAuthedMutation } from "./lib/auth";
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { authedMutation, authedQuery } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
-import { memberIdentifierSchema, memberNameSchema } from "./lib/validation";
+import { normalizeMemberIdentifier, normalizeMemberName } from "./lib/validation";
+
+const memberErrorMessages = {
+  member_not_found: "Member not found",
+} as const;
+
+type MemberErrorCode = "duplicate_identifier" | keyof typeof memberErrorMessages;
+type MemberMutationResult =
+  | { ok: true; id: Id<"members"> }
+  | { ok: false; code: MemberErrorCode; message: string };
+
+function memberError(code: MemberErrorCode, identifier?: string) {
+  if (code === "duplicate_identifier") {
+    return {
+      ok: false,
+      code,
+      message: `A member with identifier "${identifier}" already exists`,
+    } as const;
+  }
+
+  return { ok: false, code, message: memberErrorMessages[code] } as const;
+}
 
 export const listRoster = authedQuery({
   args: {},
@@ -29,12 +50,15 @@ export const listRoster = authedQuery({
   },
 });
 
-export const create = zAuthedMutation({
+export const create = authedMutation({
   args: {
-    name: memberNameSchema,
-    identifier: memberIdentifierSchema,
+    name: v.string(),
+    identifier: v.string(),
   },
-  handler: async (ctx, { name, identifier }) => {
+  handler: async (ctx, args): Promise<MemberMutationResult> => {
+    const name = normalizeMemberName(args.name);
+    const identifier = normalizeMemberIdentifier(args.identifier);
+
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -48,33 +72,40 @@ export const create = zAuthedMutation({
       .unique();
 
     if (existing) {
-      throw new ConvexError(`A member with identifier "${identifier}" already exists`);
+      return memberError("duplicate_identifier", identifier);
     }
 
-    return ctx.db.insert("members", {
-      organizationId: ctx.organizationId,
-      name,
-      identifier,
-      isActive: true,
-    });
+    return {
+      ok: true,
+      id: await ctx.db.insert("members", {
+        organizationId: ctx.organizationId,
+        name,
+        identifier,
+        isActive: true,
+      }),
+    };
   },
 });
 
-export const update = zAuthedMutation({
+export const update = authedMutation({
   args: {
-    memberId: zid("members"),
-    name: memberNameSchema.optional(),
-    identifier: memberIdentifierSchema.optional(),
+    memberId: v.id("members"),
+    name: v.optional(v.string()),
+    identifier: v.optional(v.string()),
   },
-  handler: async (ctx, { memberId, name, identifier }) => {
+  handler: async (ctx, args): Promise<MemberMutationResult> => {
+    const name = args.name === undefined ? undefined : normalizeMemberName(args.name);
+    const identifier =
+      args.identifier === undefined ? undefined : normalizeMemberIdentifier(args.identifier);
+
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
       throws: true,
     });
 
-    const member = await ctx.db.get("members", memberId);
-    if (!member) throw new ConvexError("Member not found");
+    const member = await ctx.db.get("members", args.memberId);
+    if (!member) return memberError("member_not_found");
 
     if (identifier !== undefined && identifier !== member.identifier) {
       const existing = await ctx.db
@@ -85,26 +116,28 @@ export const update = zAuthedMutation({
         .unique();
 
       if (existing) {
-        throw new ConvexError(`A member with identifier "${identifier}" already exists`);
+        return memberError("duplicate_identifier", identifier);
       }
     }
 
-    const memberChanges: Record<string, string> = {};
+    const memberChanges: { name?: string; identifier?: string } = {};
     if (name !== undefined && name !== member.name) memberChanges.name = name;
     if (identifier !== undefined && identifier !== member.identifier) {
       memberChanges.identifier = identifier;
     }
 
     if (Object.keys(memberChanges).length > 0) {
-      await ctx.db.patch("members", memberId, memberChanges);
+      await ctx.db.patch("members", args.memberId, memberChanges);
     }
+
+    return { ok: true, id: args.memberId };
   },
 });
 
 /** Soft delete. Historical attendance records are preserved. */
 export const archive = authedMutation({
   args: { memberId: v.id("members") },
-  handler: async (ctx, { memberId }) => {
+  handler: async (ctx, { memberId }): Promise<MemberMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -112,18 +145,18 @@ export const archive = authedMutation({
     });
 
     const member = await ctx.db.get("members", memberId);
-    if (!member) throw new ConvexError("Member not found");
+    if (!member) return memberError("member_not_found");
     if (!member.isActive) {
-      return memberId;
+      return { ok: true, id: memberId };
     }
     await ctx.db.patch("members", memberId, { isActive: false });
-    return memberId;
+    return { ok: true, id: memberId };
   },
 });
 
 export const restore = authedMutation({
   args: { memberId: v.id("members") },
-  handler: async (ctx, { memberId }) => {
+  handler: async (ctx, { memberId }): Promise<MemberMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -131,11 +164,11 @@ export const restore = authedMutation({
     });
 
     const member = await ctx.db.get("members", memberId);
-    if (!member) throw new ConvexError("Member not found");
+    if (!member) return memberError("member_not_found");
     if (member.isActive) {
-      return memberId;
+      return { ok: true, id: memberId };
     }
     await ctx.db.patch("members", memberId, { isActive: true });
-    return memberId;
+    return { ok: true, id: memberId };
   },
 });

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { api } from "../_generated/api";
 import { type Id, seedMeeting, seedMember, seedOrg, seedRecord, type T } from "../lib/seed";
-import { convexTest, schema } from "./harness";
+import { convexTest, expectMutationError, expectMutationId, schema } from "./harness";
 
 /** Create a standard org + member + active meeting for check-in tests. */
 async function setupCheckIn(
@@ -44,6 +44,39 @@ async function setupCheckIn(
   return { orgId, memberId, meetingId };
 }
 
+async function checkIn(
+  t: T,
+  args: Parameters<typeof t.mutation<typeof api.attendance.checkIn>>[1],
+) {
+  return t.mutation(api.attendance.checkIn, args);
+}
+
+async function expectCheckInId(
+  t: T,
+  args: Parameters<typeof t.mutation<typeof api.attendance.checkIn>>[1],
+) {
+  return expectMutationId(await checkIn(t, args));
+}
+
+async function expectCheckInError(
+  t: T,
+  args: Parameters<typeof t.mutation<typeof api.attendance.checkIn>>[1],
+  code:
+    | "already_checked_in"
+    | "check_in_closed"
+    | "check_in_ended"
+    | "check_in_not_started"
+    | "device_already_used"
+    | "device_verification_required"
+    | "invalid_check_in_code"
+    | "invalid_member_identifier"
+    | "location_required"
+    | "member_inactive"
+    | "outside_allowed_area",
+) {
+  return expectMutationError(await checkIn(t, args), code);
+}
+
 beforeAll(async () => {
   const t = convexTest(schema);
   const now = Date.now();
@@ -66,7 +99,7 @@ describe("attendance:checkIn", () => {
       meetingEndTime: now + 60 * 60_000,
     });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
     });
@@ -86,7 +119,7 @@ describe("attendance:checkIn", () => {
       lateAfter: now + 10 * 60_000,
     });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
     });
@@ -104,7 +137,7 @@ describe("attendance:checkIn", () => {
       lateAfter: now - 60_000,
     });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
     });
@@ -147,11 +180,11 @@ describe("attendance:checkIn", () => {
       lateAfter: now - 60_000,
     });
 
-    const chicagoRecordId = await t.mutation(api.attendance.checkIn, {
+    const chicagoRecordId = await expectCheckInId(t, {
       code: "CHI123",
       identifier: "CHI001",
     });
-    const tokyoRecordId = await t.mutation(api.attendance.checkIn, {
+    const tokyoRecordId = await expectCheckInId(t, {
       code: "TYO123",
       identifier: "TYO001",
     });
@@ -200,24 +233,28 @@ describe("attendance:checkIn", () => {
     const t = convexTest(schema);
     await setupCheckIn(t);
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "WRONG1",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("Invalid check-in code");
+      },
+      "invalid_check_in_code",
+    );
   });
 
   it("rejects when meeting is inactive", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { isActive: false });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("Check-ins are closed");
+      },
+      "check_in_closed",
+    );
   });
 
   it("rejects when check-in is before startTime", async () => {
@@ -228,12 +265,14 @@ describe("attendance:checkIn", () => {
       meetingEndTime: now + 2 * 60 * 60_000,
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("Check-in has not started yet");
+      },
+      "check_in_not_started",
+    );
   });
 
   it("rejects when check-in is after endTime", async () => {
@@ -244,31 +283,35 @@ describe("attendance:checkIn", () => {
       meetingEndTime: now - 60 * 60_000,
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("Check-in has ended");
+      },
+      "check_in_ended",
+    );
   });
 
   it("rejects unknown member identifier", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t);
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "NONEXISTENT",
-      }),
-    ).rejects.toThrow("Member not found");
+      },
+      "invalid_member_identifier",
+    );
   });
 
   it("normalizes member identifiers before lookup", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t);
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "  STU001  ",
     });
@@ -280,29 +323,33 @@ describe("attendance:checkIn", () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { memberIsActive: false });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("no longer active");
+      },
+      "member_inactive",
+    );
   });
 
   it("rejects duplicate check-in for the same member + meeting", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t);
 
-    await t.mutation(api.attendance.checkIn, {
+    await checkIn(t, {
       code: "ABC123",
       identifier: "STU001",
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("Already checked in");
+      },
+      "already_checked_in",
+    );
   });
 
   it("allows check-in within geo-fence radius", async () => {
@@ -315,7 +362,7 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
       latitude: 40.0001,
@@ -335,14 +382,16 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
         latitude: 40.1,
         longitude: -74.1,
-      }),
-    ).rejects.toThrow("outside the allowed check-in area");
+      },
+      "outside_allowed_area",
+    );
   });
 
   it("rejects check-in when geo-fence is set but no location is provided", async () => {
@@ -355,19 +404,21 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("requires location verification");
+      },
+      "location_required",
+    );
   });
 
   it("allows check-in without location when geo-fence is disabled", async () => {
     const t = convexTest(schema);
     await setupCheckIn(t);
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
     });
@@ -385,7 +436,7 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
       latitude: 40.0001,
@@ -399,12 +450,14 @@ describe("attendance:checkIn", () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: true });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("requires device verification");
+      },
+      "device_verification_required",
+    );
   });
 
   it("rejects duplicate device fingerprint for the same meeting", async () => {
@@ -418,19 +471,21 @@ describe("attendance:checkIn", () => {
       identifier: "STU002",
     });
 
-    await t.mutation(api.attendance.checkIn, {
+    await checkIn(t, {
       code: "ABC123",
       identifier: "STU001",
       deviceFingerprint: "device-aaa",
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU002",
         deviceFingerprint: "device-aaa",
-      }),
-    ).rejects.toThrow("device has already been used");
+      },
+      "device_already_used",
+    );
   });
 
   it("allows different devices to check in when fingerprint is required", async () => {
@@ -442,12 +497,12 @@ describe("attendance:checkIn", () => {
       identifier: "STU002",
     });
 
-    const r1 = await t.mutation(api.attendance.checkIn, {
+    const r1 = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
       deviceFingerprint: "device-aaa",
     });
-    const r2 = await t.mutation(api.attendance.checkIn, {
+    const r2 = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU002",
       deviceFingerprint: "device-bbb",
@@ -461,7 +516,7 @@ describe("attendance:checkIn", () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: true });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
       deviceFingerprint: "device-xyz",
@@ -475,7 +530,7 @@ describe("attendance:checkIn", () => {
     const t = convexTest(schema);
     await setupCheckIn(t, { requireFingerprint: false });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
+    const recordId = await expectCheckInId(t, {
       code: "ABC123",
       identifier: "STU001",
       deviceFingerprint: "device-xyz",
@@ -508,12 +563,12 @@ describe("attendance:checkIn", () => {
       endTime: now + 60 * 60_000,
     });
 
-    const r1 = await t.mutation(api.attendance.checkIn, {
+    const r1 = await expectCheckInId(t, {
       code: "MTG001",
       identifier: "STU001",
       deviceFingerprint: "device-aaa",
     });
-    const r2 = await t.mutation(api.attendance.checkIn, {
+    const r2 = await expectCheckInId(t, {
       code: "MTG002",
       identifier: "STU001",
       deviceFingerprint: "device-aaa",
@@ -545,12 +600,14 @@ describe("attendance:checkIn", () => {
       endTime: now + 60 * 60_000,
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "CODE_B",
         identifier: "STU001",
-      }),
-    ).rejects.toThrow("Member not found");
+      },
+      "invalid_member_identifier",
+    );
   });
 
   it("rejects check-in with latitude but no longitude when geo-fence is set", async () => {
@@ -563,13 +620,15 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
         latitude: 40.0,
-      }),
-    ).rejects.toThrow("requires location verification");
+      },
+      "location_required",
+    );
   });
 
   it("rejects check-in with longitude but no latitude when geo-fence is set", async () => {
@@ -582,13 +641,15 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
         longitude: -74.0,
-      }),
-    ).rejects.toThrow("requires location verification");
+      },
+      "location_required",
+    );
   });
 
   it("validates geo-fence before checking fingerprint", async () => {
@@ -602,15 +663,17 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
         latitude: 41.0,
         longitude: -75.0,
         deviceFingerprint: "device-123",
-      }),
-    ).rejects.toThrow("outside the allowed check-in area");
+      },
+      "outside_allowed_area",
+    );
   });
 
   it("validates time window before checking geo-fence", async () => {
@@ -626,14 +689,16 @@ describe("attendance:checkIn", () => {
       },
     });
 
-    await expect(
-      t.mutation(api.attendance.checkIn, {
+    await expectCheckInError(
+      t,
+      {
         code: "ABC123",
         identifier: "STU001",
         latitude: 40.0,
         longitude: -74.0,
-      }),
-    ).rejects.toThrow("Check-in has not started yet");
+      },
+      "check_in_not_started",
+    );
   });
 });
 

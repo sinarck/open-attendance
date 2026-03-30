@@ -6,7 +6,6 @@ import {
   wrapDatabaseReader,
   wrapDatabaseWriter,
 } from "convex-helpers/server/rowLevelSecurity";
-import { zCustomMutation, zCustomQuery } from "convex-helpers/server/zod4";
 import type { DataModel } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { mutation, query } from "../_generated/server";
@@ -89,8 +88,6 @@ const authedMutationCtx = customCtx(async (ctx) => {
 
 /** Authenticated query. ctx.db is scoped to the caller's org via RLS. */
 export const authedQuery = customQuery(query, authedQueryCtx);
-export const zAuthedQuery = zCustomQuery(query, authedQueryCtx);
 
 /** Authenticated mutation. ctx.db also gates inserts, patches, and deletes. */
 export const authedMutation = customMutation(mutation, authedMutationCtx);
-export const zAuthedMutation = zCustomMutation(mutation, authedMutationCtx);

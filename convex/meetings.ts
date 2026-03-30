@@ -1,33 +1,56 @@
-import { ConvexError, v } from "convex/values";
-import { zid } from "convex-helpers/server/zod4";
+import { v } from "convex/values";
 import { isAfter, isBefore, isEqual } from "date-fns";
-import { authedMutation, authedQuery, zAuthedMutation } from "./lib/auth";
+import type { Id } from "./_generated/dataModel";
+import { authedMutation, authedQuery } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
-import { z } from "zod";
 import {
-  meetingGeofenceSchema,
-  meetingGeofenceUpdateSchema,
-  meetingNameSchema,
-  meetingOptionalTextSchema,
-  meetingTagsSchema,
+  normalizeMeetingName,
+  normalizeMeetingOptionalText,
+  normalizeMeetingTags,
 } from "./lib/validation";
+
+const geofenceValidator = v.object({
+  latitude: v.number(),
+  longitude: v.number(),
+  radiusM: v.number(),
+});
+
+const meetingErrorMessages = {
+  end_time_not_after_start_time: "End time must be after start time",
+  invalid_late_after: "Late-after cutoff must be between start time and end time",
+  invalid_geofence_radius: "Geofence radius must be a positive number",
+  meeting_not_found: "Meeting not found",
+} as const;
+
+type MeetingErrorCode = keyof typeof meetingErrorMessages;
+type MeetingMutationResult =
+  | { ok: true; id: Id<"meetings"> }
+  | { ok: false; code: MeetingErrorCode; message: string };
+
+function meetingError(code: MeetingErrorCode) {
+  return { ok: false, code, message: meetingErrorMessages[code] } as const;
+}
 
 /** Validates startTime < lateAfter <= endTime. */
 function assertValidTimeWindow(startTime: number, endTime: number, lateAfter: number) {
   if (isBefore(endTime, startTime) || isEqual(endTime, startTime)) {
-    throw new ConvexError("End time must be after start time");
+    return meetingError("end_time_not_after_start_time");
   }
   if (isBefore(lateAfter, startTime) || isAfter(lateAfter, endTime)) {
-    throw new ConvexError("Late-after cutoff must be between start time and end time");
+    return meetingError("invalid_late_after");
   }
+
+  return null;
 }
 
 function assertValidGeofence(
   geofence: { latitude: number; longitude: number; radiusM: number } | undefined,
 ) {
   if (geofence !== undefined && geofence.radiusM <= 0) {
-    throw new ConvexError("Geofence radius must be a positive number");
+    return meetingError("invalid_geofence_radius");
   }
+
+  return null;
 }
 
 export const list = authedQuery({
@@ -42,19 +65,26 @@ export const list = authedQuery({
 });
 
 /** lateAfter defaults to endTime (no one marked late). */
-export const create = zAuthedMutation({
+export const create = authedMutation({
   args: {
-    name: meetingNameSchema,
-    description: meetingOptionalTextSchema,
-    location: meetingOptionalTextSchema,
-    startTime: z.number(),
-    endTime: z.number(),
-    tags: meetingTagsSchema,
-    lateAfter: z.number().optional(),
-    geofence: meetingGeofenceSchema,
-    requireFingerprint: z.boolean().optional(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    location: v.optional(v.string()),
+    startTime: v.number(),
+    endTime: v.number(),
+    tags: v.optional(v.array(v.string())),
+    lateAfter: v.optional(v.number()),
+    geofence: v.optional(geofenceValidator),
+    requireFingerprint: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<MeetingMutationResult> => {
+    const name = normalizeMeetingName(args.name);
+    const description =
+      args.description === undefined ? undefined : normalizeMeetingOptionalText(args.description);
+    const location =
+      args.location === undefined ? undefined : normalizeMeetingOptionalText(args.location);
+    const tags = normalizeMeetingTags(args.tags);
+
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -62,88 +92,99 @@ export const create = zAuthedMutation({
     });
     const lateAfter = args.lateAfter ?? args.endTime;
 
-    assertValidTimeWindow(args.startTime, args.endTime, lateAfter);
-    assertValidGeofence(args.geofence);
+    const timeWindowError = assertValidTimeWindow(args.startTime, args.endTime, lateAfter);
+    if (timeWindowError) return timeWindowError;
 
-    return ctx.db.insert("meetings", {
-      organizationId: ctx.organizationId,
-      name: args.name,
-      description: args.description,
-      location: args.location,
-      startTime: args.startTime,
-      endTime: args.endTime,
-      lateAfter,
-      checkInCode: crypto.randomUUID(),
-      isActive: false,
-      tags: args.tags,
-      geofence: args.geofence,
-      requireFingerprint: args.requireFingerprint ?? false,
-    });
+    const geofenceError = assertValidGeofence(args.geofence);
+    if (geofenceError) return geofenceError;
+
+    return {
+      ok: true,
+      id: await ctx.db.insert("meetings", {
+        organizationId: ctx.organizationId,
+        name,
+        startTime: args.startTime,
+        endTime: args.endTime,
+        lateAfter,
+        checkInCode: crypto.randomUUID(),
+        isActive: false,
+        requireFingerprint: args.requireFingerprint ?? false,
+        ...(description === undefined ? {} : { description }),
+        ...(location === undefined ? {} : { location }),
+        ...(tags === undefined ? {} : { tags }),
+        ...(args.geofence === undefined ? {} : { geofence: args.geofence }),
+      }),
+    };
   },
 });
 
 /** Cannot change checkInCode or organizationId. */
-export const update = zAuthedMutation({
+export const update = authedMutation({
   args: {
-    meetingId: zid("meetings"),
-    name: meetingNameSchema.optional(),
-    description: meetingOptionalTextSchema,
-    location: meetingOptionalTextSchema,
-    startTime: z.number().optional(),
-    endTime: z.number().optional(),
-    lateAfter: z.number().optional(),
-    tags: meetingTagsSchema,
-    geofence: meetingGeofenceUpdateSchema,
-    requireFingerprint: z.boolean().optional(),
+    meetingId: v.id("meetings"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    location: v.optional(v.string()),
+    startTime: v.optional(v.number()),
+    endTime: v.optional(v.number()),
+    lateAfter: v.optional(v.number()),
+    tags: v.optional(v.array(v.string())),
+    geofence: v.optional(v.union(geofenceValidator, v.null())),
+    requireFingerprint: v.optional(v.boolean()),
   },
-  handler: async (ctx, { meetingId, ...meetingChanges }) => {
+  handler: async (ctx, args): Promise<MeetingMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
       throws: true,
     });
 
-    const meeting = await ctx.db.get("meetings", meetingId);
-    if (!meeting) throw new ConvexError("Meeting not found");
+    const meeting = await ctx.db.get("meetings", args.meetingId);
+    if (!meeting) return meetingError("meeting_not_found");
 
-    // Merge with existing values so partial updates stay consistent.
-    const effectiveStartTime = meetingChanges.startTime ?? meeting.startTime;
-    const effectiveEndTime = meetingChanges.endTime ?? meeting.endTime;
-    const effectiveLateAfter = meetingChanges.lateAfter ?? meeting.lateAfter;
+    const name = args.name === undefined ? meeting.name : normalizeMeetingName(args.name);
+    const description =
+      args.description === undefined
+        ? meeting.description
+        : normalizeMeetingOptionalText(args.description);
+    const location =
+      args.location === undefined ? meeting.location : normalizeMeetingOptionalText(args.location);
+    const tags = args.tags === undefined ? meeting.tags : normalizeMeetingTags(args.tags);
+    const geofence = args.geofence === undefined ? meeting.geofence : (args.geofence ?? undefined);
+    const startTime = args.startTime ?? meeting.startTime;
+    const endTime = args.endTime ?? meeting.endTime;
+    const lateAfter = args.lateAfter ?? meeting.lateAfter;
+    const requireFingerprint = args.requireFingerprint ?? meeting.requireFingerprint;
+
     if (
-      meetingChanges.startTime !== undefined ||
-      meetingChanges.endTime !== undefined ||
-      meetingChanges.lateAfter !== undefined
+      args.startTime !== undefined ||
+      args.endTime !== undefined ||
+      args.lateAfter !== undefined
     ) {
-      assertValidTimeWindow(effectiveStartTime, effectiveEndTime, effectiveLateAfter);
+      const timeWindowError = assertValidTimeWindow(startTime, endTime, lateAfter);
+      if (timeWindowError) return timeWindowError;
     }
 
-    if (meetingChanges.geofence !== undefined) {
-      assertValidGeofence(meetingChanges.geofence ?? undefined);
+    if (args.geofence !== undefined) {
+      const geofenceError = assertValidGeofence(geofence);
+      if (geofenceError) return geofenceError;
     }
 
-    const { geofence, ...otherMeetingChanges } = meetingChanges;
-
-    if (geofence === null) {
-      const { _creationTime, _id, geofence: _storedGeofence, ...storedMeeting } = meeting;
-      await ctx.db.replace("meetings", meetingId, {
-        ...storedMeeting,
-        ...otherMeetingChanges,
-      });
-      return;
-    }
-
-    if (geofence !== undefined) {
-      await ctx.db.patch("meetings", meetingId, {
-        ...otherMeetingChanges,
-        geofence,
-      });
-      return;
-    }
-
-    if (Object.keys(otherMeetingChanges).length > 0) {
-      await ctx.db.patch("meetings", meetingId, otherMeetingChanges);
-    }
+    await ctx.db.replace("meetings", args.meetingId, {
+      organizationId: meeting.organizationId,
+      name,
+      startTime,
+      endTime,
+      lateAfter,
+      checkInCode: meeting.checkInCode,
+      isActive: meeting.isActive,
+      requireFingerprint,
+      ...(description === undefined ? {} : { description }),
+      ...(location === undefined ? {} : { location }),
+      ...(tags === undefined ? {} : { tags }),
+      ...(geofence === undefined ? {} : { geofence }),
+    });
+    return { ok: true, id: args.meetingId };
   },
 });
 
@@ -153,7 +194,7 @@ export const activate = authedMutation({
     meetingId: v.id("meetings"),
     regenerateCode: v.optional(v.boolean()),
   },
-  handler: async (ctx, { meetingId, regenerateCode }) => {
+  handler: async (ctx, { meetingId, regenerateCode }): Promise<MeetingMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -161,9 +202,9 @@ export const activate = authedMutation({
     });
 
     const meeting = await ctx.db.get("meetings", meetingId);
-    if (!meeting) throw new ConvexError("Meeting not found");
+    if (!meeting) return meetingError("meeting_not_found");
     if (meeting.isActive && !regenerateCode) {
-      return meetingId;
+      return { ok: true, id: meetingId };
     }
 
     const activationUpdate: { isActive: boolean; checkInCode?: string } = {
@@ -174,13 +215,13 @@ export const activate = authedMutation({
     }
 
     await ctx.db.patch("meetings", meetingId, activationUpdate);
-    return meetingId;
+    return { ok: true, id: meetingId };
   },
 });
 
 export const deactivate = authedMutation({
   args: { meetingId: v.id("meetings") },
-  handler: async (ctx, { meetingId }) => {
+  handler: async (ctx, { meetingId }): Promise<MeetingMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -188,19 +229,19 @@ export const deactivate = authedMutation({
     });
 
     const meeting = await ctx.db.get("meetings", meetingId);
-    if (!meeting) throw new ConvexError("Meeting not found");
+    if (!meeting) return meetingError("meeting_not_found");
     if (!meeting.isActive) {
-      return meetingId;
+      return { ok: true, id: meetingId };
     }
     await ctx.db.patch("meetings", meetingId, { isActive: false });
-    return meetingId;
+    return { ok: true, id: meetingId };
   },
 });
 
 /** Permanently deletes a meeting and all its attendance records. */
 export const remove = authedMutation({
   args: { meetingId: v.id("meetings") },
-  handler: async (ctx, { meetingId }) => {
+  handler: async (ctx, { meetingId }): Promise<MeetingMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -208,7 +249,7 @@ export const remove = authedMutation({
     });
 
     const meeting = await ctx.db.get("meetings", meetingId);
-    if (!meeting) throw new ConvexError("Meeting not found");
+    if (!meeting) return meetingError("meeting_not_found");
 
     const records = await ctx.db
       .query("attendanceRecords")
@@ -222,5 +263,6 @@ export const remove = authedMutation({
     }
 
     await ctx.db.delete("meetings", meetingId);
+    return { ok: true, id: meetingId };
   },
 });

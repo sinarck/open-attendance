@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { api } from "../_generated/api";
 import { seedAuthedOrg, seedMeeting, seedMember, seedRecord } from "../lib/seed";
-import { convexTest, schema } from "./harness";
+import { convexTest, expectMutationError, expectMutationId, schema } from "./harness";
 
 async function setupTenants() {
   const t = convexTest(schema);
@@ -117,38 +117,48 @@ describe("RLS: members", () => {
   it("rejects updates against another org's member", async () => {
     const { memberB, orgA } = await setupTenants();
 
-    await expect(
-      orgA.asUser.mutation(api.members.update, {
+    expectMutationError(
+      await orgA.asUser.mutation(api.members.update, {
         memberId: memberB,
         name: "Hacked",
       }),
-    ).rejects.toThrow("Member not found");
+      "member_not_found",
+      "Member not found",
+    );
   });
 
   it("rejects archive and restore against another org's member", async () => {
     const { archivedMemberA, memberB, orgA } = await setupTenants();
 
-    await expect(orgA.asUser.mutation(api.members.archive, { memberId: memberB })).rejects.toThrow(
+    expectMutationError(
+      await orgA.asUser.mutation(api.members.archive, { memberId: memberB }),
+      "member_not_found",
       "Member not found",
     );
 
-    await expect(orgA.asUser.mutation(api.members.restore, { memberId: memberB })).rejects.toThrow(
+    expectMutationError(
+      await orgA.asUser.mutation(api.members.restore, { memberId: memberB }),
+      "member_not_found",
       "Member not found",
     );
 
-    const restored = await orgA.asUser.mutation(api.members.restore, {
-      memberId: archivedMemberA,
-    });
+    const restored = expectMutationId(
+      await orgA.asUser.mutation(api.members.restore, {
+        memberId: archivedMemberA,
+      }),
+    );
     expect(restored).toBe(archivedMemberA);
   });
 
   it("creates members only inside the caller's organization", async () => {
     const { orgA } = await setupTenants();
 
-    const memberId = await orgA.asUser.mutation(api.members.create, {
-      name: "New Member",
-      identifier: "NEW-001",
-    });
+    const memberId = expectMutationId(
+      await orgA.asUser.mutation(api.members.create, {
+        name: "New Member",
+        identifier: "NEW-001",
+      }),
+    );
 
     const roster = await orgA.asUser.query(api.members.listRoster, {});
     const allMembers = [...roster.active, ...roster.archived];
@@ -171,35 +181,49 @@ describe("RLS: meetings", () => {
   it("rejects updates and state changes against another org's meeting", async () => {
     const { meetingB, orgA } = await setupTenants();
 
-    await expect(
-      orgA.asUser.mutation(api.meetings.update, {
+    expectMutationError(
+      await orgA.asUser.mutation(api.meetings.update, {
         meetingId: meetingB,
         name: "Renamed",
       }),
-    ).rejects.toThrow("Meeting not found");
+      "meeting_not_found",
+      "Meeting not found",
+    );
 
-    await expect(
-      orgA.asUser.mutation(api.meetings.activate, { meetingId: meetingB }),
-    ).rejects.toThrow("Meeting not found");
+    expectMutationError(
+      await orgA.asUser.mutation(api.meetings.activate, {
+        meetingId: meetingB,
+      }),
+      "meeting_not_found",
+      "Meeting not found",
+    );
 
-    await expect(
-      orgA.asUser.mutation(api.meetings.deactivate, { meetingId: meetingB }),
-    ).rejects.toThrow("Meeting not found");
+    expectMutationError(
+      await orgA.asUser.mutation(api.meetings.deactivate, {
+        meetingId: meetingB,
+      }),
+      "meeting_not_found",
+      "Meeting not found",
+    );
 
-    await expect(
-      orgA.asUser.mutation(api.meetings.remove, { meetingId: meetingB }),
-    ).rejects.toThrow("Meeting not found");
+    expectMutationError(
+      await orgA.asUser.mutation(api.meetings.remove, { meetingId: meetingB }),
+      "meeting_not_found",
+      "Meeting not found",
+    );
   });
 
   it("creates meetings only inside the caller's organization", async () => {
     const { orgA } = await setupTenants();
     const now = Date.now();
 
-    const meetingId = await orgA.asUser.mutation(api.meetings.create, {
-      name: "Org A Meeting",
-      startTime: now + 60_000,
-      endTime: now + 120_000,
-    });
+    const meetingId = expectMutationId(
+      await orgA.asUser.mutation(api.meetings.create, {
+        name: "Org A Meeting",
+        startTime: now + 60_000,
+        endTime: now + 120_000,
+      }),
+    );
 
     const meetings = await orgA.asUser.query(api.meetings.list, {});
     expect(meetings.some((meeting) => meeting._id === meetingId)).toBe(true);
@@ -249,29 +273,37 @@ describe("RLS: attendance", () => {
   it("rejects manual attendance writes that cross tenant boundaries", async () => {
     const { activeMeetingA, memberA, meetingB, memberB, orgA } = await setupTenants();
 
-    await expect(
-      orgA.asUser.mutation(api.attendance.markManual, {
+    expectMutationError(
+      await orgA.asUser.mutation(api.attendance.markManual, {
         meetingId: meetingB,
         memberId: memberA,
         status: "present",
       }),
-    ).rejects.toThrow("Meeting not found in your organization");
+      "meeting_not_found",
+      "Meeting not found in your organization",
+    );
 
-    await expect(
-      orgA.asUser.mutation(api.attendance.markManual, {
+    expectMutationError(
+      await orgA.asUser.mutation(api.attendance.markManual, {
         meetingId: activeMeetingA,
         memberId: memberB,
         status: "present",
       }),
-    ).rejects.toThrow("Member not found in your organization");
+      "member_not_found",
+      "Member not found in your organization",
+    );
   });
 
   it("rejects deleting another org's attendance record", async () => {
     const { orgA, recordB } = await setupTenants();
 
-    await expect(
-      orgA.asUser.mutation(api.attendance.removeRecord, { recordId: recordB }),
-    ).rejects.toThrow("Attendance record not found");
+    expectMutationError(
+      await orgA.asUser.mutation(api.attendance.removeRecord, {
+        recordId: recordB,
+      }),
+      "attendance_record_not_found",
+      "Attendance record not found",
+    );
   });
 
   it("allows same public identifier across orgs without cross-org check-in leakage", async () => {
@@ -300,10 +332,12 @@ describe("RLS: attendance", () => {
       isActive: true,
     });
 
-    const recordId = await t.mutation(api.attendance.checkIn, {
-      code: "CODE-A",
-      identifier: "SHARED",
-    });
+    const recordId = expectMutationId(
+      await t.mutation(api.attendance.checkIn, {
+        code: "CODE-A",
+        identifier: "SHARED",
+      }),
+    );
 
     const record = await t.run(async (ctx) => ctx.db.get(recordId));
     expect(record?.organizationId).toBe(orgA.orgId);

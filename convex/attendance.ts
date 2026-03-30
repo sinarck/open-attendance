@@ -1,38 +1,75 @@
 import { ConvexError, v } from "convex/values";
-import { NoOp } from "convex-helpers/server/customFunctions";
-import { zCustomMutation } from "convex-helpers/server/zod4";
 import { isAfter, isBefore } from "date-fns";
 import haversine from "haversine-distance";
-import { z } from "zod";
 import type { Doc } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
 import { authedMutation, authedQuery } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
 import {
-  checkInCodeSchema,
-  deviceFingerprintSchema,
-  memberIdentifierSchema,
+  normalizeCheckInCode,
+  normalizeDeviceFingerprint,
+  normalizeMemberIdentifier,
 } from "./lib/validation";
 import { attendanceStatus } from "./schema";
+const attendanceCheckInErrorMessages = {
+  invalid_check_in_code: "Invalid check-in code",
+  check_in_closed: "Check-ins are closed for this meeting",
+  check_in_not_started: "Check-in has not started yet",
+  check_in_ended: "Check-in has ended",
+  location_required: "This meeting requires location verification",
+  outside_allowed_area: "You are outside the allowed check-in area",
+  invalid_member_identifier: "Member not found. Check your identifier.",
+  member_inactive: "This member is no longer active",
+  already_checked_in: "Already checked in for this meeting",
+  device_verification_required: "This meeting requires device verification",
+  device_already_used: "This device has already been used to check in",
+} as const;
+const attendanceMutationErrorMessages = {
+  meeting_not_found: "Meeting not found in your organization",
+  member_not_found: "Member not found in your organization",
+  attendance_record_not_found: "Attendance record not found",
+} as const;
 
-const zMutation = zCustomMutation(mutation, NoOp);
+type AttendanceCheckInErrorCode = keyof typeof attendanceCheckInErrorMessages;
+type AttendanceMutationErrorCode = keyof typeof attendanceMutationErrorMessages;
+type CheckInResult =
+  | { ok: true; id: Doc<"attendanceRecords">["_id"] }
+  | { ok: false; code: AttendanceCheckInErrorCode; message: string };
+type AttendanceMutationResult =
+  | { ok: true; id: Doc<"attendanceRecords">["_id"] }
+  | { ok: false; code: AttendanceMutationErrorCode; message: string };
+
+function attendanceCheckInError(code: AttendanceCheckInErrorCode) {
+  return { ok: false, code, message: attendanceCheckInErrorMessages[code] } as const;
+}
+
+function attendanceMutationError(code: AttendanceMutationErrorCode) {
+  return { ok: false, code, message: attendanceMutationErrorMessages[code] } as const;
+}
 
 /** Public check-in (unauthenticated, called by members scanning QR codes). */
-export const checkIn = zMutation({
+export const checkIn = mutation({
   args: {
-    code: checkInCodeSchema,
-    identifier: memberIdentifierSchema,
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
-    deviceFingerprint: deviceFingerprintSchema.optional(),
+    code: v.string(),
+    identifier: v.string(),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
+    deviceFingerprint: v.optional(v.string()),
   },
-  handler: async (ctx, { code, identifier, latitude, longitude, deviceFingerprint }) => {
+  handler: async (ctx, args): Promise<CheckInResult> => {
+    const code = normalizeCheckInCode(args.code);
+    const identifier = normalizeMemberIdentifier(args.identifier);
+    const deviceFingerprint =
+      args.deviceFingerprint === undefined
+        ? undefined
+        : normalizeDeviceFingerprint(args.deviceFingerprint);
+
     const meeting = await ctx.db
       .query("meetings")
       .withIndex("by_checkInCode", (q) => q.eq("checkInCode", code))
       .unique();
 
-    if (!meeting) throw new ConvexError("Invalid check-in code");
+    if (!meeting) return attendanceCheckInError("invalid_check_in_code");
 
     await rateLimit(ctx, {
       name: "checkIn",
@@ -40,15 +77,15 @@ export const checkIn = zMutation({
       throws: true,
     });
 
-    if (!meeting.isActive) throw new ConvexError("Check-ins are closed for this meeting");
+    if (!meeting.isActive) return attendanceCheckInError("check_in_closed");
 
     const now = Date.now();
-    if (isBefore(now, meeting.startTime)) throw new ConvexError("Check-in has not started yet");
-    if (isAfter(now, meeting.endTime)) throw new ConvexError("Check-in has ended");
+    if (isBefore(now, meeting.startTime)) return attendanceCheckInError("check_in_not_started");
+    if (isAfter(now, meeting.endTime)) return attendanceCheckInError("check_in_ended");
 
     if (meeting.geofence) {
-      if (latitude === undefined || longitude === undefined) {
-        throw new ConvexError("This meeting requires location verification");
+      if (args.latitude === undefined || args.longitude === undefined) {
+        return attendanceCheckInError("location_required");
       }
 
       const distance = haversine(
@@ -56,11 +93,11 @@ export const checkIn = zMutation({
           latitude: meeting.geofence.latitude,
           longitude: meeting.geofence.longitude,
         },
-        { latitude, longitude },
+        { latitude: args.latitude, longitude: args.longitude },
       );
 
       if (distance > meeting.geofence.radiusM) {
-        throw new ConvexError("You are outside the allowed check-in area");
+        return attendanceCheckInError("outside_allowed_area");
       }
     }
 
@@ -71,8 +108,8 @@ export const checkIn = zMutation({
       )
       .unique();
 
-    if (!member) throw new ConvexError("Member not found. Check your identifier.");
-    if (!member.isActive) throw new ConvexError("This member is no longer active");
+    if (!member) return attendanceCheckInError("invalid_member_identifier");
+    if (!member.isActive) return attendanceCheckInError("member_inactive");
 
     const existingRecord = await ctx.db
       .query("attendanceRecords")
@@ -81,7 +118,7 @@ export const checkIn = zMutation({
       )
       .unique();
 
-    if (existingRecord) throw new ConvexError("Already checked in for this meeting");
+    if (existingRecord) return attendanceCheckInError("already_checked_in");
 
     // When lateAfter === endTime (the default), nobody can be late.
     const status: Doc<"attendanceRecords">["status"] = isAfter(now, meeting.lateAfter)
@@ -89,17 +126,20 @@ export const checkIn = zMutation({
       : "present";
 
     if (!meeting.requireFingerprint) {
-      return ctx.db.insert("attendanceRecords", {
-        organizationId: meeting.organizationId,
-        meetingId: meeting._id,
-        memberId: member._id,
-        status,
-        method: "self",
-      });
+      return {
+        ok: true,
+        id: await ctx.db.insert("attendanceRecords", {
+          organizationId: meeting.organizationId,
+          meetingId: meeting._id,
+          memberId: member._id,
+          status,
+          method: "self",
+        }),
+      };
     }
 
     if (!deviceFingerprint) {
-      throw new ConvexError("This meeting requires device verification");
+      return attendanceCheckInError("device_verification_required");
     }
 
     const existingFingerprint = await ctx.db
@@ -110,17 +150,20 @@ export const checkIn = zMutation({
       .unique();
 
     if (existingFingerprint) {
-      throw new ConvexError("This device has already been used to check in");
+      return attendanceCheckInError("device_already_used");
     }
 
-    return ctx.db.insert("attendanceRecords", {
-      organizationId: meeting.organizationId,
-      meetingId: meeting._id,
-      memberId: member._id,
-      status,
-      method: "self",
-      deviceFingerprint,
-    });
+    return {
+      ok: true,
+      id: await ctx.db.insert("attendanceRecords", {
+        organizationId: meeting.organizationId,
+        meetingId: meeting._id,
+        memberId: member._id,
+        status,
+        method: "self",
+        deviceFingerprint,
+      }),
+    };
   },
 });
 
@@ -161,7 +204,7 @@ export const markManual = authedMutation({
     memberId: v.id("members"),
     status: attendanceStatus,
   },
-  handler: async (ctx, { meetingId, memberId, status }) => {
+  handler: async (ctx, { meetingId, memberId, status }): Promise<AttendanceMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -171,10 +214,10 @@ export const markManual = authedMutation({
     // RLS-wrapped db.get returns null for docs outside the caller's org,
     // so "not found" covers both non-existent and wrong-org cases.
     const meeting = await ctx.db.get("meetings", meetingId);
-    if (!meeting) throw new ConvexError("Meeting not found in your organization");
+    if (!meeting) return attendanceMutationError("meeting_not_found");
 
     const member = await ctx.db.get("members", memberId);
-    if (!member) throw new ConvexError("Member not found in your organization");
+    if (!member) return attendanceMutationError("member_not_found");
 
     const existing = await ctx.db
       .query("attendanceRecords")
@@ -182,30 +225,33 @@ export const markManual = authedMutation({
       .unique();
 
     if (!existing) {
-      return ctx.db.insert("attendanceRecords", {
-        organizationId: ctx.organizationId,
-        meetingId,
-        memberId,
-        status,
-        method: "manual",
-      });
+      return {
+        ok: true,
+        id: await ctx.db.insert("attendanceRecords", {
+          organizationId: ctx.organizationId,
+          meetingId,
+          memberId,
+          status,
+          method: "manual",
+        }),
+      };
     }
 
     if (existing.status === status && existing.method === "manual") {
-      return existing._id;
+      return { ok: true, id: existing._id };
     }
 
     await ctx.db.patch("attendanceRecords", existing._id, {
       status,
       method: "manual",
     });
-    return existing._id;
+    return { ok: true, id: existing._id };
   },
 });
 
 export const removeRecord = authedMutation({
   args: { recordId: v.id("attendanceRecords") },
-  handler: async (ctx, { recordId }) => {
+  handler: async (ctx, { recordId }): Promise<AttendanceMutationResult> => {
     await rateLimit(ctx, {
       name: "orgWrite",
       key: ctx.organizationId,
@@ -214,8 +260,9 @@ export const removeRecord = authedMutation({
 
     const record = await ctx.db.get("attendanceRecords", recordId);
 
-    if (!record) throw new ConvexError("Attendance record not found");
+    if (!record) return attendanceMutationError("attendance_record_not_found");
     await ctx.db.delete("attendanceRecords", recordId);
+    return { ok: true, id: recordId };
   },
 });
 
