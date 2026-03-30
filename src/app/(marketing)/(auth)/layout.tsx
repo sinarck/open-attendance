@@ -1,7 +1,5 @@
-import { connection } from "next/server";
 import type { ReactNode } from "react";
 
-export default async function AuthLayout({ children }: { children: ReactNode }) {
-  await connection();
+export default function AuthLayout({ children }: { children: ReactNode }) {
   return children;
 }

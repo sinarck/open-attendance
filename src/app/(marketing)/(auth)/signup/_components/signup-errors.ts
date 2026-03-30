@@ -1,4 +1,3 @@
-import { BetterFetchError } from "better-auth/react";
 import { authClient } from "@/lib/auth/client";
 
 export type SignUpError =
@@ -7,8 +6,13 @@ export type SignUpError =
   | { code: "slug"; field: "organizationSlug"; title: "Choose another URL"; description: string }
   | { code: "unexpected"; title: "Sign up failed"; description: string };
 
+type AuthClientError = Error & {
+  status: number;
+  error?: { code?: string };
+};
+
 export function normalizeSignUpError(error: unknown): SignUpError {
-  if (!(error instanceof BetterFetchError)) {
+  if (!(error instanceof Error) || !("status" in error) || typeof error.status !== "number") {
     return {
       code: "unexpected",
       description: "Unable to finish signup.",
@@ -16,7 +20,9 @@ export function normalizeSignUpError(error: unknown): SignUpError {
     };
   }
 
-  if (error.error?.code === authClient.$ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL) {
+  const authError = error as AuthClientError;
+
+  if (authError.error?.code === authClient.$ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL) {
     return {
       code: "email",
       field: "email",
@@ -25,15 +31,15 @@ export function normalizeSignUpError(error: unknown): SignUpError {
     };
   }
 
-  if (error.status === 400) {
+  if (authError.status === 400) {
     return {
       code: "input",
-      description: error.message,
+      description: authError.message,
       title: "Check your details",
     };
   }
 
-  if (error.status === 422) {
+  if (authError.status === 422) {
     return {
       code: "slug",
       field: "organizationSlug",
@@ -44,7 +50,7 @@ export function normalizeSignUpError(error: unknown): SignUpError {
 
   return {
     code: "unexpected",
-    description: error.message,
+    description: authError.message,
     title: "Sign up failed",
   };
 }

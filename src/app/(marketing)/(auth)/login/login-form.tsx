@@ -1,10 +1,9 @@
 "use client";
 
-import { BetterFetchError } from "better-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,14 +12,31 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn } from "@/lib/auth/client";
+import { signIn, useSession } from "@/lib/auth/client";
 import { toast } from "@/lib/toast";
 import { loginFormSchema } from "@/lib/validation/auth";
 
+type AuthClientError = Error & {
+  status: number;
+};
+
 export default function LoginForm() {
   const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    router.replace("/dashboard");
+  }, [router, session]);
+
+  if (isPending || session) {
+    return null;
+  }
 
   async function handleSubmit(formValues: Record<string, any>) {
     setErrors({});
@@ -45,7 +61,12 @@ export default function LoginForm() {
     if (error) {
       setLoading(false);
 
-      if (error instanceof BetterFetchError && error.status === 401) {
+      if (
+        error instanceof Error &&
+        "status" in error &&
+        typeof error.status === "number" &&
+        (error as AuthClientError).status === 401
+      ) {
         setErrors({
           email: "Invalid email or password.",
           password: "Invalid email or password.",

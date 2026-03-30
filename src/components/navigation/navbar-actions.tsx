@@ -1,15 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getMarketingAppHref } from "@/lib/auth/guards";
+import { useSession } from "@/lib/auth/client";
 
-export async function NavbarActions() {
-  const appHref = await getMarketingAppHref();
+export function NavbarActions() {
+  const { data: session, isPending } = useSession();
 
-  if (appHref) {
+  if (isPending) {
+    return <div aria-hidden className="ui-cta-slot h-8" />;
+  }
+
+  if (session) {
     return (
       <div className="nav-cta-enter ui-cta-slot flex justify-end">
         <span className="nav-cta-item">
-          <Button size="sm" render={<Link href={appHref} />}>
+          <Button size="sm" render={<Link href="/dashboard" />}>
             Open App
           </Button>
         </span>

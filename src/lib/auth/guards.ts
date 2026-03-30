@@ -32,32 +32,6 @@ export const getRequestAuthState = cache(async (): Promise<RequestAuthState> => 
   };
 });
 
-export async function getMarketingAppHref() {
-  // Marketing CTAs should render one destination on the server, not flicker
-  // between anonymous and authenticated actions after hydration.
-  const { isAuthenticated, organization } = await getRequestAuthState();
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  return organization === null || organization.slug === "" ? "/signup" : "/dashboard";
-}
-
-export async function redirectAuthenticatedUser() {
-  const { isAuthenticated, organization } = await getRequestAuthState();
-
-  if (!isAuthenticated) {
-    return;
-  }
-
-  if (organization === null || organization.slug === "") {
-    redirect("/signup");
-  }
-
-  redirect("/dashboard");
-}
-
 export async function requireOrganizationAccess() {
   // Authenticated app routes require both a valid session and a completed
   // organization record. The returned token hydrates Convex client queries

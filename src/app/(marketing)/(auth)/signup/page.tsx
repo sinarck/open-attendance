@@ -1,37 +1,56 @@
-import { ConvexProvider } from "convex/react";
-import { redirect } from "next/navigation";
-import { getRequestAuthState } from "@/lib/auth/guards";
-import { getToken } from "@/lib/auth/server";
-import { ConvexClientProvider, convexReactClient } from "@/providers/convex-client-provider";
+"use client";
+
+import { useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { useSession } from "@/lib/auth/client";
 import { CreateAccountForm } from "./_components/create-account-form";
 import { FinishSetupForm } from "./_components/finish-setup-form";
+import { api } from "../../../../../convex/_generated/api";
 
-export default async function SignUpPage() {
-  const { isAuthenticated, organization } = await getRequestAuthState();
+function SignUpContent() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+  const organization = useQuery(api.organizations.getCurrent, session ? {} : "skip");
 
-  if (isAuthenticated && organization && organization.slug !== "") {
-    redirect("/dashboard");
+  useEffect(() => {
+    if (!organization || organization.slug === "") {
+      return;
+    }
+
+    router.replace("/dashboard");
+  }, [organization, router]);
+
+  if (isPending) {
+    return null;
   }
 
-  const content = (
-    <main className="flex min-h-svh items-center justify-center bg-muted p-6 md:p-10">
-      <div className="w-full max-w-md">
-        {isAuthenticated ? (
-          <FinishSetupForm
-            initialOrganizationName={organization?.name}
-            initialOrganizationSlug={organization?.slug}
-            initialTimezone={organization?.timezone}
-          />
-        ) : (
-          <CreateAccountForm />
-        )}
-      </div>
-    </main>
+  if (!session) {
+    return <CreateAccountForm />;
+  }
+
+  if (organization === undefined || organization?.slug) {
+    return null;
+  }
+
+  return (
+    <FinishSetupForm
+      initialOrganizationName={organization?.name}
+      initialOrganizationSlug={organization?.slug}
+      initialTimezone={organization?.timezone}
+    />
   );
+}
 
-  if (isAuthenticated) {
-    return <ConvexClientProvider initialToken={await getToken()}>{content}</ConvexClientProvider>;
-  }
-
-  return <ConvexProvider client={convexReactClient}>{content}</ConvexProvider>;
+export default function SignUpPage() {
+  return (
+    <ConvexClientProvider>
+      <main className="flex min-h-svh items-center justify-center bg-muted p-6 md:p-10">
+        <div className="w-full max-w-md">
+          <SignUpContent />
+        </div>
+      </main>
+    </ConvexClientProvider>
+  );
 }

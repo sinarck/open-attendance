@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { NavbarActions } from "@/components/navigation/navbar-actions";
 
 export function Navbar() {
@@ -10,9 +9,7 @@ export function Navbar() {
           open/attendance
         </Link>
         <div className="ui-cta-slot flex items-center justify-end">
-          <Suspense fallback={<div aria-hidden className="ui-cta-slot h-8" />}>
-            <NavbarActions />
-          </Suspense>
+          <NavbarActions />
         </div>
       </nav>
     </header>
