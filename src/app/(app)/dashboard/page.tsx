@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getTime, startOfMinute } from "date-fns";
 import { Activity, CalendarRange, Fingerprint, ShieldCheck, Users2, Waves } from "lucide-react";
 import { requireOrganization } from "@/lib/auth/guards";
@@ -6,8 +7,9 @@ import { api } from "../../../../convex/_generated/api";
 import { AttentionList } from "./_components/attention-list";
 import { LiveStatus } from "./_components/live-status";
 import { RecentMeetings } from "./_components/recent-meetings";
+import DashboardLoading from "./loading";
 
-export default async function DashboardPage() {
+async function DashboardPageContent() {
   const organization = await requireOrganization();
   const { timezone } = organization;
   const currentMinute = getTime(startOfMinute(new Date()));
@@ -129,5 +131,21 @@ export default async function DashboardPage() {
         </section>
       )}
     </main>
+  );
+}
+
+/**
+ * Protected dashboard route entry.
+ *
+ * @remarks
+ * The route export stays synchronous so request-time auth and Convex work live
+ * below this route-local `<Suspense>` boundary instead of blocking the entire
+ * `(app)` shell.
+ */
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardPageContent />
+    </Suspense>
   );
 }

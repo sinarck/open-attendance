@@ -173,11 +173,34 @@ describe("members:create", () => {
 
 ### Route Groups
 
-- `(app)/` — authenticated routes; wrapped in `ConvexClientProvider`
+- `(app)/` — authenticated routes; the layout is a static shell only. Each page owns its own request-time auth/data work behind a route-local `<Suspense>` boundary, and only the pages that need live Convex React hooks mount `ConvexClientProvider`.
 - `(marketing)/` — public pages; uses `RootProviders` only
-- `(auth)/` — login/signup pages nested under marketing layout
+- `(auth)/` — login/signup pages nested under marketing layout; both stay fully public and synchronous
 - Keep providers scoped to the smallest subtree that actually needs them.
-- Do not put Suspense boundaries above auth redirects. Auth pages should render or redirect cleanly without flashing loading shells.
+- Public marketing/layout shells must stay synchronous. Do not read request-time auth state in the marketing navbar, auth layout, or other public shells.
+- Protected app pages should use this pattern: sync route export, route-local `<Suspense>`, existing `loading.tsx` fallback, async inner server component for auth/data work.
+- `src/proxy.ts` is only an optimistic cookie redirect layer. Do not use it for personalization or as a reason to move real auth checks out of server guards.
+- Auth pages should render as public pages and rely on proxy for optimistic redirects. Do not add request-time auth branching back into `/login`, `/signup`, or their shared layout.
+
+### Cache Components Regression Memory
+
+- We have regressed the same Cache Components / Suspense issue multiple times. Treat these rules as hard constraints, not suggestions.
+- Wrong assumption: "Putting `connection()`, `cookies()`, `headers()`, `fetchQuery()`, or auth guards in a layout is fine if the route already has `loading.tsx`."
+  Reality: with Cache Components enabled, request-time work in the layout blocks the whole route unless it is below a route-local `<Suspense>` boundary.
+- Wrong assumption: "`loading.tsx` automatically protects async page or layout work."
+  Reality: the request-time work still has to live under an explicit `<Suspense>` boundary in the route entry. A bare async page/layout can still trigger `blocking-route`.
+- Wrong assumption: "Public auth pages should check auth on the server so they can redirect immediately."
+  Reality: `/login` and `/signup` should stay public and synchronous. Optimistic redirects belong in `src/proxy.ts`; secure auth checks belong in protected routes and Convex RLS.
+- Wrong assumption: "If a marketing navbar wants to reflect auth state, the whole navbar should become request-time auth-aware."
+  Reality: keep the marketing shell static and isolate auth-aware UI to a tiny client island.
+- Wrong assumption: "If the code type-checks and lint passes, the Cache Components boundaries are probably fine."
+  Reality: these regressions are architectural, not type-level. Always validate route boundaries intentionally when moving auth, providers, or server data fetching.
+- Before changing auth/app route structure, verify all of the following:
+  1. No public layout or navbar reads request-time auth state.
+  2. `(app)/layout.tsx` stays a static shell.
+  3. Protected app pages put auth/data work in an async inner component under route-local `<Suspense>`.
+  4. `/login` and `/signup` remain synchronous public pages.
+  5. `src/proxy.ts` only performs optimistic cookie-based redirects.
 
 ### Key Libraries
 
