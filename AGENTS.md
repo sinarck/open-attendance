@@ -100,7 +100,8 @@ src/
 - Convex types auto-generated in `convex/_generated/` — use `Id<"tableName">` for IDs
 - Shared app/domain types belong in `src/types`; keep local component prop types in the file that owns them
 - Assume declared types are correct. Do not add defensive fallbacks like `?? ""`, `?? null`, or optional chaining against values that the type system already guarantees.
-- Prefer direct destructuring and direct property access over alias variables when they do not improve readability.
+- Prefer destructuring when it shortens repeated property access or makes the data shape clearer.
+- Do not destructure so aggressively that it causes naming conflicts, awkward renames, or hides where a value came from.
 
 ### Simplicity & Abstractions
 
