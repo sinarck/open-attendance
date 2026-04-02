@@ -1,57 +1,46 @@
 "use client";
 
-import { mergeProps } from "@base-ui/react/merge-props";
-import type { Route } from "next";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import type { ComponentPropsWithoutRef } from "react";
 import { useRef, useState } from "react";
 import { z } from "zod";
-import { SlugStatusIndicator } from "@/components/auth/slug-status-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Field,
-  FieldControl,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useSlugAvailability } from "@/hooks/use-slug-availability";
-import { authClient } from "@/lib/auth/client";
+import { signUp } from "@/lib/auth/client";
+import { getRateLimitDescription, isRateLimitError } from "@/lib/auth/client-errors";
 import { getPreferredTimeZone, normalizeTimeZone } from "@/lib/date";
 import { slugify } from "@/lib/slug";
 import { toast } from "@/lib/toast";
 import { signupFormSchema } from "@/lib/validation/auth";
+import { OrganizationSlugField } from "./organization-slug-field";
 import { normalizeSignUpError } from "./signup-errors";
 
-export function CreateAccountForm() {
+/**
+ * Public account-creation form for `/signup`.
+ *
+ * @remarks
+ * Organization provisioning is part of this same submit action. The extra
+ * organization fields passed to Better Auth are consumed by the sign-up hooks in
+ * `convex/auth.ts`, which normalize the data, provision the org, and roll the
+ * user back if provisioning fails.
+ */
+export function CreateAccountForm({ appUrl }: { appUrl: string }) {
   const router = useRouter();
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
   const autoSlugRef = useRef("");
-  const slugStatus = useSlugAvailability(organizationSlug);
+  const slugStatus = useSlugAvailability(organizationSlug, !loading);
   const timezone = normalizeTimeZone(undefined, getPreferredTimeZone());
 
-  const renderOrganizationSlugInput = (props: ComponentPropsWithoutRef<"input">) => (
-    <input
-      className="h-9 w-full min-w-0 bg-transparent pl-3 pr-12 font-mono text-sm outline-none placeholder:text-muted-foreground/72 sm:h-8"
-      placeholder="robotics-society"
-      autoCapitalize="none"
-      autoComplete="off"
-      autoCorrect="off"
-      spellCheck={false}
-      required
-      disabled={loading}
-      {...mergeProps(props, { name: "organizationSlug" })}
-    />
-  );
-
-  async function handleSubmit(formValues: Record<string, unknown>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setErrors({});
 
     if (slugStatus !== "available") {
@@ -60,7 +49,8 @@ export function CreateAccountForm() {
     }
 
     const result = signupFormSchema.safeParse({
-      ...formValues,
+      ...Object.fromEntries(new FormData(event.currentTarget)),
+      organizationSlug,
       timezone,
     });
 
@@ -70,49 +60,89 @@ export function CreateAccountForm() {
     }
 
     setLoading(true);
+    let rateLimitDescription = "Please wait a moment and try again.";
+    const {
+      email,
+      name,
+      organizationName,
+      organizationSlug: submittedOrganizationSlug,
+      password,
+      timezone: submittedTimezone,
+      username,
+    } = result.data;
 
     try {
-      await authClient.$fetch("/sign-up/email", {
-        body: {
-          email: result.data.email,
-          name: result.data.name,
-          organizationName: result.data.organizationName,
-          organizationSlug: result.data.organizationSlug,
-          password: result.data.password,
-          timezone: result.data.timezone,
-          username: result.data.username,
+      // Better Auth owns account creation. The additional body fields are
+      // application-specific signup metadata consumed by our Better Auth hooks.
+      const { error } = await signUp.email({
+        email,
+        name,
+        password,
+        username,
+        fetchOptions: {
+          body: {
+            organizationName,
+            organizationSlug: submittedOrganizationSlug,
+            rememberMe: true,
+            timezone: submittedTimezone,
+          },
+          async onError(context) {
+            const { response } = context;
+            const { headers, status } = response;
+
+            if (status !== 429) {
+              return;
+            }
+
+            rateLimitDescription = getRateLimitDescription(headers.get("X-Retry-After"));
+          },
         },
-        method: "POST",
       });
-    } catch (error) {
+
+      if (!error) {
+        posthog.capture("user_signed_up", { method: "email" });
+        toast.success("Account created!", "Your workspace is ready.");
+        router.replace("/dashboard");
+        return;
+      }
+
+      if (isRateLimitError(error)) {
+        setLoading(false);
+        toast.error("Too many attempts", rateLimitDescription);
+        return;
+      }
+
       const signupError = normalizeSignUpError(error);
+      const { code, description, title } = signupError;
       setLoading(false);
 
-      switch (signupError.code) {
+      switch (code) {
         case "email":
         case "slug":
-          setErrors({ [signupError.field]: signupError.description });
+          setErrors({ [signupError.field]: description });
           return;
         case "input":
         case "unexpected":
-          toast.error(signupError.title, signupError.description);
+          toast.error(title, description);
           return;
       }
+    } catch (error) {
+      setLoading(false);
+      toast.error(
+        "Sign up failed",
+        error instanceof Error ? error.message : "Unable to create account.",
+      );
     }
-
-    posthog.capture("user_signed_up", { method: "email" });
-    toast.success("Account created!", "Your workspace is ready.");
-    router.replace("/dashboard" as Route);
   }
 
   return (
-    <Card className="motion-safe:animate-auth-card-enter motion-reduce:animate-none">
+    <Card className="motion-safe:animate-auth-card-enter">
       <CardHeader className="text-center">
         <CardTitle className="text-xl">Create an account</CardTitle>
         <CardDescription>Enter your details to get started</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form onFormSubmit={handleSubmit} errors={errors}>
+        <Form onSubmit={handleSubmit} errors={errors}>
           <Field name="name">
             <FieldLabel>Name</FieldLabel>
             <Input
@@ -162,25 +192,14 @@ export function CreateAccountForm() {
           </Field>
 
           <Field name="organizationSlug">
-            <FieldLabel>Organization URL</FieldLabel>
-            <div className="group relative flex w-full rounded-lg border border-input bg-background shadow-xs transition-shadow focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/24">
-              <span className="flex items-center rounded-l-lg border-r border-input bg-muted/50 px-3 text-sm text-muted-foreground">
-                openattendance.app/
-              </span>
-              <FieldControl
-                value={organizationSlug}
-                onValueChange={(value) => {
-                  setOrganizationSlug(slugify(value));
-                }}
-                render={renderOrganizationSlugInput}
-              />
-              <SlugStatusIndicator status={slugStatus} />
-            </div>
-            <FieldDescription>Lowercase letters, numbers, and hyphens.</FieldDescription>
-            <FieldError />
+            <OrganizationSlugField
+              appUrl={appUrl}
+              loading={loading}
+              slug={organizationSlug}
+              status={slugStatus}
+              onSlugChange={setOrganizationSlug}
+            />
           </Field>
-
-          <input type="hidden" name="timezone" value={timezone} />
 
           <Field name="email">
             <FieldLabel>Email</FieldLabel>
@@ -226,7 +245,11 @@ export function CreateAccountForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+            <Link
+              href="/login"
+              prefetch
+              className="text-foreground underline-offset-4 hover:underline"
+            >
               Sign in
             </Link>
           </p>

@@ -1,8 +1,7 @@
-import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
-import { TrackedLinkButton } from "@/components/ui/tracked-link-button";
 import { homePreviewSession } from "@/config/data";
 import { siteConfig } from "@/config/site";
+import { HomeCtaActions } from "./_components/home-cta-actions";
 
 export const metadata: Metadata = {
   title: siteConfig.name,
@@ -10,8 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  const totalMembers = homePreviewSession.rows.length;
-  const checkedInMembers = homePreviewSession.rows.filter((row) => row.status !== "absent").length;
+  const { group, rows, title } = homePreviewSession;
+  const totalMembers = rows.length;
+  const checkedInMembers = rows.filter(({ status }) => status !== "absent").length;
   const attendanceRate = Math.round((checkedInMembers / totalMembers) * 100);
 
   return (
@@ -30,22 +30,7 @@ export default function Home() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-4">
-          <TrackedLinkButton
-            href="/signup"
-            eventName="cta_start_tracking_clicked"
-            eventProperties={{ source: "homepage", cta_text: "Start tracking" }}
-          >
-            Start tracking
-            <ArrowRight />
-          </TrackedLinkButton>
-          <TrackedLinkButton
-            variant="ghost"
-            href={siteConfig.repo}
-            eventName="cta_github_clicked"
-            eventProperties={{ source: "homepage" }}
-          >
-            View on GitHub
-          </TrackedLinkButton>
+          <HomeCtaActions repoUrl={siteConfig.repo} />
 
           <span className="hidden h-4 w-px bg-border sm:block" />
 
@@ -60,24 +45,24 @@ export default function Home() {
         <div className="mt-12 overflow-hidden rounded-xl border border-border bg-card font-mono text-sm">
           <div className="flex items-center gap-2 border-b border-border px-4 py-2.5 text-xs text-muted-foreground">
             <span className="size-1.5 rounded-full bg-emerald-500" />
-            {homePreviewSession.title} - {homePreviewSession.group}
+            {title} - {group}
           </div>
           <div className="divide-y divide-border">
-            {homePreviewSession.rows.map((row) => (
-              <div key={row.name} className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-foreground">{row.name}</span>
+            {rows.map(({ name, status, time }) => (
+              <div key={name} className="flex items-center justify-between px-4 py-2.5">
+                <span className="text-foreground">{name}</span>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>{row.time}</span>
+                  <span>{time}</span>
                   <span
                     className={
-                      row.status === "present"
+                      status === "present"
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : row.status === "late"
+                        : status === "late"
                           ? "text-amber-600 dark:text-amber-400"
                           : "text-muted-foreground"
                     }
                   >
-                    {row.status}
+                    {status}
                   </span>
                 </div>
               </div>

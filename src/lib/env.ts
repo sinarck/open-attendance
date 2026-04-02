@@ -2,6 +2,15 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { vercel } from "@t3-oss/env-nextjs/presets-zod";
 import { z } from "zod";
 
+/**
+ * Runtime environment validation and URL normalization.
+ *
+ * @remarks
+ * This module is intentionally strict because auth, analytics, and canonical
+ * URLs all depend on exact origin shapes. Keep server-only values behind helper
+ * functions so client components do not accidentally import them and pull
+ * privileged env access into the browser bundle.
+ */
 const escapeRegex = (value: string) => value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const origin = (label: string, httpsOnly = false, hostnameSuffix?: string) =>
@@ -59,7 +68,37 @@ export const env = createEnv({
   extends: [vercel()],
 });
 
-export const getAppUrl = () => toAppUrl(env.VERCEL_URL);
+/**
+ * Returns the canonical public app origin.
+ *
+ * @remarks
+ * Only call this from server code. Client bundles must not import helpers that
+ * reach for Vercel's server-side deployment variables.
+ */
 export const getCanonicalUrl = () => toAppUrl(env.VERCEL_PROJECT_PRODUCTION_URL ?? env.VERCEL_URL);
+
+/**
+ * Returns the public app origin that best matches the current deployment.
+ *
+ * @remarks
+ * Preview deployments prefer the stable branch alias when Vercel provides one,
+ * then fall back to the current deployment URL. Production keeps using the
+ * canonical production host instead of a generated deployment URL.
+ */
+export const getCurrentAppUrl = () => {
+  if (process.env.VERCEL_ENV === "production") {
+    return getCanonicalUrl();
+  }
+
+  return toAppUrl(env.VERCEL_BRANCH_URL ?? env.VERCEL_URL ?? env.VERCEL_PROJECT_PRODUCTION_URL);
+};
+
+/**
+ * Returns the Better Auth/Convex site origin used for server-side auth calls.
+ *
+ * @remarks
+ * We prefer an explicit `CONVEX_SITE_URL`, but can derive the equivalent
+ * `.convex.site` origin from the public `.convex.cloud` URL when needed.
+ */
 export const getConvexSiteUrl = () =>
   env.CONVEX_SITE_URL ?? toConvexSiteUrl(env.NEXT_PUBLIC_CONVEX_URL);

@@ -11,7 +11,7 @@ export function normalizeSignUpError(error: unknown): SignUpError {
   if (!isAuthClientError(error)) {
     return {
       code: "unexpected",
-      description: "Unable to finish signup.",
+      description: "Unable to create account.",
       title: "Sign up failed",
     };
   }

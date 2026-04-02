@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { api } from "../_generated/api";
-import {
-  seedAuthedOrg,
-  seedAuthedUser,
-  seedMeeting,
-  seedMember,
-  seedOrg,
-  seedRecord,
-} from "../lib/seed";
+import { seedAuthedUser, seedMeeting, seedMember, seedOrg, seedRecord } from "../lib/seed";
 import { createOrganizationForAuthUser } from "../organizations";
 import { convexTest, schema } from "./harness";
 
@@ -42,78 +35,14 @@ describe("organizations:getCurrent (authId lookup)", () => {
   });
 });
 
-describe("organizations:create", () => {
-  it("creates an organization for an authenticated user with no existing org", async () => {
-    const t = convexTest(schema);
-    const { asUser, userId } = await seedAuthedUser(t);
-
-    const result = await asUser.mutation(api.organizations.create, {
-      name: "My Classroom",
-      slug: "my-classroom",
-      timezone: "America/New_York",
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      throw new Error("Expected organization id");
-    }
-
-    const orgId = result.id;
-    const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org?.authId).toBe(userId);
-    expect(org?.name).toBe("My Classroom");
-    expect(org?.slug).toBe("my-classroom");
-    expect(org?.timezone).toBe("America/New_York");
-  });
-
-  it("repairs a legacy incomplete organization row", async () => {
-    const t = convexTest(schema);
-    const { asUser, orgId } = await seedAuthedOrg(t, {
-      name: "",
-      slug: "",
-      timezone: "UTC",
-    });
-
-    const result = await asUser.mutation(api.organizations.create, {
-      name: "Recovered Org",
-      slug: "recovered-org",
-      timezone: "America/Chicago",
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      throw new Error("Expected organization id");
-    }
-
-    const returnedId = result.id;
-    expect(returnedId).toBe(orgId);
-
-    const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org?.name).toBe("Recovered Org");
-    expect(org?.slug).toBe("recovered-org");
-    expect(org?.timezone).toBe("America/Chicago");
-  });
-
-  it("rejects an invalid timezone", async () => {
-    const t = convexTest(schema);
-    const { asUser } = await seedAuthedUser(t);
-
-    await expect(
-      asUser.mutation(api.organizations.create, {
-        name: "My Classroom",
-        slug: "my-classroom",
-        timezone: "Mars/Olympus",
-      }),
-    ).rejects.toThrowError("Timezone must be valid");
-  });
-
-  it("creates the org when called through the helper without a pre-existing row", async () => {
+describe("organizations:createForAuthUser", () => {
+  it("creates the org for a freshly signed-up auth user", async () => {
     const t = convexTest(schema);
 
     const result = await t.run(async (ctx) =>
       createOrganizationForAuthUser(ctx, "user_missing_org", {
-        name: "Recovered Org",
-        slug: "recovered-org",
+        name: "New Org",
+        slug: "new-org",
         timezone: "America/Chicago",
       }),
     );
@@ -126,66 +55,32 @@ describe("organizations:create", () => {
     const orgId = result.id;
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org?.authId).toBe("user_missing_org");
-    expect(org?.name).toBe("Recovered Org");
-    expect(org?.slug).toBe("recovered-org");
+    expect(org?.name).toBe("New Org");
+    expect(org?.slug).toBe("new-org");
     expect(org?.timezone).toBe("America/Chicago");
   });
 
-  it("rejects creation if a complete organization already exists", async () => {
+  it("rejects creation if the auth user already has an organization", async () => {
     const t = convexTest(schema);
-    const { asUser } = await seedAuthedOrg(t, {
+    await seedOrg(t, {
+      authId: "existing-user",
       name: "Existing Org",
       slug: "existing-org",
     });
 
-    const result = await asUser.mutation(api.organizations.create, {
-      name: "Another Org",
-      slug: "another-org",
-      timezone: "America/Chicago",
-    });
+    const result = await t.run(async (ctx) =>
+      createOrganizationForAuthUser(ctx, "existing-user", {
+        name: "Another Org",
+        slug: "another-org",
+        timezone: "America/Chicago",
+      }),
+    );
 
     expect(result).toEqual({
       code: "exists",
       message: "Organization already exists for this account",
       ok: false,
     });
-  });
-
-  it("rejects unauthenticated organization creation with a stable code", async () => {
-    const t = convexTest(schema);
-
-    const result = await t.mutation(api.organizations.create, {
-      name: "My Classroom",
-      slug: "my-classroom",
-      timezone: "America/New_York",
-    });
-
-    expect(result).toEqual({
-      code: "auth",
-      message: "Not authenticated",
-      ok: false,
-    });
-  });
-
-  it("returns the org ID after successful creation", async () => {
-    const t = convexTest(schema);
-    const { asUser } = await seedAuthedUser(t);
-
-    const result = await asUser.mutation(api.organizations.create, {
-      name: "My Org",
-      slug: "my-org",
-      timezone: "America/Chicago",
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      throw new Error("Expected organization id");
-    }
-
-    const orgId = result.id;
-    const org = await t.run(async (ctx) => ctx.db.get(orgId));
-    expect(org?.name).toBe("My Org");
-    expect(org?.slug).toBe("my-org");
   });
 });
 
@@ -223,13 +118,14 @@ describe("organizations:slug uniqueness", () => {
       authId: "existing-user",
       slug: "unique-slug",
     });
-    const { asUser } = await seedAuthedUser(t);
 
-    const result = await asUser.mutation(api.organizations.create, {
-      name: "Different Org",
-      slug: "unique-slug",
-      timezone: "America/Chicago",
-    });
+    const result = await t.run(async (ctx) =>
+      createOrganizationForAuthUser(ctx, "new-user", {
+        name: "Different Org",
+        slug: "unique-slug",
+        timezone: "America/Chicago",
+      }),
+    );
 
     expect(result).toEqual({
       code: "slug",
@@ -466,7 +362,7 @@ describe("organizations:cascade delete (empty org)", () => {
 });
 
 describe("organizations:user creation", () => {
-  it("does not create an organization before setup is completed", async () => {
+  it("does not create an organization before sign-up provisioning runs", async () => {
     const t = convexTest(schema);
     const { userId } = await seedAuthedUser(t);
 

@@ -4,14 +4,14 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-export function useSlugAvailability(slug: string) {
+export function useSlugAvailability(slug: string, enabled = true) {
   const debouncedSlug = useDebounce(slug, 180);
   const isAvailable = useQuery(
     api.organizations.isSlugAvailable,
-    debouncedSlug.length < 2 ? "skip" : { slug: debouncedSlug },
+    !enabled || debouncedSlug.length < 2 ? "skip" : { slug: debouncedSlug },
   );
 
-  if (slug.length < 2) {
+  if (!enabled || slug.length < 2) {
     return "idle";
   }
 

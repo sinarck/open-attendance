@@ -8,9 +8,7 @@ export function Navbar() {
         <Link href="/" className="font-mono text-sm tracking-tight">
           open/attendance
         </Link>
-        <div className="ui-cta-slot flex items-center justify-end">
-          <NavbarActions />
-        </div>
+        <NavbarActions />
       </nav>
     </header>
   );

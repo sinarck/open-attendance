@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import {
   normalizeOrganizationName,
@@ -9,17 +9,24 @@ import {
   normalizeOrganizationSlugCandidate,
   normalizeOrganizationTimezone,
 } from "./lib/validation";
-type OrganizationErrorCode = "auth" | "exists" | "slug";
+
+type OrganizationErrorCode = "exists" | "slug";
 type OrganizationError =
-  | { ok: false; code: "auth"; message: "Not authenticated" }
   | { ok: false; code: "exists"; message: "Organization already exists for this account" }
   | { ok: false; code: "slug"; message: "Slug already taken" };
+
+/**
+ * Result of organization provisioning for a Better Auth user.
+ *
+ * @remarks
+ * This helper is intentionally internal-facing. Public signup goes through the
+ * Better Auth hook in `convex/auth.ts`, which translates these codes back into
+ * auth-friendly API errors.
+ */
 export type CreateOrganizationResult = { ok: true; id: Id<"organizations"> } | OrganizationError;
 
 function organizationError(code: OrganizationErrorCode): CreateOrganizationResult {
   switch (code) {
-    case "auth":
-      return { ok: false, code, message: "Not authenticated" };
     case "exists":
       return { ok: false, code, message: "Organization already exists for this account" };
     case "slug":
@@ -27,6 +34,15 @@ function organizationError(code: OrganizationErrorCode): CreateOrganizationResul
   }
 }
 
+/**
+ * Creates the single organization owned by a Better Auth user.
+ *
+ * @remarks
+ * Organization creation is part of signup provisioning, not a separate product
+ * step. If an org already exists for `authId`, this returns `"exists"` instead
+ * of repairing or mutating it because "authenticated but unprovisioned" is no
+ * longer a supported state.
+ */
 export async function createOrganizationForAuthUser(
   ctx: Pick<MutationCtx, "db">,
   authId: string,
@@ -37,7 +53,7 @@ export async function createOrganizationForAuthUser(
     .withIndex("by_authId", (q) => q.eq("authId", authId))
     .unique();
 
-  if (org && org.slug !== "") {
+  if (org) {
     return organizationError("exists");
   }
 
@@ -48,16 +64,6 @@ export async function createOrganizationForAuthUser(
 
   if (existing && existing.authId !== authId) {
     return organizationError("slug");
-  }
-
-  if (org) {
-    // Repair legacy empty-slug rows left behind by the old setup flow.
-    await ctx.db.patch("organizations", org._id, {
-      name,
-      slug,
-      timezone,
-    });
-    return { ok: true, id: org._id };
   }
 
   return {
@@ -71,7 +77,13 @@ export async function createOrganizationForAuthUser(
   };
 }
 
-/** Returns the caller's organization, or null if setup has not been completed yet. */
+/**
+ * Returns the signed-in caller's organization.
+ *
+ * @remarks
+ * This is the organization lookup used by App Router guards after Better Auth
+ * has already confirmed the request has a session.
+ */
 export const getCurrent = query({
   args: {},
   handler: async (ctx) => {
@@ -85,25 +97,13 @@ export const getCurrent = query({
   },
 });
 
-/** Creates the caller's organization, or repairs a legacy incomplete organization row. */
-export const create = mutation({
-  args: {
-    name: v.string(),
-    slug: v.string(),
-    timezone: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await authComponent.safeGetAuthUser(ctx);
-    if (!user) return organizationError("auth");
-
-    return createOrganizationForAuthUser(ctx, user._id, {
-      name: normalizeOrganizationName(args.name),
-      slug: normalizeOrganizationSlug(args.slug),
-      timezone: normalizeOrganizationTimezone(args.timezone),
-    });
-  },
-});
-
+/**
+ * Internal mutation wrapper used by the Better Auth sign-up hook.
+ *
+ * @remarks
+ * Keep organization normalization here so the auth hook and tests share the
+ * same provisioning behavior.
+ */
 export const createForAuthUser = internalMutation({
   args: {
     authId: v.string(),
@@ -120,7 +120,13 @@ export const createForAuthUser = internalMutation({
   },
 });
 
-/** Real-time slug availability check for the signup and organization setup forms. */
+/**
+ * Real-time slug availability check for the signup form.
+ *
+ * @remarks
+ * This is intentionally advisory UX, not the final authority. Signup still
+ * re-checks the slug in the Better Auth hook to close race conditions.
+ */
 export const isSlugAvailable = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {

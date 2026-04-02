@@ -1,42 +1,38 @@
 "use client";
 
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { signIn, useSession } from "@/lib/auth/client";
-import { isAuthClientError } from "@/lib/auth/client-errors";
+import { signIn } from "@/lib/auth/client";
+import {
+  getRateLimitDescription,
+  isAuthClientError,
+  isRateLimitError,
+} from "@/lib/auth/client-errors";
 import { toast } from "@/lib/toast";
 import { loginFormSchema } from "@/lib/validation/auth";
 
-export default function LoginForm() {
+/**
+ * Email/password login form for the public `/login` route.
+ */
+export function LoginForm() {
   const router = useRouter();
-  const { data: session, isPending } = useSession();
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!session) {
-      return;
-    }
-
-    router.replace("/dashboard");
-  }, [router, session]);
-
-  if (isPending || session) {
-    return null;
-  }
-
-  async function handleSubmit(formValues: Record<string, unknown>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setErrors({});
 
-    const result = loginFormSchema.safeParse(formValues);
+    const result = loginFormSchema.safeParse(Object.fromEntries(new FormData(event.currentTarget)));
 
     if (!result.success) {
       setErrors(z.flattenError(result.error).fieldErrors);
@@ -46,15 +42,35 @@ export default function LoginForm() {
     setLoading(true);
 
     const { email, password } = result.data;
+    let rateLimitDescription = "Please wait a moment and try again.";
 
+    // Better Auth owns credential validation and session creation. This form is
+    // responsible only for local validation, UX copy, and the post-login route.
     const { error } = await signIn.email({
       email,
       password,
       rememberMe: true,
+      fetchOptions: {
+        async onError(context) {
+          const { response } = context;
+          const { headers, status } = response;
+
+          if (status !== 429) {
+            return;
+          }
+
+          rateLimitDescription = getRateLimitDescription(headers.get("X-Retry-After"));
+        },
+      },
     });
 
     if (error) {
       setLoading(false);
+
+      if (isRateLimitError(error)) {
+        toast.error("Too many attempts", rateLimitDescription);
+        return;
+      }
 
       if (isAuthClientError(error) && error.status === 401) {
         setErrors({
@@ -73,13 +89,13 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="motion-safe:animate-auth-card-enter motion-reduce:animate-none">
+    <Card className="motion-safe:animate-auth-card-enter">
       <CardHeader className="text-center">
         <CardTitle className="text-xl">Welcome back</CardTitle>
         <CardDescription>Enter your credentials to continue</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form onFormSubmit={handleSubmit} errors={errors}>
+        <Form onSubmit={handleSubmit} errors={errors}>
           <Field name="email">
             <FieldLabel>Email</FieldLabel>
             <Input
@@ -111,7 +127,11 @@ export default function LoginForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-foreground underline-offset-4 hover:underline">
+            <Link
+              href="/signup"
+              prefetch
+              className="text-foreground underline-offset-4 hover:underline"
+            >
               Sign up
             </Link>
           </p>
