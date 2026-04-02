@@ -71,6 +71,26 @@ describe("rate limits: checkIn", () => {
 });
 
 describe("rate limits: orgWrite", () => {
+  it("limits member creation", async () => {
+    const t = convexTest(schema);
+    const { asUser, orgId } = await seedAuthedOrg(t);
+    const drainMeetingId = await seedMeeting(t, {
+      organizationId: orgId,
+      name: "Drain Meeting",
+      isActive: false,
+    });
+
+    await drainOrgWriteBudget((args) => asUser.mutation(api.meetings.update, args), drainMeetingId);
+
+    await expectRateLimited(
+      asUser.mutation(api.members.create, {
+        name: "Rate Limited Member",
+        identifier: "RATE-LIMIT-MEMBER",
+      }),
+      "orgWrite",
+    );
+  });
+
   it("limits member archive", async () => {
     const t = convexTest(schema);
     const { asUser, orgId } = await seedAuthedOrg(t);
@@ -127,6 +147,28 @@ describe("rate limits: orgWrite", () => {
     );
   });
 
+  it("limits meeting creation", async () => {
+    const t = convexTest(schema);
+    const { asUser, orgId } = await seedAuthedOrg(t);
+    const drainMeetingId = await seedMeeting(t, {
+      organizationId: orgId,
+      name: "Drain Meeting",
+      isActive: false,
+    });
+    const now = Date.now();
+
+    await drainOrgWriteBudget((args) => asUser.mutation(api.meetings.update, args), drainMeetingId);
+
+    await expectRateLimited(
+      asUser.mutation(api.meetings.create, {
+        name: "Rate Limited Meeting",
+        startTime: now,
+        endTime: now + 60 * 60_000,
+      }),
+      "orgWrite",
+    );
+  });
+
   it("limits meeting deactivation", async () => {
     const t = convexTest(schema);
     const { asUser, orgId } = await seedAuthedOrg(t);
@@ -173,5 +215,32 @@ describe("rate limits: orgWrite", () => {
     await drainOrgWriteBudget((args) => asUser.mutation(api.meetings.update, args), drainMeetingId);
 
     await expectRateLimited(asUser.mutation(api.attendance.removeRecord, { recordId }), "orgWrite");
+  });
+
+  it("limits manual attendance upserts", async () => {
+    const t = convexTest(schema);
+    const { asUser, orgId } = await seedAuthedOrg(t);
+    const drainMeetingId = await seedMeeting(t, {
+      organizationId: orgId,
+      name: "Drain Meeting",
+      isActive: false,
+    });
+    const targetMeetingId = await seedMeeting(t, {
+      organizationId: orgId,
+      name: "Target Meeting",
+      checkInCode: "TARGET-MANUAL",
+    });
+    const memberId = await seedMember(t, { organizationId: orgId });
+
+    await drainOrgWriteBudget((args) => asUser.mutation(api.meetings.update, args), drainMeetingId);
+
+    await expectRateLimited(
+      asUser.mutation(api.attendance.markManual, {
+        meetingId: targetMeetingId,
+        memberId,
+        status: "present",
+      }),
+      "orgWrite",
+    );
   });
 });

@@ -4,6 +4,13 @@ import { authedMutation, authedQuery } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
 import { normalizeMemberIdentifier, normalizeMemberName } from "./lib/validation";
 
+/**
+ * Member roster management for an authenticated organization.
+ *
+ * @remarks
+ * Members are soft-archived instead of deleted so historical attendance records
+ * can continue pointing at the same roster entry.
+ */
 const memberErrorMessages = {
   member_not_found: "Member not found",
 } as const;
@@ -25,6 +32,9 @@ function memberError(code: MemberErrorCode, identifier?: string) {
   return { ok: false, code, message: memberErrorMessages[code] } as const;
 }
 
+/**
+ * Returns the active and archived roster for the caller's organization.
+ */
 export const listRoster = authedQuery({
   args: {},
   handler: async (ctx) => {
@@ -50,6 +60,14 @@ export const listRoster = authedQuery({
   },
 });
 
+/**
+ * Creates a new active member in the caller's organization.
+ *
+ * @remarks
+ * Member identifiers are normalized and enforced as organization-local unique
+ * keys because public self check-in resolves a member by identifier inside the
+ * meeting's tenant.
+ */
 export const create = authedMutation({
   args: {
     name: v.string(),
@@ -87,6 +105,10 @@ export const create = authedMutation({
   },
 });
 
+/**
+ * Updates a roster entry while preserving identifier uniqueness per
+ * organization.
+ */
 export const update = authedMutation({
   args: {
     memberId: v.id("members"),
@@ -134,7 +156,9 @@ export const update = authedMutation({
   },
 });
 
-/** Soft delete. Historical attendance records are preserved. */
+/**
+ * Archives a member without deleting historical attendance.
+ */
 export const archive = authedMutation({
   args: { memberId: v.id("members") },
   handler: async (ctx, { memberId }): Promise<MemberMutationResult> => {
@@ -154,6 +178,9 @@ export const archive = authedMutation({
   },
 });
 
+/**
+ * Restores a previously archived member to the active roster.
+ */
 export const restore = authedMutation({
   args: { memberId: v.id("members") },
   handler: async (ctx, { memberId }): Promise<MemberMutationResult> => {

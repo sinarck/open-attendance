@@ -9,6 +9,14 @@ import {
   normalizeMeetingTags,
 } from "./lib/validation";
 
+/**
+ * Meeting mutations and queries for authenticated organization admins.
+ *
+ * @remarks
+ * Meetings own the public self check-in lifecycle. Creating or updating a
+ * meeting configures the future check-in rules, while activation controls when
+ * the public endpoint in `convex/attendance.ts` will accept records.
+ */
 const geofenceValidator = v.object({
   latitude: v.number(),
   longitude: v.number(),
@@ -31,7 +39,14 @@ function meetingError(code: MeetingErrorCode) {
   return { ok: false, code, message: meetingErrorMessages[code] } as const;
 }
 
-/** Validates startTime < lateAfter <= endTime. */
+/**
+ * Validates `startTime < lateAfter <= endTime`.
+ *
+ * @remarks
+ * `lateAfter` defaults to `endTime`, which means "no late window" rather than
+ * "late immediately". This helper keeps that rule consistent across create and
+ * update mutations.
+ */
 function assertValidTimeWindow(startTime: number, endTime: number, lateAfter: number) {
   if (isBefore(endTime, startTime) || isEqual(endTime, startTime)) {
     return meetingError("end_time_not_after_start_time");
@@ -53,6 +68,9 @@ function assertValidGeofence(
   return null;
 }
 
+/**
+ * Lists meetings for the caller's organization in reverse chronological order.
+ */
 export const list = authedQuery({
   args: {},
   handler: async (ctx) => {
@@ -64,7 +82,13 @@ export const list = authedQuery({
   },
 });
 
-/** lateAfter defaults to endTime (no one marked late). */
+/**
+ * Creates a meeting owned by the caller's organization.
+ *
+ * @remarks
+ * New meetings start inactive. Opening check-in is a separate explicit action
+ * so drafting or editing a meeting never accidentally exposes a live code.
+ */
 export const create = authedMutation({
   args: {
     name: v.string(),
@@ -118,7 +142,15 @@ export const create = authedMutation({
   },
 });
 
-/** Cannot change checkInCode or organizationId. */
+/**
+ * Updates mutable meeting fields without changing tenant ownership or the
+ * existing check-in code.
+ *
+ * @remarks
+ * `checkInCode` and `organizationId` stay stable here on purpose. Code rotation
+ * happens only through `activate({ regenerateCode: true })`, which keeps the
+ * operational meaning of "open check-in" and "change the code" in one place.
+ */
 export const update = authedMutation({
   args: {
     meetingId: v.id("meetings"),
@@ -188,7 +220,9 @@ export const update = authedMutation({
   },
 });
 
-/** Optionally regenerates the check-in code when opening check-ins. */
+/**
+ * Opens check-in for a meeting, optionally rotating the public check-in code.
+ */
 export const activate = authedMutation({
   args: {
     meetingId: v.id("meetings"),
@@ -219,6 +253,9 @@ export const activate = authedMutation({
   },
 });
 
+/**
+ * Closes check-in for a meeting without changing any other meeting data.
+ */
 export const deactivate = authedMutation({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, { meetingId }): Promise<MeetingMutationResult> => {
@@ -238,7 +275,14 @@ export const deactivate = authedMutation({
   },
 });
 
-/** Permanently deletes a meeting and all its attendance records. */
+/**
+ * Permanently deletes a meeting and its attendance records.
+ *
+ * @remarks
+ * Attendance records are removed manually first so we do not leave orphaned
+ * rows behind. This is one of the few places where the relationship is cleaned
+ * up explicitly instead of relying on a database-level cascade.
+ */
 export const remove = authedMutation({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, { meetingId }): Promise<MeetingMutationResult> => {

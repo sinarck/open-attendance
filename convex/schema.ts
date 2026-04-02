@@ -17,7 +17,7 @@ export const attendanceMethod = v.union(v.literal("self"), v.literal("manual"));
 export default defineSchema({
   ...rateLimitTables,
 
-  // One org per authenticated user, created during the initial organization setup flow.
+  // One org per authenticated user, created during sign-up.
   // This is the tenant boundary; all other tables reference organizationId for isolation.
   organizations: defineTable({
     authId: v.string(), // Better Auth user._id

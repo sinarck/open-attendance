@@ -1,7 +1,15 @@
 import { defineRateLimits } from "convex-helpers/server/rateLimit";
 import { millisecondsInMinute } from "date-fns/constants";
 
-export const { rateLimit, checkRateLimit, resetRateLimit } = defineRateLimits({
+/**
+ * Application-level rate limits enforced inside Convex mutations.
+ *
+ * @remarks
+ * These are intentionally small, transaction-local controls. They protect the
+ * app from routine abuse and accidental bursts, but they are not a substitute
+ * for network-layer protection or stronger anonymous-user authorization.
+ */
+export const { rateLimit } = defineRateLimits({
   // Public self check-in, keyed by meeting ID after the code has been resolved.
   checkIn: {
     kind: "token bucket",

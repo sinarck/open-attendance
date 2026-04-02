@@ -11,6 +11,7 @@ import {
   normalizeMemberIdentifier,
 } from "./lib/validation";
 import { attendanceStatus } from "./schema";
+
 const attendanceCheckInErrorMessages = {
   invalid_check_in_code: "Invalid check-in code",
   check_in_closed: "Check-ins are closed for this meeting",
@@ -47,7 +48,18 @@ function attendanceMutationError(code: AttendanceMutationErrorCode) {
   return { ok: false, code, message: attendanceMutationErrorMessages[code] } as const;
 }
 
-/** Public check-in (unauthenticated, called by members scanning QR codes). */
+/**
+ * Public self check-in endpoint used by members scanning a meeting QR code.
+ *
+ * @remarks
+ * This mutation is intentionally unauthenticated. The meeting code identifies
+ * the meeting, the member identifier selects the roster entry, and optional
+ * geofence/device checks add friction before we create an attendance record.
+ *
+ * That keeps the flow fast for in-person check-in, but it also means this
+ * endpoint is less trustworthy than authenticated admin mutations. The security
+ * TODOs below are deliberate reminders of the remaining anonymous-abuse gaps.
+ */
 export const checkIn = mutation({
   args: {
     code: v.string(),
@@ -69,8 +81,15 @@ export const checkIn = mutation({
       .withIndex("by_checkInCode", (q) => q.eq("checkInCode", code))
       .unique();
 
+    // TODO(security): Add a pre-resolution anonymous abuse limiter so invalid
+    // codes cannot be brute-forced without ever touching the meeting-scoped
+    // rate limit below.
     if (!meeting) return attendanceCheckInError("invalid_check_in_code");
 
+    // TODO(security): Meeting-scoped throttling protects throughput, but it does
+    // not identify anonymous users. Harden this flow with an anonymous session,
+    // IP/captcha authorization, or similar before relying on it as the primary
+    // abuse control for public self check-in.
     await rateLimit(ctx, {
       name: "checkIn",
       key: `${meeting._id}`,
@@ -120,7 +139,8 @@ export const checkIn = mutation({
 
     if (existingRecord) return attendanceCheckInError("already_checked_in");
 
-    // When lateAfter === endTime (the default), nobody can be late.
+    // When `lateAfter === endTime` (the default), the whole check-in window is
+    // considered on time and nobody can be marked late.
     const status: Doc<"attendanceRecords">["status"] = isAfter(now, meeting.lateAfter)
       ? "late"
       : "present";
@@ -167,6 +187,9 @@ export const checkIn = mutation({
   },
 });
 
+/**
+ * Lists attendance records for one meeting inside the caller's organization.
+ */
 export const listByMeeting = authedQuery({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, { meetingId }) => {
@@ -182,6 +205,9 @@ export const listByMeeting = authedQuery({
   },
 });
 
+/**
+ * Lists attendance records for one member inside the caller's organization.
+ */
 export const listByMember = authedQuery({
   args: { memberId: v.id("members") },
   handler: async (ctx, { memberId }) => {
@@ -197,7 +223,14 @@ export const listByMember = authedQuery({
   },
 });
 
-/** Manually record or update attendance (admin upsert). */
+/**
+ * Upserts a manual attendance record for an admin-managed correction.
+ *
+ * @remarks
+ * Manual attendance is modeled as an upsert so admins can record a missing
+ * check-in or override a previous manual correction without creating duplicate
+ * rows for the same member/meeting pair.
+ */
 export const markManual = authedMutation({
   args: {
     meetingId: v.id("meetings"),
@@ -249,6 +282,9 @@ export const markManual = authedMutation({
   },
 });
 
+/**
+ * Deletes a single attendance record inside the caller's organization.
+ */
 export const removeRecord = authedMutation({
   args: { recordId: v.id("attendanceRecords") },
   handler: async (ctx, { recordId }): Promise<AttendanceMutationResult> => {
@@ -266,7 +302,14 @@ export const removeRecord = authedMutation({
   },
 });
 
-/** Summary stats for a meeting: present, late, excused, absent, total roster. */
+/**
+ * Returns summary counts for one meeting.
+ *
+ * @remarks
+ * `absent` is derived from the current active roster, not stored directly.
+ * Archived members are excluded so historical roster cleanup does not inflate
+ * absence counts.
+ */
 export const meetingSummary = authedQuery({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, { meetingId }) => {
@@ -302,7 +345,9 @@ export const meetingSummary = authedQuery({
   },
 });
 
-/** Attendance rate for a single member across all meetings. */
+/**
+ * Returns the attendance rate for one member across the organization's meetings.
+ */
 export const memberStats = authedQuery({
   args: { memberId: v.id("members") },
   handler: async (ctx, { memberId }) => {
