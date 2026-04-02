@@ -1,9 +1,18 @@
+import { requireOrganizationToken } from "@/lib/auth/guards";
 import { preloadAuthQuery } from "@/lib/auth/server";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { api } from "../../../../convex/_generated/api";
 import { ReportsLive } from "./reports-live";
 
 export default async function ReportsPage() {
-  const preloadedOverview = await preloadAuthQuery(api.reports.overview);
+  const [{ token }, preloadedOverview] = await Promise.all([
+    requireOrganizationToken(),
+    preloadAuthQuery(api.reports.overview),
+  ]);
 
-  return <ReportsLive preloadedOverview={preloadedOverview} />;
+  return (
+    <ConvexClientProvider initialToken={token}>
+      <ReportsLive preloadedOverview={preloadedOverview} />
+    </ConvexClientProvider>
+  );
 }

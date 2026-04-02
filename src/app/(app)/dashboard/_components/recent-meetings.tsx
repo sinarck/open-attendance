@@ -37,17 +37,17 @@ export function RecentMeetings({ meetings, timeZone }: RecentMeetingsProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {meetings.map((meeting) => (
         <div
           key={meeting._id}
-          className="group rounded-xl border border-border/60 p-4 transition-colors hover:border-border"
+          className="rounded-xl border border-border/60 bg-card p-4 transition-colors hover:border-border"
         >
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{meeting.name}</p>
-              <div className="ui-meta-compact mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock3 className="size-3" />
                   {formatInTimeZone(meeting.startTime, "MMM d, h:mm a", timeZone)}
@@ -64,20 +64,20 @@ export function RecentMeetings({ meetings, timeZone }: RecentMeetingsProps) {
           </div>
 
           {/* Progress */}
-          <Progress className="mt-4 gap-1.5" value={meeting.attendanceRate}>
+          <Progress className="mt-3 gap-1" value={meeting.attendanceRate}>
             <div className="flex items-baseline justify-between">
-              <span className="ui-meta-compact">Coverage</span>
-              <span className="font-mono text-sm font-semibold tabular-nums">
+              <span className="text-[11px] text-muted-foreground">Coverage</span>
+              <span className="font-mono text-xs font-semibold tabular-nums">
                 {meeting.attendanceRate}%
               </span>
             </div>
-            <ProgressTrack className="h-1.5 rounded-full">
+            <ProgressTrack className="h-1 rounded-full">
               <ProgressIndicator className="rounded-full bg-chart-2" />
             </ProgressTrack>
           </Progress>
 
           {/* Badges */}
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-2.5 flex flex-wrap gap-1">
             <Badge variant="outline" size="sm">
               {meeting.recorded} in
             </Badge>

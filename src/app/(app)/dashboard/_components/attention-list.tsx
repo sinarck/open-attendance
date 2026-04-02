@@ -48,11 +48,11 @@ export function AttentionList({ summary }: AttentionListProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {summary.membersNeedingAttention.map((member) => (
         <div
           key={member._id}
-          className="group rounded-xl border border-border/60 p-4 transition-colors hover:border-border"
+          className="rounded-xl border border-border/60 bg-card p-4 transition-colors hover:border-border"
         >
           <div className="flex items-center gap-3">
             <UserAvatar name={member.name} size={32} />
@@ -64,8 +64,8 @@ export function AttentionList({ summary }: AttentionListProps) {
               {member.attendanceRate}%
             </Badge>
           </div>
-          <Progress className="mt-3.5 gap-1.5" value={member.attendanceRate}>
-            <ProgressTrack className="h-1.5 rounded-full">
+          <Progress className="mt-3 gap-1" value={member.attendanceRate}>
+            <ProgressTrack className="h-1 rounded-full">
               <ProgressIndicator
                 className={
                   member.attendanceRate < 60
@@ -75,7 +75,7 @@ export function AttentionList({ summary }: AttentionListProps) {
               />
             </ProgressTrack>
           </Progress>
-          <div className="ui-meta-compact mt-3 flex flex-wrap gap-x-3 gap-y-1">
+          <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             <span>{member.attended} present</span>
             <span>{member.excused} excused</span>
             <span>{member.missed} missed</span>

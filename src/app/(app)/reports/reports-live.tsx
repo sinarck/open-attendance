@@ -29,7 +29,7 @@ export function ReportsLive({ preloadedOverview }: ReportsLiveProps) {
 
   if (overview.meetings.length === 0 && overview.members.length === 0) {
     return (
-      <div className="space-y-6 p-4 sm:p-6">
+      <main className="space-y-6 p-4 sm:p-6">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -41,12 +41,12 @@ export function ReportsLive({ preloadedOverview }: ReportsLiveProps) {
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <main className="space-y-6 p-4 sm:p-6">
       <div className="grid gap-3 sm:grid-cols-3">
         <ReportStatCard
           label="Total Members"
@@ -91,6 +91,6 @@ export function ReportsLive({ preloadedOverview }: ReportsLiveProps) {
           />
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }

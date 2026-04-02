@@ -31,7 +31,7 @@ export function MembersLive({ preloadedRoster, timeZone }: MembersLiveProps) {
 
   if (roster.active.length === 0 && roster.archived.length === 0) {
     return (
-      <div className="space-y-6 p-4 sm:p-6">
+      <main className="space-y-6 p-4 sm:p-6">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -41,15 +41,15 @@ export function MembersLive({ preloadedRoster, timeZone }: MembersLiveProps) {
             <EmptyDescription>Add your first member to begin tracking attendance.</EmptyDescription>
           </EmptyHeader>
         </Empty>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <main className="space-y-6 p-4 sm:p-6">
       <section>
         <div className="mb-2 flex items-center gap-2">
-          <h2 className="ui-eyebrow text-muted-foreground">Active</h2>
+          <h2 className="text-xs font-medium text-muted-foreground">Active</h2>
           <Badge size="sm" variant="outline">
             {roster.active.length}
           </Badge>
@@ -64,7 +64,7 @@ export function MembersLive({ preloadedRoster, timeZone }: MembersLiveProps) {
       {roster.archived.length > 0 && (
         <section>
           <div className="mb-2 flex items-center gap-2">
-            <h2 className="ui-eyebrow text-muted-foreground">Archived</h2>
+            <h2 className="text-xs font-medium text-muted-foreground">Archived</h2>
             <Badge size="sm" variant="secondary">
               {roster.archived.length}
             </Badge>
@@ -78,6 +78,6 @@ export function MembersLive({ preloadedRoster, timeZone }: MembersLiveProps) {
           />
         </section>
       )}
-    </div>
+    </main>
   );
 }

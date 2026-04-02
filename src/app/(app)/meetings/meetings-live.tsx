@@ -31,7 +31,7 @@ export function MeetingsLive({ preloadedMeetings }: MeetingsLiveProps) {
 
   if (meetings.length === 0) {
     return (
-      <div className="space-y-6 p-4 sm:p-6">
+      <main className="space-y-6 p-4 sm:p-6">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -43,16 +43,16 @@ export function MeetingsLive({ preloadedMeetings }: MeetingsLiveProps) {
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <main className="space-y-6 p-4 sm:p-6">
       {activeMeetings.length > 0 && (
         <section>
           <div className="mb-2 flex items-center gap-2">
-            <h2 className="ui-eyebrow text-muted-foreground">Active</h2>
+            <h2 className="text-xs font-medium text-muted-foreground">Active</h2>
             <Badge size="sm" variant="outline">
               {activeMeetings.length}
             </Badge>
@@ -67,7 +67,7 @@ export function MeetingsLive({ preloadedMeetings }: MeetingsLiveProps) {
       )}
       <section>
         <div className="mb-2 flex items-center gap-2">
-          <h2 className="ui-eyebrow text-muted-foreground">Completed</h2>
+          <h2 className="text-xs font-medium text-muted-foreground">Completed</h2>
           <Badge size="sm" variant="secondary">
             {closedMeetings.length}
           </Badge>
@@ -79,6 +79,6 @@ export function MeetingsLive({ preloadedMeetings }: MeetingsLiveProps) {
           emptyDescription="Closed meetings will appear here once attendance has been taken."
         />
       </section>
-    </div>
+    </main>
   );
 }

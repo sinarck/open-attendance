@@ -22,21 +22,16 @@ export function LiveStatus({ summary, timeZone }: LiveStatusProps) {
 
   if (liveMeeting) {
     return (
-      <section className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.06] via-transparent to-transparent p-6 sm:p-7">
-        {/* Decorative corner glow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-emerald-500/8 blur-3xl"
-        />
-        <div className="relative space-y-6">
+      <section className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.03] p-5 sm:p-6">
+        <div className="space-y-5">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400">
-                <Radio className="size-4 animate-pulse" />
-                <span className="ui-eyebrow">Live session</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                <Radio className="size-3.5 animate-pulse" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Live</span>
               </div>
-              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
                 {liveMeeting.name}
               </h2>
             </div>
@@ -46,48 +41,56 @@ export function LiveStatus({ summary, timeZone }: LiveStatusProps) {
           </div>
 
           {/* Meta row */}
-          <div className="ui-meta flex flex-wrap gap-x-5 gap-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <Clock3 className="size-3.5" />
+              <Clock3 className="size-3" />
               {formatInTimeZone(liveMeeting.startTime, "h:mm a", timeZone)} &ndash;{" "}
               {formatInTimeZone(liveMeeting.endTime, "h:mm a", timeZone)}
             </span>
             <span className="flex items-center gap-1.5">
-              <MapPin className="size-3.5" />
+              <MapPin className="size-3" />
               {liveMeeting.location ?? "No location"}
             </span>
             {liveMeeting.geofenceEnabled ? (
               <span className="flex items-center gap-1.5 text-info-foreground">
-                <ShieldCheck className="size-3.5" />
+                <ShieldCheck className="size-3" />
                 Geofence
               </span>
             ) : null}
             {liveMeeting.fingerprintEnabled ? (
               <span className="flex items-center gap-1.5 text-warning-foreground">
-                <Fingerprint className="size-3.5" />
-                Device&nbsp;lock
+                <Fingerprint className="size-3" />
+                Device lock
               </span>
             ) : null}
           </div>
 
           {/* Progress bar */}
-          <Progress className="gap-2.5" value={liveMeeting.attendanceRate}>
+          <Progress className="gap-2" value={liveMeeting.attendanceRate}>
             <div className="flex items-baseline justify-between">
-              <span className="text-sm font-medium text-foreground">Roster coverage</span>
-              <span className="font-mono text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+              <span className="text-xs font-medium text-foreground">Roster coverage</span>
+              <span className="font-mono text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                 {liveMeeting.attendanceRate}%
               </span>
             </div>
-            <ProgressTrack className="h-2.5 rounded-full bg-emerald-500/10">
+            <ProgressTrack className="h-2 rounded-full bg-emerald-500/10">
               <ProgressIndicator className="rounded-full bg-emerald-500" />
             </ProgressTrack>
           </Progress>
 
           {/* Counts */}
-          <div className="flex gap-2">
-            <Badge variant="outline">{liveMeeting.recorded} checked&nbsp;in</Badge>
-            <Badge variant="outline">{liveMeeting.absent} absent</Badge>
-            {liveMeeting.late > 0 ? <Badge variant="warning">{liveMeeting.late} late</Badge> : null}
+          <div className="flex gap-1.5">
+            <Badge variant="outline" size="sm">
+              {liveMeeting.recorded} checked in
+            </Badge>
+            <Badge variant="outline" size="sm">
+              {liveMeeting.absent} absent
+            </Badge>
+            {liveMeeting.late > 0 ? (
+              <Badge variant="warning" size="sm">
+                {liveMeeting.late} late
+              </Badge>
+            ) : null}
           </div>
         </div>
       </section>
@@ -96,29 +99,29 @@ export function LiveStatus({ summary, timeZone }: LiveStatusProps) {
 
   if (upcomingMeeting) {
     return (
-      <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-chart-2/8 via-transparent to-transparent p-6 sm:p-7">
-        <div className="space-y-4">
-          <div className="ui-eyebrow flex items-center gap-2 text-muted-foreground">
+      <section className="rounded-xl border border-border/60 bg-card p-5 sm:p-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Sparkles className="size-3.5" />
-            Up next
+            <span className="text-xs font-semibold uppercase tracking-wider">Up next</span>
           </div>
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
             {upcomingMeeting.name}
           </h2>
-          <div className="ui-meta flex flex-wrap gap-x-5 gap-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <Calendar className="size-3.5" />
+              <Calendar className="size-3" />
               {formatInTimeZone(upcomingMeeting.startTime, "EEE, MMM d", timeZone)}
             </span>
             <span className="flex items-center gap-1.5">
-              <Clock3 className="size-3.5" />
+              <Clock3 className="size-3" />
               Starts{" "}
               {formatDistanceToNowStrict(upcomingMeeting.startTime, {
                 addSuffix: true,
               })}
             </span>
             <span className="flex items-center gap-1.5">
-              <MapPin className="size-3.5" />
+              <MapPin className="size-3" />
               {upcomingMeeting.location ?? "No location"}
             </span>
           </div>
@@ -128,7 +131,7 @@ export function LiveStatus({ summary, timeZone }: LiveStatusProps) {
   }
 
   return (
-    <Empty className="rounded-2xl border border-border/60 p-8 md:p-10">
+    <Empty className="rounded-xl border border-border/60 p-8 md:p-10">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <Calendar />
