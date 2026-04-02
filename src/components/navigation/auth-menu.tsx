@@ -43,7 +43,6 @@ export function AuthMenu() {
     void signOut({
       fetchOptions: {
         onSuccess: () => {
-          posthog.reset();
           router.push("/");
         },
       },

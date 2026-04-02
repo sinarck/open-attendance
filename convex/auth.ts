@@ -13,6 +13,7 @@ import {
   normalizeOrganizationSlug,
   normalizeOrganizationTimezone,
 } from "./lib/validation";
+import { getTrustedAppOrigins } from "../src/lib/deployment";
 
 /**
  * Better Auth runs on Convex and is the only supported source of truth for
@@ -29,29 +30,13 @@ import {
  *   Convex RLS. A session without an organization is treated as invariant drift,
  *   not a recoverable UX state.
  *
- * Trusted frontend origins are derived from exact environment-provided hosts
- * instead of hard-coded domains or blanket wildcards. That keeps Better Auth's
- * origin checks aligned with local development, the stable production host, the
- * stable branch-preview host, and the current preview deployment.
+ * Trusted frontend origins are derived from exact environment-provided hosts.
+ * Better Auth then resolves the runtime origin from the current request via
+ * trusted proxy headers, so auth follows the active deployment instead of a
+ * static fallback chain.
  */
 const authFunctions: AuthFunctions = internal.auth as AuthFunctions;
-const vercelOrigins = [
-  process.env.VERCEL_PROJECT_PRODUCTION_URL,
-  process.env.VERCEL_BRANCH_URL,
-  process.env.VERCEL_URL,
-]
-  .filter((host): host is string => Boolean(host))
-  .map((host) => `https://${host}`);
-
-const appBaseUrl =
-  process.env.BETTER_AUTH_URL ??
-  (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ??
-  (process.env.VERCEL_BRANCH_URL && `https://${process.env.VERCEL_BRANCH_URL}`) ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL &&
-    `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ??
-  "http://localhost:3000";
-
-const trustedOrigins = [appBaseUrl, ...vercelOrigins];
+const trustedOrigins = getTrustedAppOrigins();
 
 type SignupOrganization = {
   name: string;
@@ -121,32 +106,9 @@ export const authComponent = createClient<DataModel>(components.betterAuth as ne
           .unique();
 
         if (!org) return;
-
-        const records = await ctx.db
-          .query("attendanceRecords")
-          .withIndex("by_org_meeting", (q) => q.eq("organizationId", org._id))
-          .collect();
-        for (const record of records) {
-          await ctx.db.delete("attendanceRecords", record._id);
-        }
-
-        const members = await ctx.db
-          .query("members")
-          .withIndex("by_org", (q) => q.eq("organizationId", org._id))
-          .collect();
-        for (const member of members) {
-          await ctx.db.delete("members", member._id);
-        }
-
-        const meetings = await ctx.db
-          .query("meetings")
-          .withIndex("by_org", (q) => q.eq("organizationId", org._id))
-          .collect();
-        for (const meeting of meetings) {
-          await ctx.db.delete("meetings", meeting._id);
-        }
-
-        await ctx.db.delete("organizations", org._id);
+        await ctx.scheduler.runAfter(0, internal.organizations.cleanupDeletedAuthOrganization, {
+          organizationId: org._id,
+        });
       },
     },
   },
@@ -174,9 +136,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     appName: "Open Attendance",
     secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: appBaseUrl,
     trustedOrigins,
     advanced: {
+      trustedProxyHeaders: true,
       ipAddress: {
         ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
       },

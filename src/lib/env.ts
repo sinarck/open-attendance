@@ -1,6 +1,7 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { vercel } from "@t3-oss/env-nextjs/presets-zod";
 import { z } from "zod";
+import { getCanonicalAppUrl, getCurrentAppUrl as getCurrentDeploymentAppUrl } from "./deployment";
 
 /**
  * Runtime environment validation and URL normalization.
@@ -24,8 +25,6 @@ const origin = (label: string, httpsOnly = false, hostnameSuffix?: string) =>
       return url.pathname === "/" && !url.search && !url.hash && !url.username && !url.password;
     }, `${label} must be an origin only, without a path, query, hash, or credentials`);
 
-const localhostUrl = "http://localhost:3000";
-const toAppUrl = (host?: string) => (host ? `https://${host}` : localhostUrl);
 const toConvexSiteUrl = (convexUrl: string) => {
   const url = new URL(convexUrl);
   url.hostname = url.hostname.replace(/\.convex\.cloud$/, ".convex.site");
@@ -75,7 +74,7 @@ export const env = createEnv({
  * Only call this from server code. Client bundles must not import helpers that
  * reach for Vercel's server-side deployment variables.
  */
-export const getCanonicalUrl = () => toAppUrl(env.VERCEL_PROJECT_PRODUCTION_URL ?? env.VERCEL_URL);
+export const getCanonicalUrl = () => getCanonicalAppUrl();
 
 /**
  * Returns the public app origin that best matches the current deployment.
@@ -85,13 +84,7 @@ export const getCanonicalUrl = () => toAppUrl(env.VERCEL_PROJECT_PRODUCTION_URL 
  * then fall back to the current deployment URL. Production keeps using the
  * canonical production host instead of a generated deployment URL.
  */
-export const getCurrentAppUrl = () => {
-  if (process.env.VERCEL_ENV === "production") {
-    return getCanonicalUrl();
-  }
-
-  return toAppUrl(env.VERCEL_BRANCH_URL ?? env.VERCEL_URL ?? env.VERCEL_PROJECT_PRODUCTION_URL);
-};
+export const getCurrentAppUrl = () => getCurrentDeploymentAppUrl();
 
 /**
  * Returns the Better Auth/Convex site origin used for server-side auth calls.

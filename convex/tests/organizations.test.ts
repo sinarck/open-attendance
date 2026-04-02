@@ -1,8 +1,26 @@
 import { describe, expect, it } from "vite-plus/test";
 import { api } from "../_generated/api";
 import { seedAuthedUser, seedMeeting, seedMember, seedOrg, seedRecord } from "../lib/seed";
-import { createOrganizationForAuthUser } from "../organizations";
+import {
+  cleanupDeletedAuthOrganizationBatch,
+  createOrganizationForAuthUser,
+} from "../organizations";
 import { convexTest, schema } from "./harness";
+
+async function runCleanupToCompletion(
+  t: ReturnType<typeof convexTest>,
+  organizationId: Awaited<ReturnType<typeof seedOrg>>,
+) {
+  for (let iteration = 0; iteration < 20; iteration += 1) {
+    const status = await t.run((ctx) => cleanupDeletedAuthOrganizationBatch(ctx, organizationId));
+
+    if (status === "done") {
+      return;
+    }
+  }
+
+  throw new Error("Expected organization cleanup to finish");
+}
 
 describe("organizations:getCurrent (authId lookup)", () => {
   it("finds an org by authId", async () => {
@@ -171,45 +189,26 @@ describe("organizations:isSlugAvailable", () => {
   });
 });
 
-describe("organizations:cascade delete (user.onDelete trigger)", () => {
-  it("deletes all org data when org is deleted", async () => {
+describe("organizations:cascade delete", () => {
+  it("deletes all org data in bounded batches", async () => {
     const t = convexTest(schema);
-    const orgId = await seedOrg(t, { authId: "user_del" });
-    const m1 = await seedMember(t, { organizationId: orgId, identifier: "A" });
-    const m2 = await seedMember(t, { organizationId: orgId, identifier: "B" });
+    const { userId } = await seedAuthedUser(t, { email: "cleanup@example.com" });
+    const orgId = await seedOrg(t, { authId: userId, slug: "cleanup-org" });
     const mtg = await seedMeeting(t, { organizationId: orgId });
-    await seedRecord(t, {
-      organizationId: orgId,
-      meetingId: mtg,
-      memberId: m1,
-    });
-    await seedRecord(t, {
-      organizationId: orgId,
-      meetingId: mtg,
-      memberId: m2,
-    });
+    for (let index = 0; index < 70; index += 1) {
+      const memberId = await seedMember(t, {
+        organizationId: orgId,
+        identifier: `ID-${index}`,
+        name: `Member ${index}`,
+      });
+      await seedRecord(t, {
+        organizationId: orgId,
+        meetingId: mtg,
+        memberId,
+      });
+    }
 
-    await t.run(async (ctx) => {
-      const records = await ctx.db
-        .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgId))
-        .collect();
-      for (const r of records) await ctx.db.delete(r._id);
-
-      const members = await ctx.db
-        .query("members")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
-        .collect();
-      for (const m of members) await ctx.db.delete(m._id);
-
-      const meetings = await ctx.db
-        .query("meetings")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
-        .collect();
-      for (const mt of meetings) await ctx.db.delete(mt._id);
-
-      await ctx.db.delete(orgId);
-    });
+    await runCleanupToCompletion(t, orgId);
 
     const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org).toBeNull();
@@ -241,7 +240,8 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
 
   it("does not affect data from other orgs during cascade delete", async () => {
     const t = convexTest(schema);
-    const orgA = await seedOrg(t, { slug: "org-a" });
+    const { userId } = await seedAuthedUser(t, { email: "org-a@example.com" });
+    const orgA = await seedOrg(t, { authId: userId, slug: "org-a" });
     const orgB = await seedOrg(t, { slug: "org-b" });
 
     const memberA = await seedMember(t, {
@@ -271,24 +271,7 @@ describe("organizations:cascade delete (user.onDelete trigger)", () => {
       memberId: memberB,
     });
 
-    await t.run(async (ctx) => {
-      const records = await ctx.db
-        .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgA))
-        .collect();
-      for (const r of records) await ctx.db.delete(r._id);
-      const members = await ctx.db
-        .query("members")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgA))
-        .collect();
-      for (const m of members) await ctx.db.delete(m._id);
-      const meetings = await ctx.db
-        .query("meetings")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgA))
-        .collect();
-      for (const mt of meetings) await ctx.db.delete(mt._id);
-      await ctx.db.delete(orgA);
-    });
+    await runCleanupToCompletion(t, orgA);
 
     const bMembers = await t.run(async (ctx) =>
       ctx.db
@@ -321,42 +304,20 @@ describe("organizations:cascade delete (empty org)", () => {
     const t = convexTest(schema);
     const orgId = await seedOrg(t, { authId: "user_empty" });
 
-    await t.run(async (ctx) => {
-      const records = await ctx.db
-        .query("attendanceRecords")
-        .withIndex("by_org_meeting", (q) => q.eq("organizationId", orgId))
-        .collect();
-      expect(records).toHaveLength(0);
-
-      const members = await ctx.db
-        .query("members")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
-        .collect();
-      expect(members).toHaveLength(0);
-
-      const meetings = await ctx.db
-        .query("meetings")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
-        .collect();
-      expect(meetings).toHaveLength(0);
-
-      await ctx.db.delete(orgId);
-    });
+    await runCleanupToCompletion(t, orgId);
 
     const deleted = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(deleted).toBeNull();
   });
 
-  it("returns early when no org exists for the deleted user", async () => {
+  it("returns early when cleanup reruns after the org is already gone", async () => {
     const t = convexTest(schema);
+    const orgId = await seedOrg(t, { authId: "user_repeat", slug: "repeat-org" });
 
-    const org = await t.run(async (ctx) =>
-      ctx.db
-        .query("organizations")
-        .withIndex("by_authId", (q) => q.eq("authId", "nonexistent_user"))
-        .unique(),
-    );
+    await runCleanupToCompletion(t, orgId);
+    await runCleanupToCompletion(t, orgId);
 
+    const org = await t.run(async (ctx) => ctx.db.get(orgId));
     expect(org).toBeNull();
   });
 });

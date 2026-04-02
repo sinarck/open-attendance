@@ -9,8 +9,8 @@ import { useSession } from "@/lib/auth/client";
  *
  * @remarks
  * Better Auth is the only client-side source of truth for who is signed in. We
- * reset analytics identity immediately on sign-out so events cannot leak across
- * accounts in the same browser session.
+ * mount this once near the root so analytics identity does not depend on which
+ * route subtree happens to mount a Convex provider.
  */
 export function AuthObservability() {
   const { data: session } = useSession();
