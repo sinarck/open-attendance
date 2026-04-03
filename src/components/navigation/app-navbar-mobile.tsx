@@ -3,7 +3,6 @@
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity } from "react";
 import { useState } from "react";
 import { appNavigation, isAppNavigationActive } from "@/config/navigation";
 import { Button } from "@/components/ui/button";
@@ -16,18 +15,11 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
 export function AppNavbarMobile() {
   const pathname = usePathname();
-  const isMobile = useMediaQuery("max-md");
-
-  return (
-    <Activity mode={isMobile ? "visible" : "hidden"}>
-      <AppNavbarMobileDrawer pathname={pathname} />
-    </Activity>
-  );
+  return <AppNavbarMobileDrawer pathname={pathname} />;
 }
 
 interface AppNavbarMobileDrawerProps {
@@ -39,7 +31,11 @@ function AppNavbarMobileDrawer({ pathname }: AppNavbarMobileDrawerProps) {
 
   return (
     <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
-      <DrawerTrigger aria-label="Open menu" render={<Button size="icon-sm" variant="ghost" />}>
+      <DrawerTrigger
+        aria-label="Open menu"
+        className="md:hidden"
+        render={<Button size="icon-sm" variant="ghost" />}
+      >
         <Menu className="size-4" />
       </DrawerTrigger>
       <DrawerPopup
