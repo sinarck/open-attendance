@@ -1,7 +1,6 @@
 "use client";
 
 import { LogOut, SunMoon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import posthog from "posthog-js";
 import {
@@ -21,7 +20,6 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { signOut, useSession } from "@/lib/auth/client";
 
 export function AuthMenu() {
-  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { data: session, isPending } = useSession();
 
@@ -43,7 +41,13 @@ export function AuthMenu() {
     void signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/");
+          // Better Auth updates its client session store shortly after sign-out
+          // succeeds. A full document navigation avoids replaying stale
+          // authenticated UI during that handoff. This does step outside
+          // Next's client router, but the tradeoff is worth it here because it
+          // keeps logout behavior simple and eliminates the post-sign-out CTA
+          // flicker without extra optimistic state or provider machinery.
+          window.location.assign("/");
         },
       },
     });
