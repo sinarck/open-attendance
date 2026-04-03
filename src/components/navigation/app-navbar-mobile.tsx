@@ -3,51 +3,69 @@
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Activity } from "react";
 import { useState } from "react";
-import { APP_NAV, isAppNavActive } from "@/components/navigation/app-nav";
+import { appNavigation, isAppNavigationActive } from "@/config/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetPanel,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerPanel,
+  DrawerPopup,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
 export function AppNavbarMobile() {
   const pathname = usePathname();
+  const isMobile = useMediaQuery("max-md");
+
+  return (
+    <Activity mode={isMobile ? "visible" : "hidden"}>
+      <AppNavbarMobileDrawer pathname={pathname} />
+    </Activity>
+  );
+}
+
+interface AppNavbarMobileDrawerProps {
+  pathname: string;
+}
+
+function AppNavbarMobileDrawer({ pathname }: AppNavbarMobileDrawerProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-      <SheetTrigger
-        aria-label="Open menu"
-        className="md:hidden"
-        render={<Button size="icon-sm" variant="ghost" />}
-      >
+    <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
+      <DrawerTrigger aria-label="Open menu" render={<Button size="icon-sm" variant="ghost" />}>
         <Menu className="size-4" />
-      </SheetTrigger>
-      <SheetContent side="right" className="border-border/60 sm:max-w-xs">
-        <SheetHeader className="border-b border-border/60 pb-4">
-          <SheetTitle className="font-mono text-sm font-semibold tracking-tight">
+      </DrawerTrigger>
+      <DrawerPopup
+        className="max-h-[min(42rem,calc(100svh-2.5rem))] border-border/60"
+        showBar
+        variant="inset"
+      >
+        <DrawerHeader className="border-b border-border/60 pb-4">
+          <DrawerTitle className="font-mono text-sm font-semibold tracking-tight">
             open<span className="text-muted-foreground">/</span>attendance
-          </SheetTitle>
-          <SheetDescription className="sr-only">Navigation</SheetDescription>
-        </SheetHeader>
-        <SheetPanel>
-          <nav className="flex flex-col gap-0.5">
-            {APP_NAV.map(({ href, label, icon: Icon }) => {
-              const active = isAppNavActive(pathname, href);
+          </DrawerTitle>
+          <DrawerDescription className="text-xs">
+            Move between attendance, meetings, members, and reports.
+          </DrawerDescription>
+        </DrawerHeader>
+        <DrawerPanel className="pt-3">
+          <nav className="flex flex-col gap-1">
+            {appNavigation.map(({ href, label, icon: Icon }) => {
+              const active = isAppNavigationActive(pathname, href);
               return (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                     active
                       ? "bg-foreground/[0.06] text-foreground"
                       : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
@@ -59,8 +77,8 @@ export function AppNavbarMobile() {
               );
             })}
           </nav>
-        </SheetPanel>
-      </SheetContent>
-    </Sheet>
+        </DrawerPanel>
+      </DrawerPopup>
+    </Drawer>
   );
 }

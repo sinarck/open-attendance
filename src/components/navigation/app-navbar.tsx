@@ -8,7 +8,7 @@ export function AppNavbar() {
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <div className="flex h-12 items-center gap-4 px-4 sm:px-6">
         <Link
-          href="/dashboard"
+          href="/"
           className="shrink-0 font-mono text-sm font-semibold tracking-tight hover:opacity-80"
         >
           open<span className="text-muted-foreground">/</span>attendance
