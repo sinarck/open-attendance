@@ -72,5 +72,12 @@
       "react-grab",
       "sharp"
     ]
+  },
+  "reactDoctor": {
+    "ignore": {
+      "rules": [
+        "react-hooks-js/incompatible-library"
+      ]
+    }
   }
 }

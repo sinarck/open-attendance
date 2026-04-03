@@ -20,6 +20,13 @@ export function DataTable<TData, TValue>({
   emptyDescription,
   rowClassName,
 }: DataTableProps<TData, TValue>) {
+  // Tracking: React Compiler and React Doctor flag TanStack Table as a known
+  // incompatible library because the table instance mutates in place. We keep
+  // the library and suppress `react-hooks-js/incompatible-library` in the
+  // repo's React Doctor config until upstream guidance changes.
+  // See: https://github.com/facebook/react/issues/33057
+  // See: https://github.com/facebook/react/pull/34027
+  // See: https://github.com/TanStack/table/issues/5567
   const table = useReactTable({
     data,
     columns,

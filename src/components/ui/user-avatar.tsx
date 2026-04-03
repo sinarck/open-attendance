@@ -19,7 +19,7 @@ export function UserAvatar({ name, size = 32, className }: UserAvatarProps) {
         className,
       )}
     >
-      <Avatar name={name} size={size} variant="beam" colors={PALETTE} />
+      <Avatar name={name} size={size} variant="geometric" colors={PALETTE} />
     </span>
   );
 }
