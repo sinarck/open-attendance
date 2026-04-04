@@ -1,7 +1,8 @@
 import { Suspense } from "react";
+import { ClientAuthBoundary } from "@/lib/client-auth-boundary";
 import { requireOrganizationToken } from "@/lib/auth/guards";
-import { preloadAuthQuery } from "@/lib/auth/server";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { preloadAuthQuery } from "@/lib/auth-server";
+import { ConvexClientProvider } from "@/app/convex-client-provider";
 import { api } from "../../../../convex/_generated/api";
 import MeetingsLoading from "./loading";
 import { MeetingsLive } from "./meetings-live";
@@ -14,7 +15,9 @@ async function MeetingsPageContent() {
 
   return (
     <ConvexClientProvider initialToken={token}>
-      <MeetingsLive preloadedMeetings={preloadedMeetings} />
+      <ClientAuthBoundary>
+        <MeetingsLive preloadedMeetings={preloadedMeetings} />
+      </ClientAuthBoundary>
     </ConvexClientProvider>
   );
 }

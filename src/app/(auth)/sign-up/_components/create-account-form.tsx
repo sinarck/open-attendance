@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -12,7 +13,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useSlugAvailability } from "@/hooks/use-slug-availability";
-import { signUp } from "@/lib/auth/client";
+import { signUp } from "@/lib/auth-client";
 import { getRateLimitDescription, isRateLimitError } from "@/lib/auth/client-errors";
 import { getPreferredTimeZone, normalizeTimeZone } from "@/lib/date";
 import { slugify } from "@/lib/slug";
@@ -22,7 +23,7 @@ import { OrganizationSlugField } from "./organization-slug-field";
 import { normalizeSignUpError } from "./signup-errors";
 
 /**
- * Public account-creation form for `/signup`.
+ * Public account-creation form for `/sign-up`.
  *
  * @remarks
  * Organization provisioning is part of this same submit action. The extra
@@ -102,7 +103,7 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
       if (!error) {
         posthog.capture("user_signed_up", { method: "email" });
         toast.success("Account created!", "Your workspace is ready.");
-        router.replace("/dashboard");
+        router.replace("/dashboard" as Route);
         return;
       }
 
@@ -246,7 +247,7 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
-              href="/login"
+              href={"/sign-in" as Route}
               prefetch
               className="text-foreground underline-offset-4 hover:underline"
             >

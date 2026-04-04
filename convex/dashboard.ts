@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { authedQuery } from "./lib/auth";
 
@@ -31,6 +31,7 @@ interface DashboardRiskMember {
 }
 
 export interface DashboardSummary {
+  timezone: string;
   totalMembers: number;
   activeMembers: number;
   archivedMembers: number;
@@ -73,6 +74,14 @@ function getAttendanceRate(recorded: number, totalMembers: number) {
 export const summary = authedQuery({
   args: { now: v.number() },
   handler: async (ctx, { now }): Promise<DashboardSummary> => {
+    const organization = await ctx.db.get(ctx.organizationId);
+
+    if (!organization) {
+      throw new ConvexError(
+        "Authenticated user has no organization. This invariant should be impossible.",
+      );
+    }
+
     const [members, meetings, records] = await Promise.all([
       ctx.db
         .query("members")
@@ -187,6 +196,7 @@ export const summary = authedQuery({
       .slice(0, 5);
 
     return {
+      timezone: organization.timezone,
       totalMembers: members.length,
       activeMembers: activeMembers.length,
       archivedMembers: members.length - activeMembers.length,

@@ -1,4 +1,3 @@
-import { authClient } from "@/lib/auth/client";
 import { isAuthClientError } from "@/lib/auth/client-errors";
 
 export type SignUpError =
@@ -16,7 +15,7 @@ export function normalizeSignUpError(error: unknown): SignUpError {
     };
   }
 
-  if (error.error?.code === authClient.$ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL) {
+  if (error.error?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
     return {
       code: "email",
       field: "email",

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import posthog from "posthog-js";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ export function HomeCtaActions({ repoUrl }: HomeCtaActionsProps) {
   return (
     <>
       <Button
-        render={<Link href="/signup" prefetch />}
+        render={<Link href={"/sign-up" as Route} prefetch />}
         onClick={() => {
           posthog.capture("cta_start_tracking_clicked", {
             cta_text: "Start tracking",

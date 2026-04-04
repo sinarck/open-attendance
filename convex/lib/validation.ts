@@ -1,4 +1,5 @@
 import { tzOffset } from "@date-fns/tz";
+import { z } from "zod";
 
 const timeZoneReferenceDate = new Date(0);
 
@@ -6,33 +7,73 @@ function compact(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
-function required(value: string, message: string) {
-  const normalized = compact(value);
-  if (normalized === "") {
-    throw new Error(message);
-  }
-  return normalized;
+function requiredCompactString(message: string) {
+  return z
+    .string()
+    .transform(compact)
+    .refine((value) => value !== "", { message });
 }
 
+export const memberNameSchema = requiredCompactString("Name cannot be empty");
+export const memberIdentifierSchema = z
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => value !== "", {
+    message: "Identifier cannot be empty",
+  });
+export const meetingNameSchema = requiredCompactString("Meeting name cannot be empty");
+export const meetingOptionalTextSchema = z
+  .string()
+  .transform(compact)
+  .transform((value) => {
+    return value === "" ? undefined : value;
+  });
+export const meetingTagsSchema = z.array(z.string()).transform((values) => {
+  const tags = Array.from(new Set(values.map(compact).filter((value) => value !== "")));
+  return tags.length === 0 ? undefined : tags;
+});
+export const organizationNameSchema = requiredCompactString("Organization name cannot be empty");
+export const organizationTimezoneSchema = z
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => !Number.isNaN(tzOffset(value, timeZoneReferenceDate)), {
+    message: "Timezone must be valid",
+  });
+export const organizationSlugCandidateSchema = z.string().transform((value) =>
+  compact(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48),
+);
+export const organizationSlugSchema = organizationSlugCandidateSchema.refine(
+  (value) => value !== "",
+  {
+    message: "Slug cannot be empty",
+  },
+);
+export const checkInCodeSchema = z
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => value !== "", {
+    message: "Check-in code cannot be empty",
+  });
+export const deviceFingerprintSchema = z.string().min(1, "Device fingerprint cannot be empty");
+
 export function normalizeMemberName(value: string) {
-  return required(value, "Name cannot be empty");
+  return memberNameSchema.parse(value);
 }
 
 export function normalizeMemberIdentifier(value: string) {
-  const normalized = value.trim();
-  if (normalized === "") {
-    throw new Error("Identifier cannot be empty");
-  }
-  return normalized;
+  return memberIdentifierSchema.parse(value);
 }
 
 export function normalizeMeetingName(value: string) {
-  return required(value, "Meeting name cannot be empty");
+  return meetingNameSchema.parse(value);
 }
 
 export function normalizeMeetingOptionalText(value: string) {
-  const normalized = compact(value);
-  return normalized === "" ? undefined : normalized;
+  return meetingOptionalTextSchema.parse(value);
 }
 
 export function normalizeMeetingTags(values: string[] | undefined) {
@@ -40,49 +81,29 @@ export function normalizeMeetingTags(values: string[] | undefined) {
     return undefined;
   }
 
-  const tags = Array.from(new Set(values.map(compact).filter((value) => value !== "")));
-  return tags.length === 0 ? undefined : tags;
+  return meetingTagsSchema.parse(values);
 }
 
 export function normalizeOrganizationName(value: string) {
-  return required(value, "Organization name cannot be empty");
+  return organizationNameSchema.parse(value);
 }
 
 export function normalizeOrganizationTimezone(value: string) {
-  const normalized = value.trim();
-  if (Number.isNaN(tzOffset(normalized, timeZoneReferenceDate))) {
-    throw new Error("Timezone must be valid");
-  }
-  return normalized;
+  return organizationTimezoneSchema.parse(value);
 }
 
 export function normalizeOrganizationSlugCandidate(value: string) {
-  return compact(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
+  return organizationSlugCandidateSchema.parse(value);
 }
 
 export function normalizeOrganizationSlug(value: string) {
-  const normalized = normalizeOrganizationSlugCandidate(value);
-  if (normalized === "") {
-    throw new Error("Slug cannot be empty");
-  }
-  return normalized;
+  return organizationSlugSchema.parse(value);
 }
 
 export function normalizeCheckInCode(value: string) {
-  const normalized = value.trim();
-  if (normalized === "") {
-    throw new Error("Check-in code cannot be empty");
-  }
-  return normalized;
+  return checkInCodeSchema.parse(value);
 }
 
 export function normalizeDeviceFingerprint(value: string) {
-  if (value === "") {
-    throw new Error("Device fingerprint cannot be empty");
-  }
-  return value;
+  return deviceFingerprintSchema.parse(value);
 }

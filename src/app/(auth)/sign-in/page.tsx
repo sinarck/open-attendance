@@ -1,16 +1,16 @@
-import { LoginForm } from "./login-form";
+import { SignInForm } from "./sign-in-form";
 
 /**
- * Public login page.
+ * Public sign-in page.
  *
  * @remarks
  * Authenticated users should normally never render this page because the proxy
  * redirects them to `/dashboard` as an optimistic fast-path.
  */
-export default function LoginPage() {
+export default function SignInPage() {
   return (
     <div className="w-full max-w-sm">
-      <LoginForm />
+      <SignInForm />
     </div>
   );
 }

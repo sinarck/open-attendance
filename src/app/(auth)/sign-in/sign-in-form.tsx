@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { signIn } from "@/lib/auth/client";
+import { signIn } from "@/lib/auth-client";
 import {
   getRateLimitDescription,
   isAuthClientError,
@@ -21,9 +22,9 @@ import { toast } from "@/lib/toast";
 import { loginFormSchema } from "@/lib/validation/auth";
 
 /**
- * Email/password login form for the public `/login` route.
+ * Email/password login form for the public `/sign-in` route.
  */
-export function LoginForm() {
+export function SignInForm() {
   const router = useRouter();
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
@@ -85,7 +86,7 @@ export function LoginForm() {
     }
 
     posthog.capture("user_logged_in", { method: "email" });
-    router.replace("/dashboard");
+    router.replace("/dashboard" as Route);
   }
 
   return (
@@ -128,7 +129,7 @@ export function LoginForm() {
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link
-              href="/signup"
+              href={"/sign-up" as Route}
               prefetch
               className="text-foreground underline-offset-4 hover:underline"
             >

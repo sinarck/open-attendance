@@ -1,9 +1,9 @@
-import { getCurrentAppUrl } from "@/lib/env";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { ConvexClientProvider } from "@/app/convex-client-provider";
+import { getCurrentAppUrl } from "@/lib/deployment";
 import { CreateAccountForm } from "./_components/create-account-form";
 
 /**
- * Public signup page.
+ * Public sign-up page.
  *
  * @remarks
  * This route intentionally renders only the create-account flow. Organization

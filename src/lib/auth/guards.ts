@@ -1,10 +1,11 @@
 import "server-only";
 
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { fetchAuthQuery, getToken, isAuthenticated } from "./server";
+import { fetchAuthQuery, getToken, isAuthenticated } from "../auth-server";
 
 /**
  * Request-scoped auth state shared by App Router guards.
@@ -15,36 +16,38 @@ import { fetchAuthQuery, getToken, isAuthenticated } from "./server";
  */
 interface RequestAuthState {
   isAuthenticated: boolean;
-  organization: Doc<"organizations"> | null;
 }
 
 /**
- * Resolves the current Better Auth session and, when present, the caller's
- * organization record.
+ * Resolves whether the current request has a Better Auth session.
  *
  * @remarks
- * The result is cached per request so multiple layouts/pages can ask the same
- * question without duplicating Better Auth and Convex work. Anonymous requests
- * stop after the session check; organization lookup only happens for real
- * sessions.
+ * Keep this check separate from organization lookup so routes that only need an
+ * auth redirect do not pay for extra Convex work.
  */
 export const getRequestAuthState = cache(async (): Promise<RequestAuthState> => {
-  const authenticated = await isAuthenticated();
-
-  if (!authenticated) {
-    return {
-      isAuthenticated: false,
-      organization: null,
-    };
-  }
-
-  const organization = await fetchAuthQuery(api.organizations.getCurrent);
-
   return {
-    isAuthenticated: true,
-    organization,
+    isAuthenticated: await isAuthenticated(),
   };
 });
+
+const getRequestOrganization = cache(async (): Promise<Doc<"organizations"> | null> => {
+  const { isAuthenticated } = await getRequestAuthState();
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return fetchAuthQuery(api.organizations.getCurrent);
+});
+
+export async function requireAuthenticated() {
+  const { isAuthenticated } = await getRequestAuthState();
+
+  if (!isAuthenticated) {
+    redirect("/sign-in" as Route);
+  }
+}
 
 /**
  * Returns the caller's organization or redirects/throws when the request is not
@@ -56,11 +59,8 @@ export const getRequestAuthState = cache(async (): Promise<RequestAuthState> => 
  * that should be investigated instead of patched over in-product.
  */
 export async function requireOrganization() {
-  const { isAuthenticated, organization } = await getRequestAuthState();
-
-  if (!isAuthenticated) {
-    redirect("/login");
-  }
+  await requireAuthenticated();
+  const organization = await getRequestOrganization();
 
   if (organization === null) {
     throw new Error("Authenticated user has no organization. This invariant should be impossible.");

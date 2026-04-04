@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from "next/server";
  *
  * @remarks
  * This proxy is intentionally fast and intentionally incomplete. It only checks
- * for cookie existence so we can keep `/login` and `/signup` public while still
+ * for cookie existence so we can keep `/sign-in` and `/sign-up` public while still
  * bouncing obviously authenticated traffic to `/dashboard`, and reject clearly
  * anonymous traffic before protected app routes render.
  *
@@ -18,7 +18,7 @@ export function proxy(request: NextRequest) {
   const session = getSessionCookie(request);
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/login" || pathname === "/signup") {
+  if (pathname === "/sign-in" || pathname === "/sign-up") {
     if (session) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
@@ -27,7 +27,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (!session) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
   return NextResponse.next();
@@ -44,8 +44,8 @@ export function proxy(request: NextRequest) {
  */
 export const config = {
   matcher: [
-    "/login",
-    "/signup",
+    "/sign-in",
+    "/sign-up",
     "/dashboard/:path*",
     "/meetings/:path*",
     "/members/:path*",

@@ -3,46 +3,72 @@ import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { requireRunMutationCtx } from "@convex-dev/better-auth/utils";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { internalAction, query } from "./_generated/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth/minimal";
 import { username } from "better-auth/plugins";
+import { z } from "zod";
 import { api, components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
 import {
-  normalizeOrganizationName,
-  normalizeOrganizationSlug,
-  normalizeOrganizationTimezone,
+  organizationNameSchema,
+  organizationSlugSchema,
+  organizationTimezoneSchema,
 } from "./lib/validation";
-import { getTrustedAppOrigins } from "../src/lib/deployment";
+import authSchema from "./betterAuth/schema";
 
 /**
  * Better Auth runs on Convex and is the only supported source of truth for
  * session creation, org provisioning, and user teardown.
  *
  * @remarks
+ * This file is the app-specific wrapper around the local Better Auth component
+ * registered in `convex/convex.config.ts`.
+ *
  * The auth model in this app is intentionally opinionated:
  *
  * - Sign up creates the Better Auth user, session, and organization in one
  *   flow.
- * - `/login` and `/signup` stay public and fast; optimistic redirects happen in
+ * - `/sign-in` and `/sign-up` stay public and fast; optimistic redirects happen in
  *   Next proxy, not in request-time auth pages.
  * - Authenticated app access still requires server-side org resolution and
  *   Convex RLS. A session without an organization is treated as invariant drift,
  *   not a recoverable UX state.
  *
- * Trusted frontend origins are derived from exact environment-provided hosts.
- * Better Auth then resolves the runtime origin from the current request via
- * trusted proxy headers, so auth follows the active deployment instead of a
- * static fallback chain.
+ * This module keeps app-specific auth behavior layered on top of the
+ * Convex Better Auth component: organization provisioning, tenant cleanup,
+ * and the stricter auth/session defaults required by this app.
  */
 const authFunctions: AuthFunctions = internal.auth as AuthFunctions;
-const trustedOrigins = getTrustedAppOrigins();
+const siteUrl = process.env.SITE_URL!;
+const trustedOrigins = [
+  siteUrl,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL &&
+    `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
+  process.env.VERCEL_BRANCH_URL && `https://${process.env.VERCEL_BRANCH_URL}`,
+  process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+].filter(
+  (origin, index, origins): origin is string =>
+    Boolean(origin) && origins.indexOf(origin) === index,
+);
 
 type SignupOrganization = {
   name: string;
   slug: string;
   timezone: string;
 };
+
+const signupOrganizationSchema = z
+  .object({
+    organizationName: organizationNameSchema,
+    organizationSlug: organizationSlugSchema,
+    timezone: organizationTimezoneSchema,
+  })
+  .transform(({ organizationName, organizationSlug, timezone }) => ({
+    name: organizationName,
+    slug: organizationSlug,
+    timezone,
+  }));
 
 /**
  * Extracts and validates the organization payload piggybacked onto
@@ -53,32 +79,17 @@ type SignupOrganization = {
  * the same request body, validate them here, then strip them back out before
  * the request reaches the built-in sign-up handler.
  */
-function parseSignupOrganization(body: Record<string, unknown>): SignupOrganization {
-  const { organizationName, organizationSlug, timezone } = body;
+function parseSignupOrganization(body: unknown): SignupOrganization {
+  const result = signupOrganizationSchema.safeParse(body);
 
-  if (
-    typeof organizationName !== "string" ||
-    typeof organizationSlug !== "string" ||
-    typeof timezone !== "string"
-  ) {
+  if (!result.success) {
     throw new APIError("BAD_REQUEST", {
       code: "input",
-      message: "Invalid signup data",
+      message: result.error.issues[0]?.message ?? "Invalid signup data",
     });
   }
 
-  try {
-    return {
-      name: normalizeOrganizationName(organizationName),
-      slug: normalizeOrganizationSlug(organizationSlug),
-      timezone: normalizeOrganizationTimezone(timezone),
-    };
-  } catch (error) {
-    throw new APIError("BAD_REQUEST", {
-      code: "input",
-      message: error instanceof Error ? error.message : "Invalid signup data",
-    });
-  }
+  return result.data;
 }
 
 /**
@@ -90,7 +101,10 @@ function parseSignupOrganization(body: Record<string, unknown>): SignupOrganizat
  * full organization payload. `onDelete` cascades the tenant data for the auth
  * user's organization.
  */
-export const authComponent = createClient<DataModel>(components.betterAuth as never, {
+export const authComponent = createClient<DataModel, typeof authSchema>(components.betterAuth, {
+  local: {
+    schema: authSchema,
+  },
   authFunctions,
   triggers: {
     user: {
@@ -115,6 +129,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth as ne
 });
 
 export const { onCreate, onDelete } = authComponent.triggersApi();
+export const { getAuthUser } = authComponent.clientApi();
 
 /**
  * Creates the Better Auth instance bound to the current Convex request context.
@@ -132,13 +147,13 @@ export const { onCreate, onDelete } = authComponent.triggersApi();
  * That rollback is the reason the rest of the app can treat a missing org as an
  * impossible invariant instead of a first-class onboarding state.
  */
-export const createAuth = (ctx: GenericCtx<DataModel>) => {
-  return betterAuth({
+export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
+  return {
     appName: "Open Attendance",
+    baseURL: siteUrl,
     secret: process.env.BETTER_AUTH_SECRET,
     trustedOrigins,
     advanced: {
-      trustedProxyHeaders: true,
       ipAddress: {
         ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
       },
@@ -243,15 +258,15 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         const rollbackUser = async () => {
           await request.context.internalAdapter.deleteUser(session.user.id);
           request.setCookie(request.context.authCookies.sessionToken.name, "", {
-            ...request.context.authCookies.sessionToken.options,
+            ...request.context.authCookies.sessionToken.attributes,
             maxAge: 0,
           });
           request.setCookie(request.context.authCookies.sessionData.name, "", {
-            ...request.context.authCookies.sessionData.options,
+            ...request.context.authCookies.sessionData.attributes,
             maxAge: 0,
           });
           request.setCookie(request.context.authCookies.dontRememberToken.name, "", {
-            ...request.context.authCookies.dontRememberToken.options,
+            ...request.context.authCookies.dontRememberToken.attributes,
             maxAge: 0,
           });
         };
@@ -289,6 +304,21 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         }
       }),
     },
-    plugins: [username(), convex({ authConfig })],
-  } satisfies BetterAuthOptions);
+    plugins: [username(), convex({ authConfig, jwks: process.env.JWKS })],
+  } satisfies BetterAuthOptions;
 };
+
+export const createAuth = (ctx: GenericCtx<DataModel>) => betterAuth(createAuthOptions(ctx));
+
+export const getCurrentUser = query({
+  args: {},
+  handler: async (ctx) => authComponent.getAuthUser(ctx),
+});
+
+export const getLatestJwks = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const auth = createAuth(ctx);
+    return auth.api.getLatestJwks();
+  },
+});

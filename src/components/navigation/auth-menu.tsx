@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { signOut, useSession } from "@/lib/auth/client";
+import { signOut, useSession } from "@/lib/auth-client";
 
 export function AuthMenu() {
   const { theme, setTheme } = useTheme();
@@ -41,6 +41,7 @@ export function AuthMenu() {
     void signOut({
       fetchOptions: {
         onSuccess: () => {
+          posthog.reset();
           // Tracking: `@convex-dev/better-auth` keeps a cached Convex token and
           // reports `isAuthenticated` while that token still exists, even after
           // Better Auth has started clearing the session. That gap can let a
@@ -58,7 +59,7 @@ export function AuthMenu() {
   return (
     <Menu>
       <MenuTrigger
-        className="flex cursor-pointer items-center rounded-full ring-ring/50 transition-shadow hover:ring-2 focus-visible:ring-2 focus-visible:outline-none"
+        className="flex select-none cursor-pointer items-center rounded-full ring-ring/50 transition-shadow hover:ring-2 focus-visible:ring-2 focus-visible:outline-none"
         aria-label="Account menu"
       >
         <UserAvatar name={user.name} size={28} />

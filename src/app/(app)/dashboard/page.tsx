@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { getTime, startOfMinute } from "date-fns";
 import { Activity, CalendarRange, Fingerprint, ShieldCheck, Users2, Waves } from "lucide-react";
-import { requireOrganization } from "@/lib/auth/guards";
-import { fetchAuthQuery } from "@/lib/auth/server";
+import { requireAuthenticated } from "@/lib/auth/guards";
+import { fetchAuthQuery } from "@/lib/auth-server";
 import { api } from "../../../../convex/_generated/api";
 import { AttentionList } from "./_components/attention-list";
 import { LiveStatus } from "./_components/live-status";
@@ -10,8 +10,7 @@ import { RecentMeetings } from "./_components/recent-meetings";
 import DashboardLoading from "./loading";
 
 async function DashboardPageContent() {
-  const organization = await requireOrganization();
-  const { timezone } = organization;
+  await requireAuthenticated();
   const currentMinute = getTime(startOfMinute(new Date()));
   const summary = await fetchAuthQuery(api.dashboard.summary, {
     now: currentMinute,
@@ -26,6 +25,7 @@ async function DashboardPageContent() {
     membersNeedingAttention,
     recentAttendanceRate,
     recentMeetings,
+    timezone,
     totalCheckIns,
     totalMeetings,
   } = summary;
