@@ -36,7 +36,7 @@ export const meetingColumns: ColumnDef<Meeting>[] = [
     accessorKey: "checkInCode",
     header: "Code",
     cell: ({ row }) => (
-      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+      <code className="cursor-text select-text rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
         {row.original.checkInCode.slice(0, 8)}
       </code>
     ),

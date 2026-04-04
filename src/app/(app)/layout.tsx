@@ -12,9 +12,9 @@ import { AppNavbar } from "@/components/navigation/app-navbar";
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex h-svh flex-col overflow-hidden bg-background">
       <AppNavbar />
-      {children}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-none">{children}</div>
     </div>
   );
 }

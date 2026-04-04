@@ -61,7 +61,7 @@ function AppNavbarMobileDrawer({ pathname }: AppNavbarMobileDrawerProps) {
                   href={href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
+                    "flex select-none items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                     active
                       ? "bg-foreground/[0.06] text-foreground"
                       : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",

@@ -9,7 +9,7 @@ export function AppNavbarLinks() {
   const pathname = usePathname();
 
   return (
-    <nav className="hidden items-center gap-0.5 md:flex">
+    <nav className="hidden select-none items-center gap-0.5 md:flex">
       {appNavigation.map(({ href, label }) => {
         const active = isAppNavigationActive(pathname, href);
         return (

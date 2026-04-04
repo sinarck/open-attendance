@@ -9,7 +9,7 @@ export function AppNavbar() {
       <div className="flex h-12 items-center gap-4 px-4 sm:px-6">
         <Link
           href="/"
-          className="shrink-0 font-mono text-sm font-semibold tracking-tight hover:opacity-80"
+          className="shrink-0 select-none font-mono text-sm font-semibold tracking-tight hover:opacity-80"
         >
           open<span className="text-muted-foreground">/</span>attendance
         </Link>

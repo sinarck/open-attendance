@@ -63,7 +63,7 @@ export const memberColumns: ColumnDef<Member>[] = [
     accessorKey: "identifier",
     header: "Identifier",
     cell: ({ row }) => (
-      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+      <code className="cursor-text select-text rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
         {row.original.identifier}
       </code>
     ),
