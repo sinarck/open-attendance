@@ -29,13 +29,20 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-const hasPostHogSourceMaps = Boolean(env.POSTHOG_API_KEY) && Boolean(env.POSTHOG_PROJECT_ID);
+const postHogApiKey = process.env.POSTHOG_API_KEY;
+const postHogProjectId = process.env.POSTHOG_PROJECT_ID;
 
-export default withPostHogConfig(nextConfig, {
-  host: env.NEXT_PUBLIC_POSTHOG_HOST,
-  personalApiKey: env.POSTHOG_API_KEY ?? "",
-  projectId: env.POSTHOG_PROJECT_ID ?? "",
-  sourcemaps: {
-    enabled: process.env.NODE_ENV === "production" && hasPostHogSourceMaps, // Don't bother uploading source maps in development
-  },
-});
+let config = nextConfig;
+
+if (postHogApiKey && postHogProjectId) {
+  config = withPostHogConfig(nextConfig, {
+    host: env.NEXT_PUBLIC_POSTHOG_HOST,
+    personalApiKey: postHogApiKey,
+    projectId: postHogProjectId,
+    sourcemaps: {
+      enabled: process.env.NODE_ENV === "production",
+    },
+  });
+}
+
+export default config;
