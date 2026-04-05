@@ -6,8 +6,7 @@ import { z } from "zod";
  * Runtime environment validation.
  *
  * @remarks
- * Keep this module focused on typed env access. Deployment-specific URL
- * selection lives in `src/lib/deployment.ts`.
+ * Keep this module focused on typed env access only.
  */
 const escapeRegex = (value: string) => value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -23,19 +22,7 @@ const origin = (label: string, httpsOnly = false, hostnameSuffix?: string) =>
     }, `${label} must be an origin only, without a path, query, hash, or credentials`);
 
 export const env = createEnv({
-  server: {
-    BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
-    JWKS: z.string().min(1).optional(),
-    POSTHOG_API_KEY: z
-      .string()
-      .regex(/^phx_[A-Za-z0-9]+$/, "POSTHOG_API_KEY must look like phx_...")
-      .optional(),
-    POSTHOG_PROJECT_ID: z
-      .string()
-      .regex(/^\d+$/, "POSTHOG_PROJECT_ID must be a numeric string")
-      .optional(),
-    SITE_URL: origin("SITE_URL"),
-  },
+  server: {},
   client: {
     NEXT_PUBLIC_CONVEX_SITE_URL: origin("NEXT_PUBLIC_CONVEX_SITE_URL", true, ".convex.site"),
     NEXT_PUBLIC_CONVEX_URL: origin("NEXT_PUBLIC_CONVEX_URL", true, ".convex.cloud"),
@@ -49,7 +36,6 @@ export const env = createEnv({
         /^\/(?:[A-Za-z0-9._~!$&'()*+,;=:@/-]*[A-Za-z0-9._~!$&'()*+,;=:@-])?$/,
         "NEXT_PUBLIC_POSTHOG_API_HOST must be a root-relative path without a trailing slash, query, or hash",
       ),
-    NEXT_PUBLIC_SITE_URL: origin("NEXT_PUBLIC_SITE_URL"),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_CONVEX_SITE_URL: process.env.NEXT_PUBLIC_CONVEX_SITE_URL,
@@ -57,7 +43,6 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_API_HOST: process.env.NEXT_PUBLIC_POSTHOG_API_HOST,
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   emptyStringAsUndefined: true,
   extends: [vercel()],

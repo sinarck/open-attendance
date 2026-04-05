@@ -40,17 +40,17 @@ import authSchema from "./betterAuth/schema";
  * and the stricter auth/session defaults required by this app.
  */
 const authFunctions: AuthFunctions = internal.auth as AuthFunctions;
-const siteUrl = process.env.SITE_URL!;
-const trustedOrigins = [
-  siteUrl,
-  process.env.VERCEL_PROJECT_PRODUCTION_URL &&
-    `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
-  process.env.VERCEL_BRANCH_URL && `https://${process.env.VERCEL_BRANCH_URL}`,
-  process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-].filter(
-  (origin, index, origins): origin is string =>
-    Boolean(origin) && origins.indexOf(origin) === index,
-);
+const allowedHosts = ["localhost:3000", "*.vercel.app"];
+const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+const convexSiteUrl = process.env.CONVEX_SITE_URL;
+
+if (productionHost) {
+  allowedHosts.push(productionHost);
+}
+
+if (convexSiteUrl) {
+  allowedHosts.push(new URL(convexSiteUrl).host);
+}
 
 type SignupOrganization = {
   name: string;
@@ -150,9 +150,11 @@ export const { getAuthUser } = authComponent.clientApi();
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
   return {
     appName: "Open Attendance",
-    baseURL: siteUrl,
-    secret: process.env.BETTER_AUTH_SECRET,
-    trustedOrigins,
+    baseURL: {
+      allowedHosts,
+      protocol: process.env.NODE_ENV === "development" ? "http" : "https",
+    },
+    secret: process.env.BETTER_AUTH_SECRET!,
     advanced: {
       ipAddress: {
         ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],

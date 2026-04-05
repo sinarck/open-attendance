@@ -1,5 +1,5 @@
 import { ConvexClientProvider } from "@/app/convex-client-provider";
-import { getCurrentAppUrl } from "@/lib/deployment";
+import { getCurrentSiteUrl } from "@/config/site";
 import { CreateAccountForm } from "./_components/create-account-form";
 
 /**
@@ -14,7 +14,7 @@ import { CreateAccountForm } from "./_components/create-account-form";
  * live slug-availability query while the user types.
  */
 export default function SignUpPage() {
-  const appUrl = getCurrentAppUrl();
+  const appUrl = getCurrentSiteUrl();
 
   return (
     <div className="w-full max-w-md">
