@@ -3,7 +3,6 @@
 import type { FormEvent } from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useState } from "react";
 import { z } from "zod";
@@ -19,13 +18,12 @@ import {
   isRateLimitError,
 } from "@/lib/auth/client-errors";
 import { toast } from "@/lib/toast";
-import { loginFormSchema } from "@/lib/validation/auth";
+import { signInFormSchema } from "@/lib/validation/auth";
 
 /**
- * Email/password login form for the public `/sign-in` route.
+ * Email/password sign-in form for the public `/sign-in` route.
  */
 export function SignInForm() {
-  const router = useRouter();
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +31,9 @@ export function SignInForm() {
     event.preventDefault();
     setErrors({});
 
-    const result = loginFormSchema.safeParse(Object.fromEntries(new FormData(event.currentTarget)));
+    const result = signInFormSchema.safeParse(
+      Object.fromEntries(new FormData(event.currentTarget)),
+    );
 
     if (!result.success) {
       setErrors(z.flattenError(result.error).fieldErrors);
@@ -86,7 +86,9 @@ export function SignInForm() {
     }
 
     posthog.capture("user_logged_in", { method: "email" });
-    router.replace("/dashboard" as Route);
+    // Match sign-up and other auth-boundary transitions so the next request
+    // sees the latest session cookie before the proxy and server guards run.
+    window.location.assign("/dashboard");
   }
 
   return (

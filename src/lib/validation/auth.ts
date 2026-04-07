@@ -32,9 +32,9 @@ const timezone = z.string().trim().min(1, "Timezone is required").refine(isValid
   message: "Timezone must be valid",
 });
 
-export const loginFormSchema = z.object({ email, password });
+export const signInFormSchema = z.object({ email, password });
 
-export const signupFormSchema = z
+export const signUpFormSchema = z
   .object({
     name: z.string().trim().min(2, "Name must be at least 2 characters"),
     organizationName,

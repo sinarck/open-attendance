@@ -5,7 +5,7 @@ import { SlugStatusIndicator } from "@/components/auth/slug-status-indicator";
 import { slugify } from "@/lib/slug";
 import type { OrganizationSlugStatus } from "@/types/auth";
 
-interface OrganizationSlugFieldProps {
+interface SlugFieldProps {
   appUrl: string;
   loading: boolean;
   slug: string;
@@ -13,13 +13,7 @@ interface OrganizationSlugFieldProps {
   onSlugChange: (slug: string) => void;
 }
 
-export function OrganizationSlugField({
-  appUrl,
-  loading,
-  slug,
-  status,
-  onSlugChange,
-}: OrganizationSlugFieldProps) {
+export function SlugField({ appUrl, loading, slug, status, onSlugChange }: SlugFieldProps) {
   const appOriginLabel = new URL(appUrl).host;
 
   return (

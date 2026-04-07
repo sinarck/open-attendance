@@ -1,4 +1,4 @@
-import { SignInForm } from "./sign-in-form";
+import { SignInForm } from "./_components/sign-in-form";
 
 /**
  * Public sign-in page.

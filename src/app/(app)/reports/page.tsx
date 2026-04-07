@@ -1,24 +1,21 @@
 import { Suspense } from "react";
 import { ClientAuthBoundary } from "@/lib/auth/auth-boundary";
-import { requireOrganizationToken } from "@/lib/auth/guards";
+import { requireOrganization } from "@/lib/auth/guards";
 import { preloadAuthQuery } from "@/lib/auth/auth-server";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { api } from "../../../../convex/_generated/api";
 import ReportsLoading from "./loading";
 import { ReportsLive } from "./reports-live";
 
 async function ReportsPageContent() {
-  const [{ token }, preloadedOverview] = await Promise.all([
-    requireOrganizationToken(),
+  const [, preloadedOverview] = await Promise.all([
+    requireOrganization(),
     preloadAuthQuery(api.reports.overview),
   ]);
 
   return (
-    <ConvexClientProvider initialToken={token}>
-      <ClientAuthBoundary>
-        <ReportsLive preloadedOverview={preloadedOverview} />
-      </ClientAuthBoundary>
-    </ConvexClientProvider>
+    <ClientAuthBoundary>
+      <ReportsLive preloadedOverview={preloadedOverview} />
+    </ClientAuthBoundary>
   );
 }
 

@@ -1,24 +1,21 @@
 import { Suspense } from "react";
 import { ClientAuthBoundary } from "@/lib/auth/auth-boundary";
-import { requireOrganizationToken } from "@/lib/auth/guards";
+import { requireOrganization } from "@/lib/auth/guards";
 import { preloadAuthQuery } from "@/lib/auth/auth-server";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { api } from "../../../../convex/_generated/api";
 import MeetingsLoading from "./loading";
 import { MeetingsLive } from "./meetings-live";
 
 async function MeetingsPageContent() {
-  const [{ token }, preloadedMeetings] = await Promise.all([
-    requireOrganizationToken(),
+  const [, preloadedMeetings] = await Promise.all([
+    requireOrganization(),
     preloadAuthQuery(api.meetings.list),
   ]);
 
   return (
-    <ConvexClientProvider initialToken={token}>
-      <ClientAuthBoundary>
-        <MeetingsLive preloadedMeetings={preloadedMeetings} />
-      </ClientAuthBoundary>
-    </ConvexClientProvider>
+    <ClientAuthBoundary>
+      <MeetingsLive preloadedMeetings={preloadedMeetings} />
+    </ClientAuthBoundary>
   );
 }
 

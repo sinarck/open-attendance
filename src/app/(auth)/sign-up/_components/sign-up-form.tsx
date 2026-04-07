@@ -3,7 +3,6 @@
 import type { FormEvent } from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useRef, useState } from "react";
 import { z } from "zod";
@@ -18,9 +17,9 @@ import { getRateLimitDescription, isRateLimitError } from "@/lib/auth/client-err
 import { getPreferredTimeZone, normalizeTimeZone } from "@/lib/date";
 import { slugify } from "@/lib/slug";
 import { toast } from "@/lib/toast";
-import { signupFormSchema } from "@/lib/validation/auth";
-import { OrganizationSlugField } from "./organization-slug-field";
-import { normalizeSignUpError } from "./signup-errors";
+import { signUpFormSchema } from "@/lib/validation/auth";
+import { normalizeSignUpError } from "./sign-up-errors";
+import { SlugField } from "./slug-field";
 
 /**
  * Public account-creation form for `/sign-up`.
@@ -31,8 +30,7 @@ import { normalizeSignUpError } from "./signup-errors";
  * `convex/auth.ts`, which normalize the data, provision the org, and roll the
  * user back if provisioning fails.
  */
-export function CreateAccountForm({ appUrl }: { appUrl: string }) {
-  const router = useRouter();
+export function SignUpForm({ appUrl }: { appUrl: string }) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
@@ -49,7 +47,7 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
       return;
     }
 
-    const result = signupFormSchema.safeParse({
+    const result = signUpFormSchema.safeParse({
       ...Object.fromEntries(new FormData(event.currentTarget)),
       organizationSlug,
       timezone,
@@ -74,7 +72,7 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
 
     try {
       // Better Auth owns account creation. The additional body fields are
-      // application-specific signup metadata consumed by our Better Auth hooks.
+      // application-specific sign-up metadata consumed by our Better Auth hooks.
       const { error } = await signUp.email({
         email,
         name,
@@ -102,7 +100,9 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
 
       if (!error) {
         posthog.capture("user_signed_up", { method: "email" });
-        router.replace("/dashboard" as Route);
+        // A hard navigation gives the next request a clean chance to observe the
+        // freshly written Better Auth cookie before the optimistic proxy runs.
+        window.location.assign("/dashboard");
         return;
       }
 
@@ -112,14 +112,14 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
         return;
       }
 
-      const signupError = normalizeSignUpError(error);
-      const { code, description, title } = signupError;
+      const signUpError = normalizeSignUpError(error);
+      const { code, description, title } = signUpError;
       setLoading(false);
 
       switch (code) {
         case "email":
         case "slug":
-          setErrors({ [signupError.field]: description });
+          setErrors({ [signUpError.field]: description });
           return;
         case "input":
         case "unexpected":
@@ -192,7 +192,7 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
           </Field>
 
           <Field name="organizationSlug">
-            <OrganizationSlugField
+            <SlugField
               appUrl={appUrl}
               loading={loading}
               slug={organizationSlug}

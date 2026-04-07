@@ -58,7 +58,7 @@ type SignupOrganization = {
   timezone: string;
 };
 
-const signupOrganizationSchema = z
+const signUpOrganizationSchema = z
   .object({
     organizationName: organizationNameSchema,
     organizationSlug: organizationSlugSchema,
@@ -79,8 +79,8 @@ const signupOrganizationSchema = z
  * the same request body, validate them here, then strip them back out before
  * the request reaches the built-in sign-up handler.
  */
-function parseSignupOrganization(body: unknown): SignupOrganization {
-  const result = signupOrganizationSchema.safeParse(body);
+function parseSignUpOrganization(body: unknown): SignupOrganization {
+  const result = signUpOrganizationSchema.safeParse(body);
 
   if (!result.success) {
     throw new APIError("BAD_REQUEST", {
@@ -203,7 +203,7 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
           return;
         }
 
-        const organization = parseSignupOrganization(request.body);
+        const organization = parseSignUpOrganization(request.body);
 
         const isSlugAvailable: boolean = await ctx.runQuery(api.organizations.isSlugAvailable, {
           slug: organization.slug,
@@ -231,7 +231,7 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
             body,
             context: {
               ...request.context,
-              signupOrganization: {
+              signUpOrganization: {
                 name: organization.name,
                 slug: organization.slug,
                 timezone: organization.timezone,
@@ -250,10 +250,10 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
         }
 
         const context = request.context as typeof request.context & {
-          signupOrganization?: SignupOrganization;
+          signUpOrganization?: SignupOrganization;
         };
         const session = context.newSession;
-        const organization = context.signupOrganization;
+        const organization = context.signUpOrganization;
 
         if (!session || !organization) {
           return;

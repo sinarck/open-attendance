@@ -1,10 +1,9 @@
 "use client";
 
-import { useConvexAuth } from "convex/react";
 import type { Route } from "next";
 import Link from "next/link";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/auth/auth-client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,17 +15,9 @@ import { cn } from "@/lib/utils";
  * fast while authenticated visitors can still be nudged toward the app.
  */
 export function NavbarActions() {
-  return (
-    <ConvexClientProvider>
-      <NavbarActionsContent />
-    </ConvexClientProvider>
-  );
-}
-
-function NavbarActionsContent() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const showAnonymousActions = !isLoading && !isAuthenticated;
-  const showAuthenticatedAction = !isLoading && isAuthenticated;
+  const { data: session, isPending } = useSession();
+  const showAnonymousActions = !isPending && !session;
+  const showAuthenticatedAction = !isPending && !!session;
 
   return (
     <div className="relative flex h-8 min-w-[12rem] justify-end">

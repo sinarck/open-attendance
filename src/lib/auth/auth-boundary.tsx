@@ -1,24 +1,24 @@
 "use client";
 
-import { AuthBoundary } from "@convex-dev/better-auth/react";
 import type { Route } from "next";
-import type { PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "../../../convex/_generated/api";
-import { authClient } from "@/lib/auth/auth-client";
-import { isAuthError } from "@/lib/utils";
+import { useSession } from "@/lib/auth/auth-client";
 
 export function ClientAuthBoundary({ children }: PropsWithChildren) {
   const router = useRouter();
+  const { data: session, isPending } = useSession();
+  const isAuthenticated = !!session;
 
-  return (
-    <AuthBoundary
-      authClient={authClient}
-      onUnauth={() => router.replace("/sign-in" as Route)}
-      getAuthUserFn={api.auth.getAuthUser}
-      isAuthError={isAuthError}
-    >
-      {children}
-    </AuthBoundary>
-  );
+  useEffect(() => {
+    if (!isPending && !isAuthenticated) {
+      router.replace("/sign-in" as Route);
+    }
+  }, [isAuthenticated, isPending, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return children;
 }

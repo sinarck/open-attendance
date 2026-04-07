@@ -1,6 +1,6 @@
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { getCurrentSiteUrl } from "@/config/site";
-import { CreateAccountForm } from "./_components/create-account-form";
+import { SignUpForm } from "./_components/sign-up-form";
 
 /**
  * Public sign-up page.
@@ -19,7 +19,7 @@ export default function SignUpPage() {
   return (
     <div className="w-full max-w-md">
       <ConvexClientProvider>
-        <CreateAccountForm appUrl={appUrl} />
+        <SignUpForm appUrl={appUrl} />
       </ConvexClientProvider>
     </div>
   );
