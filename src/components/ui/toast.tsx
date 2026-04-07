@@ -22,6 +22,27 @@ const toastIcons = {
   warning: TriangleAlert,
 } as const;
 
+function isToastIconKey(type: string): type is keyof typeof toastIcons {
+  return Object.hasOwn(toastIcons, type);
+}
+
+function getToastIcon(type: unknown): LucideIcon | null {
+  if (typeof type !== "string" || !isToastIconKey(type)) {
+    return null;
+  }
+
+  return toastIcons[type];
+}
+
+function getTooltipStyle(data: unknown) {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  const tooltipStyle = Reflect.get(data, "tooltipStyle");
+  return typeof tooltipStyle === "boolean" ? tooltipStyle : false;
+}
+
 type ToastPosition =
   | "top-left"
   | "top-center"
@@ -62,9 +83,7 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
         data-slot="toast-viewport"
       >
         {toasts.map((toast) => {
-          const Icon = toast.type
-            ? (toastIcons[toast.type as keyof typeof toastIcons] as LucideIcon)
-            : null;
+          const Icon = getToastIcon(toast.type);
 
           return (
             <Toast.Root
@@ -163,10 +182,8 @@ function AnchoredToasts() {
     <Toast.Portal data-slot="toast-portal-anchored">
       <Toast.Viewport className="outline-none" data-slot="toast-viewport-anchored">
         {toasts.map((toast) => {
-          const Icon = toast.type
-            ? (toastIcons[toast.type as keyof typeof toastIcons] as LucideIcon)
-            : null;
-          const tooltipStyle = (toast.data as { tooltipStyle?: boolean })?.tooltipStyle ?? false;
+          const Icon = getToastIcon(toast.type);
+          const tooltipStyle = getTooltipStyle(toast.data);
           const positionerProps = toast.positionerProps;
 
           if (!positionerProps?.anchor) {

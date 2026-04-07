@@ -7,8 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function isAuthError(error: unknown) {
-  const message =
-    (error instanceof ConvexError && error.data) || (error instanceof Error && error.message) || "";
+  if (error instanceof ConvexError && typeof error.data === "string") {
+    return /auth/i.test(error.data);
+  }
 
-  return /auth/i.test(String(message));
+  if (error instanceof Error) {
+    return /auth/i.test(error.message);
+  }
+
+  return false;
 }
