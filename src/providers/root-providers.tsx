@@ -5,7 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { useEffect, type ReactNode } from "react";
 import { ToastProvider } from "@/components/ui/toast";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth/auth-client";
 
 function PostHogIdentitySync() {
   const { data: session, isPending } = useSession();

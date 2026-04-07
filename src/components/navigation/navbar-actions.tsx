@@ -3,7 +3,7 @@
 import { useConvexAuth } from "convex/react";
 import type { Route } from "next";
 import Link from "next/link";
-import { ConvexClientProvider } from "@/app/convex-client-provider";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

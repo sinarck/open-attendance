@@ -1,4 +1,4 @@
-import { ConvexClientProvider } from "@/app/convex-client-provider";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { getCurrentSiteUrl } from "@/config/site";
 import { CreateAccountForm } from "./_components/create-account-form";
 

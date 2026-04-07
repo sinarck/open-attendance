@@ -4,8 +4,8 @@ import { AuthBoundary } from "@convex-dev/better-auth/react";
 import type { Route } from "next";
 import type { PropsWithChildren } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "../../convex/_generated/api";
-import { authClient } from "@/lib/auth-client";
+import { api } from "../../../convex/_generated/api";
+import { authClient } from "@/lib/auth/auth-client";
 import { isAuthError } from "@/lib/utils";
 
 export function ClientAuthBoundary({ children }: PropsWithChildren) {

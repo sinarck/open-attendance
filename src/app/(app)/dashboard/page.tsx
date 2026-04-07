@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getTime, startOfMinute } from "date-fns";
 import { Activity, CalendarRange, Fingerprint, ShieldCheck, Users2, Waves } from "lucide-react";
 import { requireAuthenticated } from "@/lib/auth/guards";
-import { fetchAuthQuery } from "@/lib/auth-server";
+import { fetchAuthQuery } from "@/lib/auth/auth-server";
 import { api } from "../../../../convex/_generated/api";
 import { AttentionList } from "./_components/attention-list";
 import { LiveStatus } from "./_components/live-status";

@@ -6,4 +6,4 @@ export const authClient = createAuthClient({
   plugins: [convexClient(), usernameClient()],
 });
 
-export const { signIn, signOut, signUp, useSession } = authClient;
+export const { deleteUser, signIn, signOut, signUp, useSession } = authClient;

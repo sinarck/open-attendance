@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { fetchAuthQuery, getToken, isAuthenticated } from "../auth-server";
+import { fetchAuthQuery, getToken, isAuthenticated } from "./auth-server";
 
 /**
  * Request-scoped auth state shared by App Router guards.
