@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AuthMenu } from "@/components/navigation/auth-menu";
 import { AppNavbarLinks } from "@/components/navigation/app-navbar-links";
 import { AppNavbarMobile } from "@/components/navigation/app-navbar-mobile";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 
 export function AppNavbar() {
   return (
@@ -20,7 +21,9 @@ export function AppNavbar() {
 
         <div className="flex-1" />
 
-        <AuthMenu />
+        <ConvexClientProvider>
+          <AuthMenu />
+        </ConvexClientProvider>
         <AppNavbarMobile />
       </div>
     </header>

@@ -167,6 +167,11 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
       minPasswordLength: 8,
       maxPasswordLength: 128,
     },
+    user: {
+      deleteUser: {
+        enabled: true,
+      },
+    },
     rateLimit: {
       enabled: true,
       storage: "database",

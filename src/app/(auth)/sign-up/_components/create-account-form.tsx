@@ -13,7 +13,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Form, type FormErrors } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useSlugAvailability } from "@/hooks/use-slug-availability";
-import { signUp } from "@/lib/auth-client";
+import { signUp } from "@/lib/auth/auth-client";
 import { getRateLimitDescription, isRateLimitError } from "@/lib/auth/client-errors";
 import { getPreferredTimeZone, normalizeTimeZone } from "@/lib/date";
 import { slugify } from "@/lib/slug";
@@ -102,7 +102,6 @@ export function CreateAccountForm({ appUrl }: { appUrl: string }) {
 
       if (!error) {
         posthog.capture("user_signed_up", { method: "email" });
-        toast.success("Account created!", "Your workspace is ready.");
         router.replace("/dashboard" as Route);
         return;
       }
