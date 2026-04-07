@@ -18,7 +18,9 @@ const modules = createModulesGlob([
   ..."attendance,auth,dashboard,http,meetings,members,organizations,reports"
     .split(",")
     .map((name) => `../${name}.ts`),
-  ..."auth,rateLimits,validation".split(",").map((name) => `../lib/${name}.ts`),
+  "../lib/auth.ts",
+  "../lib/rateLimits.ts",
+  "../lib/validation.ts",
 ]);
 
 const betterAuthModules = createModulesGlob([

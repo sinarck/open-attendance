@@ -31,8 +31,8 @@ convex/                  # Convex backend — serverless functions + schema
   betterAuth/            # Better Auth Convex component
   lib/                   # Backend utilities (auth helpers, rate limits)
   schema.ts              # Database schema with validators + indexes
-  *.test.ts              # Backend tests (co-located with source)
-  test.helpers.ts        # Shared test factories (seedOrg, seedMember, etc.)
+  tests/                 # Convex tests + harness
+  lib/seed.ts            # Shared test factories (seedOrg, seedMember, etc.)
 src/
   app/                   # Next.js App Router
     (app)/               # Authenticated routes (dashboard, members, meetings, reports)
@@ -74,10 +74,12 @@ src/
 ### File Naming
 
 - **kebab-case** for all files: `stat-card.tsx`, `auth-client.ts`, `use-media-query.ts`
+- **Convex exception:** Convex module filenames must use only alphanumeric characters, underscores, or periods. When Convex rejects a kebab-case filename, prefer the shortest readable camelCase fallback and keep it isolated to `convex/`.
 - Hooks: `use-{name}.ts` (e.g., `use-media-query.ts`)
-- Tests: `{module}.test.ts` co-located with source in `convex/`
+- Tests: `{module}.test.ts`; Convex integration tests currently live under `convex/tests/`, while small app/runtime tests may live next to the file under test (for example `src/proxy.test.ts`)
 - Avoid barrel exports. Import from the concrete module path instead.
 - Route-private components should live next to the route by default. Use `route/_components` only when a route subtree has multiple private components worth grouping.
+- Inside route-private folders, prefer the shortest clear filename because the folder already provides context: `sign-up-form.tsx`, `slug-field.tsx`, `meeting-columns.tsx`
 
 ### Component Conventions
 
@@ -117,6 +119,8 @@ src/
 - **camelCase** for functions and variables: `getAttendanceBadge`, `handleSubmit`
 - **PascalCase** for types, interfaces, and components: `AttendanceStatus`, `StatCardProps`
 - **kebab-case** for files and URL slugs
+- Use **`Id`**, not `ID`, in identifiers and symbol names: `userId`, `organizationId`, `meetingId`
+- Use route vocabulary consistently in code: `signIn` / `signUp` in TypeScript, `sign-in` / `sign-up` in file paths and URL segments
 - Long-lived constant/default-data objects belong in `src/config` with explicit names.
 
 ### Error Handling
@@ -132,7 +136,7 @@ src/
 
 **Framework:** Vitest v4 via Vite+ with `convex-test` | **Environment:** `edge-runtime`
 
-Tests exist only for Convex backend functions in `convex/*.test.ts`. No frontend tests.
+Tests are mostly Convex backend tests under `convex/tests/*.test.ts`. Small app/runtime regressions may also be tested next to the file under test, such as `src/proxy.test.ts`. There are still no frontend component tests.
 
 ### Patterns
 
@@ -175,12 +179,12 @@ describe("members:create", () => {
 
 - `(app)/` — authenticated routes; the layout is a static shell only. Each page owns its own request-time auth/data work behind a route-local `<Suspense>` boundary, and only the pages that need live Convex React hooks mount `ConvexClientProvider`.
 - `(marketing)/` — public pages; uses `RootProviders` only
-- `(auth)/` — login/signup pages nested under marketing layout; both stay fully public and synchronous
+- `(auth)/` — sign-in/sign-up pages nested under marketing layout; both stay fully public and synchronous
 - Keep providers scoped to the smallest subtree that actually needs them.
 - Public marketing/layout shells must stay synchronous. Do not read request-time auth state in the marketing navbar, auth layout, or other public shells.
 - Protected app pages should use this pattern: sync route export, route-local `<Suspense>`, existing `loading.tsx` fallback, async inner server component for auth/data work.
 - `src/proxy.ts` is only an optimistic cookie redirect layer. Do not use it for personalization or as a reason to move real auth checks out of server guards.
-- Auth pages should render as public pages and rely on proxy for optimistic redirects. Do not add request-time auth branching back into `/login`, `/signup`, or their shared layout.
+- Auth pages should render as public pages and rely on proxy for optimistic redirects. Do not add request-time auth branching back into `/sign-in`, `/sign-up`, or their shared layout.
 
 ### Cache Components Regression Memory
 
@@ -190,7 +194,7 @@ describe("members:create", () => {
 - Wrong assumption: "`loading.tsx` automatically protects async page or layout work."
   Reality: the request-time work still has to live under an explicit `<Suspense>` boundary in the route entry. A bare async page/layout can still trigger `blocking-route`.
 - Wrong assumption: "Public auth pages should check auth on the server so they can redirect immediately."
-  Reality: `/login` and `/signup` should stay public and synchronous. Optimistic redirects belong in `src/proxy.ts`; secure auth checks belong in protected routes and Convex RLS.
+  Reality: `/sign-in` and `/sign-up` should stay public and synchronous. Optimistic redirects belong in `src/proxy.ts`; secure auth checks belong in protected routes and Convex RLS.
 - Wrong assumption: "If a marketing navbar wants to reflect auth state, the whole navbar should become request-time auth-aware."
   Reality: keep the marketing shell static and isolate auth-aware UI to a tiny client island.
 - Wrong assumption: "If the code type-checks and lint passes, the Cache Components boundaries are probably fine."
@@ -199,7 +203,7 @@ describe("members:create", () => {
   1. No public layout or navbar reads request-time auth state.
   2. `(app)/layout.tsx` stays a static shell.
   3. Protected app pages put auth/data work in an async inner component under route-local `<Suspense>`.
-  4. `/login` and `/signup` remain synchronous public pages.
+  4. `/sign-in` and `/sign-up` remain synchronous public pages.
   5. `src/proxy.ts` only performs optimistic cookie-based redirects.
 
 ### Key Libraries
@@ -223,13 +227,11 @@ describe("members:create", () => {
 
 - Schema in `convex/schema.ts` with Convex validators (`v.string()`, `v.number()`, etc.)
 - Custom `authedQuery`/`authedMutation` in `convex/lib/auth.ts` wrap standard functions with auth + RLS
-- Auth triggers handle side effects (org creation on signup, cascade delete on user removal)
+- Auth triggers handle side effects (org creation on sign-up, cascade delete on user removal)
 - HTTP router in `convex/http.ts` for auth endpoints
 - Indexes defined on all query patterns in schema
 - Soft delete for members (`isActive` boolean); hard cascade delete for meetings
 - Public routes may use Convex client hooks when necessary, but keep that surface minimal and client-only.
-
-<!--VITE PLUS START-->
 
 # Using Vite+, the Unified Toolchain for the Web
 
@@ -302,7 +304,7 @@ These commands map to their corresponding tools. For example, `vp dev --port 300
 
 ## CI Integration
 
-For GitHub Actions, consider using [`voidzero-dev/setup-vp`](https://github.com/voidzero-dev/setup-vp) to replace separate `actions/setup-node`, package-manager setup, cache, and install steps with a single action.
+For GitHub Actions, consider using `[voidzero-dev/setup-vp](https://github.com/voidzero-dev/setup-vp)` to replace separate `actions/setup-node`, package-manager setup, cache, and install steps with a single action.
 
 ```yaml
 - uses: voidzero-dev/setup-vp@v1
@@ -314,11 +316,8 @@ For GitHub Actions, consider using [`voidzero-dev/setup-vp`](https://github.com/
 
 ## Review Checklist for Agents
 
-- [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to validate changes.
-<!--VITE PLUS END-->
-
-<!-- convex-ai-start -->
+- Run `vp install` after pulling remote changes and before getting started.
+- Run `vp check` and `vp test` to validate changes.
 
 This project uses [Convex](https://convex.dev) as its backend.
 
@@ -327,5 +326,3 @@ When working on Convex code, **always read `convex/_generated/ai/guidelines.md` 
 Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
 
 When validating Convex changes in this repo, prefer `vp exec convex ...` over calling `npx convex` directly.
-
-<!-- convex-ai-end -->

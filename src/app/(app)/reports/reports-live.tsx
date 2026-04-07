@@ -13,8 +13,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import type { api } from "../../../../convex/_generated/api";
-import { meetingColumns, memberColumns } from "./columns";
 import { ReportStatCard } from "./report-stat-card";
+import { meetingColumns, memberColumns } from "./report-columns";
 
 interface ReportsLiveProps {
   preloadedOverview: Preloaded<typeof api.reports.overview>;

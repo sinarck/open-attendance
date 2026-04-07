@@ -13,7 +13,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import type { api } from "../../../../convex/_generated/api";
-import { meetingColumns } from "./columns";
+import { meetingColumns } from "./meeting-columns";
 
 interface MeetingsLiveProps {
   preloadedMeetings: Preloaded<typeof api.meetings.list>;

@@ -13,7 +13,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import type { api } from "../../../../convex/_generated/api";
-import { archivedMemberColumns, buildActiveMemberColumns } from "./columns";
+import { archivedMemberColumns, buildActiveMemberColumns } from "./member-columns";
 
 interface MembersLiveProps {
   preloadedRoster: Preloaded<typeof api.members.listRoster>;
