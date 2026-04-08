@@ -16,11 +16,11 @@ import type { api } from "../../../../convex/_generated/api";
 import { ReportStatCard } from "./report-stat-card";
 import { meetingColumns, memberColumns } from "./report-columns";
 
-interface ReportsLiveProps {
+interface ReportsClientProps {
   preloadedOverview: Preloaded<typeof api.reports.overview>;
 }
 
-export function ReportsLive({ preloadedOverview }: ReportsLiveProps) {
+export function ReportsClient({ preloadedOverview }: ReportsClientProps) {
   const overview = usePreloadedAuthQuery(preloadedOverview);
 
   if (overview == null) {

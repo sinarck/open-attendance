@@ -15,12 +15,12 @@ import {
 import type { api } from "../../../../convex/_generated/api";
 import { archivedMemberColumns, buildActiveMemberColumns } from "./member-columns";
 
-interface MembersLiveProps {
+interface MembersClientProps {
   preloadedRoster: Preloaded<typeof api.members.listRoster>;
   timeZone: string;
 }
 
-export function MembersLive({ preloadedRoster, timeZone }: MembersLiveProps) {
+export function MembersClient({ preloadedRoster, timeZone }: MembersClientProps) {
   const roster = usePreloadedAuthQuery(preloadedRoster);
 
   if (roster == null) {

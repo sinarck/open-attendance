@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
 
 const postHogApiKey = process.env.POSTHOG_API_KEY;
 const postHogProjectId = process.env.POSTHOG_PROJECT_ID;
+const shouldUploadPostHogSourcemaps =
+  process.env.NODE_ENV === "production" && process.env.VERCEL_ENV === "production";
 
 let config = nextConfig;
 
@@ -40,7 +42,7 @@ if (postHogApiKey && postHogProjectId) {
     personalApiKey: postHogApiKey,
     projectId: postHogProjectId,
     sourcemaps: {
-      enabled: process.env.NODE_ENV === "production",
+      enabled: shouldUploadPostHogSourcemaps,
     },
   });
 }

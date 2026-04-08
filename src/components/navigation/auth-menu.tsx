@@ -19,6 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { signOut, useSession } from "@/lib/auth/auth-client";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { DeleteAccountDialog } from "./delete-account-dialog";
 
 function hardNavigateHome() {
@@ -125,11 +126,13 @@ export function AuthMenu() {
       </Menu>
 
       {deleteDialogOpen ? (
-        <DeleteAccountDialog
-          open={deleteDialogOpen}
-          onDeleted={hardNavigateHome}
-          onOpenChange={setDeleteDialogOpen}
-        />
+        <ConvexClientProvider>
+          <DeleteAccountDialog
+            open={deleteDialogOpen}
+            onDeleted={hardNavigateHome}
+            onOpenChange={setDeleteDialogOpen}
+          />
+        </ConvexClientProvider>
       ) : null}
     </>
   );

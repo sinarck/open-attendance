@@ -1,21 +1,24 @@
 import { Suspense } from "react";
 import { ClientAuthBoundary } from "@/lib/auth/auth-boundary";
-import { requireOrganization } from "@/lib/auth/guards";
+import { requireOrganizationToken } from "@/lib/auth/guards";
 import { preloadAuthQuery } from "@/lib/auth/auth-server";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { api } from "../../../../convex/_generated/api";
 import MembersLoading from "./loading";
-import { MembersLive } from "./members-live";
+import { MembersClient } from "./members-client";
 
 async function MembersPageContent() {
-  const [organization, preloadedRoster] = await Promise.all([
-    requireOrganization(),
+  const [{ organization, token }, preloadedRoster] = await Promise.all([
+    requireOrganizationToken(),
     preloadAuthQuery(api.members.listRoster),
   ]);
 
   return (
-    <ClientAuthBoundary>
-      <MembersLive preloadedRoster={preloadedRoster} timeZone={organization.timezone} />
-    </ClientAuthBoundary>
+    <ConvexClientProvider initialToken={token}>
+      <ClientAuthBoundary>
+        <MembersClient preloadedRoster={preloadedRoster} timeZone={organization.timezone} />
+      </ClientAuthBoundary>
+    </ConvexClientProvider>
   );
 }
 

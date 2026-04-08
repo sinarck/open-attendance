@@ -15,11 +15,11 @@ import {
 import type { api } from "../../../../convex/_generated/api";
 import { meetingColumns } from "./meeting-columns";
 
-interface MeetingsLiveProps {
+interface MeetingsClientProps {
   preloadedMeetings: Preloaded<typeof api.meetings.list>;
 }
 
-export function MeetingsLive({ preloadedMeetings }: MeetingsLiveProps) {
+export function MeetingsClient({ preloadedMeetings }: MeetingsClientProps) {
   const meetings = usePreloadedAuthQuery(preloadedMeetings);
 
   if (meetings == null) {
