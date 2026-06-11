@@ -1,11 +1,28 @@
-import { Figtree, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
-export const figtree = Figtree({
-  variable: "--font-figtree",
-  subsets: ["latin"],
-});
-
-export const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+export const openRunde = localFont({
+  src: [
+    {
+      path: "./fonts/OpenRunde-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/OpenRunde-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/OpenRunde-Semibold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "./fonts/OpenRunde-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-open-runde",
+  display: "swap",
 });

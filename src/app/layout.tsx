@@ -3,7 +3,7 @@ import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { RootProviders } from "@/providers/root-providers";
-import { figtree, geistMono } from "./ui/fonts";
+import { openRunde } from "./ui/fonts";
 
 export const metadata: Metadata = {
   title: siteConfig.name,
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn(figtree.variable, geistMono.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn(openRunde.variable)}>
       <body className="antialiased">
         <RootProviders>{children}</RootProviders>
       </body>

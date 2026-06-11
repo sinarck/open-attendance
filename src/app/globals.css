@@ -6,8 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-figtree);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-open-runde);
+  --font-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
 
   --spacing-app-shell: calc(100svh - var(--header-height));
   --spacing-page: var(--page-padding);

@@ -5,7 +5,7 @@ import posthog from "posthog-js";
 import { useEffect } from "react";
 import { ErrorFallback } from "@/components/error-fallback";
 import { cn } from "@/lib/utils";
-import { figtree, geistMono } from "./ui/fonts";
+import { openRunde } from "./ui/fonts";
 
 export default function GlobalError({
   error,
@@ -23,7 +23,7 @@ export default function GlobalError({
   return (
     // Next.js requires the global error boundary to render a full document shell
     // because it runs in place of the root layout after fatal render failures.
-    <html lang="en" suppressHydrationWarning className={cn(figtree.variable, geistMono.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn(openRunde.variable)}>
       <body className="antialiased">
         <ErrorFallback reset={reset} />
       </body>
