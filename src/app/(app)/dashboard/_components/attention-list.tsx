@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/empty";
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import type { DashboardSummary } from "../../../../../convex/dashboard";
+import type { DashboardSummary } from "@/types/dashboard";
 
 interface AttentionListProps {
   summary: DashboardSummary;

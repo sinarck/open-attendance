@@ -10,7 +10,7 @@ import {
 import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { recentMeetingStageVariants } from "@/config/dashboard";
 import { formatInTimeZone } from "@/lib/date";
-import type { DashboardSummary } from "../../../../../convex/dashboard";
+import type { DashboardSummary } from "@/types/dashboard";
 
 type Meeting = DashboardSummary["recentMeetings"][number];
 

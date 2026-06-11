@@ -1,17 +1,5 @@
-import type { Doc } from "./_generated/dataModel";
 import { authedQuery } from "./lib/auth";
-
-export interface ReportsOverview {
-  summary: {
-    totalMembers: number;
-    activeMembers: number;
-    archivedMembers: number;
-    totalMeetings: number;
-    activeMeetings: number;
-  };
-  meetings: Doc<"meetings">[];
-  members: Doc<"members">[];
-}
+import type { ReportsOverview } from "../src/types/reports";
 
 export const overview = authedQuery({
   args: {},
