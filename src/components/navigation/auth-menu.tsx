@@ -19,7 +19,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { signOut, useSession } from "@/lib/auth/auth-client";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { DeleteAccountDialog } from "./delete-account-dialog";
 
 function hardNavigateHome() {
@@ -32,6 +31,17 @@ function hardNavigateHome() {
   // Convex subtree immediately instead of waiting for client state to settle.
   // Upstream: https://github.com/get-convex/better-auth/issues/303
   window.location.assign("/");
+}
+
+function handleSignOut() {
+  posthog.capture("user_signed_out");
+  void signOut({
+    fetchOptions: {
+      onSuccess: () => {
+        hardNavigateHome();
+      },
+    },
+  });
 }
 
 export function AuthMenu() {
@@ -67,17 +77,6 @@ export function AuthMenu() {
   }
 
   const { user } = session;
-
-  function handleSignOut() {
-    posthog.capture("user_signed_out");
-    void signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          hardNavigateHome();
-        },
-      },
-    });
-  }
 
   return (
     <>
@@ -126,13 +125,11 @@ export function AuthMenu() {
       </Menu>
 
       {deleteDialogOpen ? (
-        <ConvexClientProvider>
-          <DeleteAccountDialog
-            open={deleteDialogOpen}
-            onDeleted={hardNavigateHome}
-            onOpenChange={setDeleteDialogOpen}
-          />
-        </ConvexClientProvider>
+        <DeleteAccountDialog
+          open={deleteDialogOpen}
+          onDeleted={hardNavigateHome}
+          onOpenChange={setDeleteDialogOpen}
+        />
       ) : null}
     </>
   );

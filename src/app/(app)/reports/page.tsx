@@ -1,38 +1,27 @@
 import { Suspense } from "react";
-import { ClientAuthBoundary } from "@/lib/auth/auth-boundary";
-import { requireOrganizationToken } from "@/lib/auth/guards";
-import { preloadAuthQuery } from "@/lib/auth/auth-server";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
-import { api } from "../../../../convex/_generated/api";
-import ReportsLoading from "./loading";
-import { ReportsClient } from "./reports-client";
+import { requireAuthenticated } from "@/lib/auth/guards";
+import { ReportsSectionsLoading } from "./loading";
+import { ReportsContent } from "./reports-client";
 
 async function ReportsPageContent() {
-  const [{ token }, preloadedOverview] = await Promise.all([
-    requireOrganizationToken(),
-    preloadAuthQuery(api.reports.overview),
-  ]);
+  await requireAuthenticated();
 
-  return (
-    <ConvexClientProvider initialToken={token}>
-      <ClientAuthBoundary>
-        <ReportsClient preloadedOverview={preloadedOverview} />
-      </ClientAuthBoundary>
-    </ConvexClientProvider>
-  );
+  return <ReportsContent />;
 }
 
 /**
  * Protected reports route entry.
  *
  * @remarks
- * Keep the route export synchronous so auth checks, preloading, and token
- * seeding happen under the route-local `<Suspense>` boundary.
+ * Keep the route export synchronous so request-time auth stays under the
+ * route-local `<Suspense>` boundary.
  */
 export default function ReportsPage() {
   return (
-    <Suspense fallback={<ReportsLoading />}>
-      <ReportsPageContent />
-    </Suspense>
+    <main className="space-y-6 p-4 sm:p-6">
+      <Suspense fallback={<ReportsSectionsLoading />}>
+        <ReportsPageContent />
+      </Suspense>
+    </main>
   );
 }

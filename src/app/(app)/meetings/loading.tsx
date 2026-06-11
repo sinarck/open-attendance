@@ -8,9 +8,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default function MeetingsLoading() {
+export function MeetingsSectionsLoading() {
   return (
-    <main className="space-y-6 p-4 sm:p-6">
+    <>
       <section>
         <div className="mb-2 flex items-center gap-2">
           <Skeleton className="h-3 w-12" />
@@ -96,6 +96,14 @@ export default function MeetingsLoading() {
           </Table>
         </div>
       </section>
+    </>
+  );
+}
+
+export default function MeetingsLoading() {
+  return (
+    <main className="space-y-6 p-4 sm:p-6">
+      <MeetingsSectionsLoading />
     </main>
   );
 }

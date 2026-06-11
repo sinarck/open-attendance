@@ -16,6 +16,7 @@ export function AppNavbarLinks() {
           <Link
             key={href}
             href={href}
+            prefetch
             className={cn(
               "rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors duration-100",
               active

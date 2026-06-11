@@ -8,9 +8,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default function MembersLoading() {
+export function MembersSectionsLoading() {
   return (
-    <main className="space-y-6 p-4 sm:p-6">
+    <>
       <section>
         <div className="mb-2 flex items-center gap-2">
           <Skeleton className="h-3 w-12" />
@@ -84,6 +84,24 @@ export default function MembersLoading() {
           </Table>
         </div>
       </section>
+    </>
+  );
+}
+
+export default function MembersLoading() {
+  return (
+    <main className="space-y-6 p-4 sm:p-6">
+      <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-muted/20 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-3.5 w-32" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-9 w-24 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+      </section>
+      <MembersSectionsLoading />
     </main>
   );
 }

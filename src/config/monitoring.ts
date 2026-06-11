@@ -16,6 +16,6 @@ export const posthogOptions = {
   capture_pageleave: false,
   capture_pageview: false,
   disable_session_recording: true,
-  enable_recording_console_log: true,
-  debug: process.env.NODE_ENV === "development",
+  enable_recording_console_log: false,
+  debug: false,
 } as const;

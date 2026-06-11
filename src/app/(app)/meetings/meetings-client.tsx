@@ -1,7 +1,6 @@
 "use client";
 
-import { usePreloadedAuthQuery } from "@convex-dev/better-auth/nextjs/client";
-import type { Preloaded } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { CalendarX2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
@@ -12,18 +11,16 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { api } from "../../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
+import { MeetingsSectionsLoading } from "./loading";
 import { meetingColumns } from "./meeting-columns";
 
-interface MeetingsClientProps {
-  preloadedMeetings: Preloaded<typeof api.meetings.list>;
-}
+export function MeetingsContent() {
+  const { isAuthenticated } = useConvexAuth();
+  const meetings = useQuery(api.meetings.list, isAuthenticated ? {} : "skip");
 
-export function MeetingsClient({ preloadedMeetings }: MeetingsClientProps) {
-  const meetings = usePreloadedAuthQuery(preloadedMeetings);
-
-  if (meetings == null) {
-    return null;
+  if (meetings === undefined) {
+    return <MeetingsSectionsLoading />;
   }
 
   const activeMeetings = meetings.filter((meeting) => meeting.isActive);
@@ -31,24 +28,22 @@ export function MeetingsClient({ preloadedMeetings }: MeetingsClientProps) {
 
   if (meetings.length === 0) {
     return (
-      <main className="space-y-6 p-4 sm:p-6">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <CalendarX2 />
-            </EmptyMedia>
-            <EmptyTitle>No meetings yet</EmptyTitle>
-            <EmptyDescription>
-              Create your first meeting to start taking attendance and building a history here.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </main>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <CalendarX2 />
+          </EmptyMedia>
+          <EmptyTitle>No meetings yet</EmptyTitle>
+          <EmptyDescription>
+            Create your first meeting to start taking attendance and building a history here.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
-    <main className="space-y-6 p-4 sm:p-6">
+    <>
       {activeMeetings.length > 0 && (
         <section>
           <div className="mb-2 flex items-center gap-2">
@@ -79,6 +74,6 @@ export function MeetingsClient({ preloadedMeetings }: MeetingsClientProps) {
           emptyDescription="Closed meetings will appear here once attendance has been taken."
         />
       </section>
-    </main>
+    </>
   );
 }

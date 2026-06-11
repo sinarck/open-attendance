@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import posthog from "posthog-js";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,8 @@ interface DeleteAccountDialogProps {
 }
 
 export function DeleteAccountDialog({ open, onDeleted, onOpenChange }: DeleteAccountDialogProps) {
-  const organization = useQuery(api.organizations.getCurrent);
+  const { isAuthenticated } = useConvexAuth();
+  const organization = useQuery(api.organizations.getCurrent, isAuthenticated ? {} : "skip");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteErrors, setDeleteErrors] = useState<FormErrors>({});
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);

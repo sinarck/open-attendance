@@ -9,9 +9,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default function ReportsLoading() {
+export function ReportsSectionsLoading() {
   return (
-    <main className="space-y-6 p-4 sm:p-6">
+    <>
       <div className="grid gap-3 sm:grid-cols-3">
         {["stat-1", "stat-2", "stat-3"].map((key) => (
           <Card key={key}>
@@ -110,6 +110,14 @@ export default function ReportsLoading() {
           </div>
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+export default function ReportsLoading() {
+  return (
+    <main className="space-y-6 p-4 sm:p-6">
+      <ReportsSectionsLoading />
     </main>
   );
 }

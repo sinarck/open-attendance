@@ -1,5 +1,7 @@
 import { type ReactNode } from "react";
 import { AppNavbar } from "@/components/navigation/app-navbar";
+import { ClientAuthBoundary } from "@/lib/auth/auth-boundary";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 
 /**
  * Static shell for authenticated routes.
@@ -12,9 +14,13 @@ import { AppNavbar } from "@/components/navigation/app-navbar";
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-svh flex-col overflow-hidden bg-background">
-      <AppNavbar />
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-none">{children}</div>
-    </div>
+    <ConvexClientProvider>
+      <div className="flex h-svh flex-col overflow-hidden bg-background">
+        <AppNavbar />
+        <ClientAuthBoundary>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-none">{children}</div>
+        </ClientAuthBoundary>
+      </div>
+    </ConvexClientProvider>
   );
 }

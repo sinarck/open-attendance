@@ -60,6 +60,7 @@ function AppNavbarMobileDrawer({ pathname }: AppNavbarMobileDrawerProps) {
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
+                  prefetch
                   className={cn(
                     "flex select-none items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                     active

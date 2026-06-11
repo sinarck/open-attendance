@@ -4,6 +4,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/auth-client";
+import { cn } from "@/lib/utils";
 
 /**
  * Auth-aware CTA island for the public marketing navbar.
@@ -15,29 +16,46 @@ import { useSession } from "@/lib/auth/auth-client";
  */
 export function NavbarActions() {
   const { data: session, isPending } = useSession();
-
-  if (isPending) {
-    return <div aria-hidden className="flex h-8 min-w-[12rem] justify-end" />;
-  }
-
-  if (!session) {
-    return (
-      <div className="flex h-8 min-w-[12rem] justify-end">
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="ghost" render={<Link href={"/sign-in" as Route} prefetch />}>
-            Log in
-          </Button>
-          <Button size="sm" render={<Link href={"/sign-up" as Route} prefetch />}>
-            Sign up
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const showAnonymousActions = !isPending && !session;
+  const showAuthenticatedAction = !isPending && !!session;
 
   return (
-    <div className="flex h-8 min-w-[12rem] justify-end">
-      <div className="flex items-center">
+    <div className="relative flex h-8 min-w-[12rem] justify-end">
+      <div
+        aria-hidden={!showAnonymousActions}
+        className={cn(
+          "absolute inset-y-0 right-0 flex items-center gap-1 transition-[opacity,transform,filter] duration-220 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-[opacity,transform,filter] motion-reduce:transition-none",
+          showAnonymousActions
+            ? "translate-y-0 opacity-100 blur-0"
+            : "pointer-events-none translate-y-1.5 opacity-0 blur-[2px]",
+        )}
+      >
+        <Button
+          size="sm"
+          variant="ghost"
+          tabIndex={showAnonymousActions ? undefined : -1}
+          render={<Link href={"/sign-in" as Route} prefetch />}
+        >
+          Log in
+        </Button>
+        <Button
+          size="sm"
+          tabIndex={showAnonymousActions ? undefined : -1}
+          render={<Link href={"/sign-up" as Route} prefetch />}
+        >
+          Sign up
+        </Button>
+      </div>
+
+      <div
+        aria-hidden={!showAuthenticatedAction}
+        className={cn(
+          "absolute inset-y-0 right-0 flex items-center transition-[opacity,transform,filter] duration-220 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-[opacity,transform,filter] motion-reduce:transition-none",
+          showAuthenticatedAction
+            ? "translate-y-0 opacity-100 blur-0"
+            : "pointer-events-none translate-y-1.5 opacity-0 blur-[2px]",
+        )}
+      >
         <Button size="sm" render={<Link href={"/dashboard" as Route} prefetch />}>
           Open app
         </Button>
