@@ -27,7 +27,7 @@ export function HomeCtaActions({ repoUrl }: HomeCtaActionsProps) {
       </Button>
       <Button
         variant="ghost"
-        render={<a href={repoUrl} rel="noreferrer" target="_blank" />}
+        render={<a aria-label="View on GitHub" href={repoUrl} rel="noreferrer" target="_blank" />}
         onClick={() => {
           posthog.capture("cta_github_clicked", { source: "homepage" });
         }}

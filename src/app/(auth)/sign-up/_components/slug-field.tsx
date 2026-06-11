@@ -30,6 +30,7 @@ export function SlugField({ appUrl, loading, slug, status, onSlugChange }: SlugF
           }}
           render={
             <input
+              aria-label="Organization URL slug"
               className="h-9 w-full min-w-0 bg-transparent pl-3 pr-12 font-mono text-sm outline-none placeholder:text-muted-foreground/72 sm:h-8"
               placeholder="robotics-society"
               autoCapitalize="none"

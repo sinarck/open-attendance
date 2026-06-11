@@ -2,7 +2,7 @@
 
 import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
 import { X } from "lucide-react";
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -10,13 +10,7 @@ import { cn } from "@/lib/utils";
 type DrawerPosition = "right" | "left" | "top" | "bottom";
 type DrawerVariant = "default" | "straight" | "inset";
 
-interface DrawerPositionContextValue {
-  position: DrawerPosition;
-}
-
-const DrawerPositionContext = createContext<DrawerPositionContextValue>({
-  position: "bottom",
-});
+const DrawerPositionContext = createContext<DrawerPosition>("bottom");
 
 function getSwipeDirection(position: DrawerPosition) {
   switch (position) {
@@ -33,7 +27,7 @@ function getSwipeDirection(position: DrawerPosition) {
 }
 
 function useDrawerPosition() {
-  return useContext(DrawerPositionContext);
+  return use(DrawerPositionContext);
 }
 
 function Drawer({
@@ -41,7 +35,7 @@ function Drawer({
   ...props
 }: DrawerPrimitive.Root.Props & { position?: DrawerPosition }) {
   return (
-    <DrawerPositionContext.Provider value={{ position }}>
+    <DrawerPositionContext.Provider value={position}>
       <DrawerPrimitive.Root swipeDirection={getSwipeDirection(position)} {...props} />
     </DrawerPositionContext.Provider>
   );
@@ -71,7 +65,7 @@ function DrawerBackdrop({ className, ...props }: DrawerPrimitive.Backdrop.Props)
 }
 
 function DrawerViewport({ className, ...props }: DrawerPrimitive.Viewport.Props) {
-  const { position } = useDrawerPosition();
+  const position = useDrawerPosition();
 
   return (
     <DrawerPrimitive.Viewport
@@ -109,7 +103,7 @@ function DrawerPopup({
   showBar?: boolean;
   variant?: DrawerVariant;
 }) {
-  const { position } = useDrawerPosition();
+  const position = useDrawerPosition();
 
   return (
     <DrawerPortal>

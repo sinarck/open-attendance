@@ -16,7 +16,7 @@ export const meetingColumns: ColumnDef<Meeting>[] = [
   {
     accessorKey: "location",
     header: "Location",
-    cell: ({ row }) => <span className="ui-meta">{row.original.location || "—"}</span>,
+    cell: ({ row }) => <span className="ui-meta">{row.original.location || "None"}</span>,
   },
   {
     id: "features",
@@ -24,7 +24,7 @@ export const meetingColumns: ColumnDef<Meeting>[] = [
     cell: ({ row }) => {
       const hasGeofence = row.original.geofence != null;
       if (!hasGeofence && !row.original.requireFingerprint) {
-        return <span className="text-xs text-muted-foreground">—</span>;
+        return <span className="text-xs text-muted-foreground">None</span>;
       }
       return (
         <div className="flex items-center gap-1.5">

@@ -9,7 +9,7 @@ import {
   type LucideIcon,
   TriangleAlert,
 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 const toastManager = Toast.createToastManager();
@@ -64,7 +64,7 @@ function ToastProvider({ children, position = "bottom-right", ...props }: ToastP
   );
 }
 
-function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
+function Toasts({ position }: { position: ToastPosition }) {
   const { toasts } = Toast.useToastManager();
   const isTop = position.startsWith("top");
 
