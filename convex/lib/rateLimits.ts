@@ -25,4 +25,12 @@ export const { rateLimit } = defineRateLimits({
     period: millisecondsInMinute,
     capacity: 60,
   },
+
+  // Batch roster imports should be deliberate and infrequent.
+  memberImport: {
+    kind: "fixed window",
+    rate: 10,
+    period: millisecondsInMinute,
+    capacity: 10,
+  },
 });

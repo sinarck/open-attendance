@@ -1,8 +1,17 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
 import { authedMutation, authedQuery } from "./lib/auth";
 import { rateLimit } from "./lib/rateLimits";
 import { normalizeMemberIdentifier, normalizeMemberName } from "./lib/validation";
+import type {
+  MemberImportCode,
+  MemberImportPreviewResult,
+  MemberImportResult,
+  MemberImportRowInput,
+  MemberImportRowResult,
+  MemberImportSummary,
+} from "../src/types/member-import";
 
 /**
  * Member roster management for an authenticated organization.
@@ -30,6 +39,145 @@ function memberError(code: MemberErrorCode, identifier?: string) {
   }
 
   return { ok: false, code, message: memberErrorMessages[code] } as const;
+}
+
+function invalidImportRow(
+  row: MemberImportRowInput,
+  code: Exclude<
+    MemberImportCode,
+    "duplicate_identifier" | "duplicate_identifier_in_archived_roster"
+  >,
+  message: string,
+): MemberImportRowResult {
+  return {
+    rowNumber: row.rowNumber,
+    name: row.name,
+    identifier: row.identifier,
+    ok: false,
+    code,
+    message,
+  };
+}
+
+type ImportAnalysisCtx = {
+  db: DatabaseReader | DatabaseWriter;
+  organizationId: Id<"organizations">;
+};
+
+function buildImportSummary(rows: MemberImportRowResult[]): MemberImportSummary {
+  return {
+    activeConflicts: rows.filter((row) => row.code === "duplicate_identifier").length,
+    archivedConflicts: rows.filter((row) => row.code === "duplicate_identifier_in_archived_roster")
+      .length,
+    duplicateIdentifiersInFile: rows.filter((row) => row.code === "duplicate_identifier_in_file")
+      .length,
+    invalidIdentifiers: rows.filter((row) => row.code === "invalid_identifier").length,
+    invalidNames: rows.filter((row) => row.code === "invalid_name").length,
+    totalRows: rows.length,
+    validRows: rows.filter((row) => row.ok).length,
+  };
+}
+
+async function analyzeImportRows(
+  ctx: ImportAnalysisCtx,
+  rows: MemberImportRowInput[],
+): Promise<MemberImportPreviewResult> {
+  const seenIdentifiers = new Set<string>();
+  const normalizedRows: Array<MemberImportRowResult> = [];
+  const identifiersToCheck = new Set<string>();
+
+  for (const row of rows) {
+    let normalizedName: string;
+    try {
+      normalizedName = normalizeMemberName(row.name);
+    } catch {
+      normalizedRows.push(invalidImportRow(row, "invalid_name", "Name cannot be empty."));
+      continue;
+    }
+
+    let normalizedIdentifier: string;
+    try {
+      normalizedIdentifier = normalizeMemberIdentifier(row.identifier);
+    } catch {
+      normalizedRows.push(
+        invalidImportRow(row, "invalid_identifier", "Identifier cannot be empty."),
+      );
+      continue;
+    }
+
+    if (seenIdentifiers.has(normalizedIdentifier)) {
+      normalizedRows.push({
+        rowNumber: row.rowNumber,
+        name: row.name,
+        identifier: row.identifier,
+        normalizedIdentifier,
+        normalizedName,
+        ok: false,
+        code: "duplicate_identifier_in_file",
+        message: `Identifier "${normalizedIdentifier}" appears multiple times in this file.`,
+      });
+      continue;
+    }
+
+    seenIdentifiers.add(normalizedIdentifier);
+    identifiersToCheck.add(normalizedIdentifier);
+    normalizedRows.push({
+      rowNumber: row.rowNumber,
+      name: row.name,
+      identifier: row.identifier,
+      normalizedIdentifier,
+      normalizedName,
+      ok: true,
+    });
+  }
+
+  const existingMembers = new Map<string, { isActive: boolean }>();
+  await Promise.all(
+    Array.from(identifiersToCheck, async (identifier) => {
+      const member = await ctx.db
+        .query("members")
+        .withIndex("by_org_identifier", (q) =>
+          q.eq("organizationId", ctx.organizationId).eq("identifier", identifier),
+        )
+        .unique();
+
+      if (member) {
+        existingMembers.set(identifier, { isActive: member.isActive });
+      }
+    }),
+  );
+
+  const rowsWithConflicts = normalizedRows.map((row) => {
+    if (!row.ok || row.normalizedIdentifier === undefined) {
+      return row;
+    }
+
+    const existing = existingMembers.get(row.normalizedIdentifier);
+    if (!existing) {
+      return row;
+    }
+
+    if (existing.isActive) {
+      return {
+        ...row,
+        ok: false,
+        code: "duplicate_identifier",
+        message: `Identifier "${row.normalizedIdentifier}" already belongs to an active member.`,
+      } satisfies MemberImportRowResult;
+    }
+
+    return {
+      ...row,
+      ok: false,
+      code: "duplicate_identifier_in_archived_roster",
+      message: `Identifier "${row.normalizedIdentifier}" belongs to an archived member.`,
+    } satisfies MemberImportRowResult;
+  });
+
+  return {
+    rows: rowsWithConflicts,
+    summary: buildImportSummary(rowsWithConflicts),
+  };
 }
 
 /**
@@ -101,6 +249,69 @@ export const create = authedMutation({
         identifier,
         isActive: true,
       }),
+    };
+  },
+});
+
+/**
+ * Reviews a mapped import file against current roster rules before commit.
+ */
+export const previewImport = authedQuery({
+  args: {
+    rows: v.array(
+      v.object({
+        rowNumber: v.number(),
+        name: v.string(),
+        identifier: v.string(),
+      }),
+    ),
+  },
+  handler: async (ctx, args): Promise<MemberImportPreviewResult> => {
+    return analyzeImportRows(ctx, args.rows);
+  },
+});
+
+/**
+ * Imports valid members in one mutation and skips conflicting rows.
+ */
+export const importMembers = authedMutation({
+  args: {
+    rows: v.array(
+      v.object({
+        rowNumber: v.number(),
+        name: v.string(),
+        identifier: v.string(),
+      }),
+    ),
+  },
+  handler: async (ctx, args): Promise<MemberImportResult> => {
+    await rateLimit(ctx, {
+      name: "memberImport",
+      key: ctx.organizationId,
+      throws: true,
+    });
+
+    const preview = await analyzeImportRows(ctx, args.rows);
+    let importedCount = 0;
+
+    for (const row of preview.rows) {
+      if (!row.ok || row.normalizedIdentifier === undefined || row.normalizedName === undefined) {
+        continue;
+      }
+
+      await ctx.db.insert("members", {
+        organizationId: ctx.organizationId,
+        name: row.normalizedName,
+        identifier: row.normalizedIdentifier,
+        isActive: true,
+      });
+      importedCount += 1;
+    }
+
+    return {
+      ...preview,
+      importedCount,
+      skippedCount: preview.rows.length - importedCount,
     };
   },
 });
