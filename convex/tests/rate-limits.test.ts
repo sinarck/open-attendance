@@ -4,12 +4,26 @@ import type { Id } from "../_generated/dataModel";
 import { seedAuthedOrg, seedMeeting, seedMember, seedOrg, seedRecord } from "../lib/seed";
 import { convexTest, schema } from "./harness";
 
+interface RateLimitErrorData {
+  kind?: string;
+  name?: string;
+}
+
+interface RateLimitError {
+  data?: RateLimitErrorData | string;
+}
+
+function getRateLimitErrorData(error: RateLimitError) {
+  if (typeof error.data === "string") {
+    return JSON.parse(error.data) as RateLimitErrorData;
+  }
+
+  return error.data;
+}
+
 async function expectRateLimited(promise: Promise<unknown>, name: string) {
-  await expect(promise).rejects.toSatisfy((error: { data?: string }) => {
-    const data = JSON.parse(error.data ?? "null") as {
-      kind?: string;
-      name?: string;
-    } | null;
+  await expect(promise).rejects.toSatisfy((error: RateLimitError) => {
+    const data = getRateLimitErrorData(error);
 
     return data?.kind === "RateLimited" && data.name === name;
   });
