@@ -7,7 +7,7 @@
     "dev:convex": "vp exec convex dev",
     "dev:next": "next dev",
     "build": "next build --webpack",
-    "build:vercel": "if [ -n \"$CONVEX_DEPLOY_KEY\" ] || { [ -n \"$CONVEX_SELF_HOSTED_URL\" ] && [ -n \"$CONVEX_SELF_HOSTED_ADMIN_KEY\" ]; }; then vp exec convex deploy --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL --cmd 'next build --webpack'; else next build --webpack; fi",
+    "build:vercel": "if [ -n \"$CONVEX_DEPLOY_KEY\" ] || { [ -n \"$CONVEX_SELF_HOSTED_URL\" ] && [ -n \"$CONVEX_SELF_HOSTED_ADMIN_KEY\" ]; }; then vp exec convex deploy --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL --cmd 'next build --webpack'; else NEXT_PUBLIC_CONVEX_URL=\"${NEXT_PUBLIC_CONVEX_URL:-https://placeholder.convex.cloud}\" NEXT_PUBLIC_CONVEX_SITE_URL=\"${NEXT_PUBLIC_CONVEX_SITE_URL:-https://placeholder.convex.site}\" next build --webpack; fi",
     "start": "next start",
     "type-check": "tsgo --noEmit",
     "prepare": "vp config"
