@@ -1,37 +1,20 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import posthog from "posthog-js";
+import { useEffect } from "react";
+import { ErrorFallback } from "@/components/error-fallback";
 
-type ErrorPageProps = Readonly<{
-  error: globalThis.Error & { digest?: string };
+interface ErrorPageProps {
   reset: () => void;
-}>;
+  error: Error & { digest?: string };
+}
 
-export default function GlobalError(props: ErrorPageProps) {
-  const appCode = (props.error.cause as { appCode?: string } | undefined)
-    ?.appCode;
-  const code = (props.error.cause as { code?: string } | undefined)?.code;
+export default function ErrorPage({ reset, error }: ErrorPageProps) {
+  useEffect(() => {
+    // Error boundaries may rerender while the user retries. Report in an effect
+    // so analytics stays out of render and each surfaced error is captured once.
+    posthog.captureException(error);
+  }, [error]);
 
-  return (
-    <div className="space-y-4 p-6">
-      <div>
-        <h2 className="text-xl font-semibold">Something went wrong</h2>
-        <p className="text-sm text-muted-foreground">{props.error.message}</p>
-      </div>
-      {appCode && (
-        <p className="text-xs text-muted-foreground">
-          App code: <code>{appCode}</code>
-          {code ? (
-            <>
-              {" "}
-              | TRPC: <code>{code}</code>
-            </>
-          ) : null}
-        </p>
-      )}
-      <div className="flex gap-2">
-        <Button onClick={() => props.reset()}>Try again</Button>
-      </div>
-    </div>
-  );
+  return <ErrorFallback reset={reset} />;
 }

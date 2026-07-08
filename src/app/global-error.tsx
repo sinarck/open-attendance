@@ -1,31 +1,31 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import "./globals.css";
+import posthog from "posthog-js";
+import { useEffect } from "react";
+import { ErrorFallback } from "@/components/error-fallback";
+import { cn } from "@/lib/utils";
+import { openRunde } from "./ui/fonts";
 
 export default function GlobalError({
-  error: _error,
+  error,
+  reset,
 }: {
   error: Error & { digest?: string };
+  reset: () => void;
 }) {
+  useEffect(() => {
+    // This boundary replaces the entire root tree, so it owns the last-resort
+    // error report for failures that happen before the normal app shell mounts.
+    posthog.captureException(error);
+  }, [error]);
+
   return (
-    <html lang="en">
-      <body>
-        <div className="min-h-svh flex items-center justify-center p-6">
-          <div className="mx-auto w-full max-w-lg text-center space-y-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Something went wrong
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              An unexpected error occurred.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button asChild>
-                <Link href="/">Go home</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
+    // Next.js requires the global error boundary to render a full document shell
+    // because it runs in place of the root layout after fatal render failures.
+    <html lang="en" suppressHydrationWarning className={cn(openRunde.variable)}>
+      <body className="antialiased">
+        <ErrorFallback reset={reset} />
       </body>
     </html>
   );

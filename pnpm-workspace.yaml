@@ -1,0 +1,19 @@
+# Keep the workspace scoped to the root package. Without this, pnpm includes
+# every nested package.json by default, which pulls tooling fixtures like
+# `.agents/` into repo-wide commands.
+packages: []
+
+# Delay newly published packages to reduce exposure to compromised releases.
+# pnpm applies this to direct and transitive dependencies.
+minimumReleaseAge: 10080
+
+# Prevent transitive dependencies from resolving from git/tarball-style exotic
+# sources. Direct dependencies may still opt into exotic sources explicitly.
+blockExoticSubdeps: true
+
+allowBuilds:
+  "@posthog/cli": true
+  core-js: true
+  esbuild: true
+  protobufjs: true
+  sharp: true
